@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快樂學習傳送門</title>
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+        h1 { color: #2c3e50; margin-bottom: 30px; text-align: center;}
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 600px;
+        }
+        .menu-item {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            text-decoration: none;
+            color: #333;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            border: 2px solid transparent;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .menu-item:active { transform: scale(0.95); background-color: #e8f6f3; }
+        .icon { font-size: 3rem; display: block; margin-bottom: 10px; }
+        .title { font-size: 1.2rem; font-weight: bold; }
+        
+        /* 不同科目的顏色邊框 */
+        .math { border-bottom: 5px solid #FF6B6B; }
+        .eng { border-bottom: 5px solid #4ECDC4; }
+    </style>
+</head>
+<body>
+
+    <h1>🎓 選擇要練習的科目</h1>
+
+    <div class="menu-grid">
+        <a href="cross_manual.html" class="menu-item math">
+            <span class="icon">✖️</span>
+            <span class="title">乘法闖關</span>
+        </a>
+
+        <a href="division_manual.html" class="menu-item math">
+            <span class="icon">➗</span>
+            <span class="title">除法小家教</span>
+        </a>
+
+        <a href="phonics_test.html" class="menu-item eng">
+            <span class="icon">🗣️</span>
+            <span class="title">Phonics 拼字</span>
+        </a>
+    </div>
+
+</body>
+</html>
