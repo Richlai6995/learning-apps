@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Phonics 拼字闖關王 8.0 (完整優化版)</title>
+    <style>
+        :root {
+            --primary: #FF6B6B;
+            --secondary: #4ECDC4;
+            --dark: #2C3E50;
+            --light: #F7F9FC;
+            --accent: #FFE66D;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --link: #3498db;
+            --user-bg: #fff3cd;
+            
+            --rank-1: #FFD700;
+            --rank-2: #C0C0C0;
+            --rank-3: #CD7F32;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            touch-action: manipulation;
+        }
+
+        h1, h2 { margin: 5px 0; color: var(--dark); text-align: center; }
+
+        /* --- 通用容器 --- */
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 20px;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .container.active { display: block; animation: fadeIn 0.3s; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* --- 按鈕樣式 --- */
+        button {
+            border: none;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s;
+            color: white;
+            margin: 2px;
+        }
+        button:active { transform: scale(0.95); }
+        
+        .btn-primary { background-color: var(--primary); }
+        .btn-secondary { background-color: var(--secondary); }
+        .btn-accent { background-color: #f39c12; }
+        .btn-gray { background-color: #95a5a6; }
+        .btn-danger { background-color: var(--danger); }
+        .btn-link { background-color: var(--link); }
+        .btn-gold { background-color: #f1c40f; color: #333; }
+        .btn-outline { background: transparent; border: 1px solid #999; color: #666; padding: 5px 10px; font-size: 0.85rem;}
+        .btn-block { width: 100%; margin: 5px 0; padding: 12px; font-size: 1.1rem; }
+
+        /* --- 學員名牌 --- */
+        .user-profile {
+            background-color: var(--user-bg);
+            border: 2px dashed #f39c12;
+            border-radius: 10px;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .user-avatar { font-size: 1.5rem; margin-right: 10px; }
+        .user-name { font-size: 1.2rem; font-weight: bold; color: #d35400; }
+        .user-edit-hint { font-size: 0.8rem; color: #999; margin-left: 8px; }
+
+        /* --- 列表項目 --- */
+        .list-item {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .list-checkbox { width: 24px; height: 24px; cursor: pointer; flex-shrink: 0; }
+        .list-content-wrapper { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+        .list-header { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .list-actions { display: flex; gap: 5px; justify-content: flex-end; width: 100%; flex-wrap: wrap; }
+
+        /* --- 英雄榜樣式 --- */
+        .rank-list { margin-top: 10px; }
+        .rank-item { display: flex; align-items: center; padding: 10px; margin-bottom: 8px; background: #fff; border-radius: 8px; border: 1px solid #eee; position: relative; }
+        .rank-num { font-size: 1.5rem; font-weight: 900; width: 40px; text-align: center; margin-right: 10px; color: #7f8c8d; }
+        .rank-info { flex: 1; }
+        .rank-user { font-weight: bold; font-size: 1.1rem; display: block; }
+        .rank-detail { font-size: 0.9rem; color: #666; }
+        .rank-score { font-weight: bold; color: var(--primary); }
+        .rank-item.rank-1 { background: linear-gradient(to right, #fff, #fff9c4); border: 2px solid var(--rank-1); }
+        .rank-item.rank-1 .rank-num { color: #d4ac0d; font-size: 2rem; }
+        .rank-item.rank-2 { border-left: 5px solid var(--rank-2); } .rank-item.rank-2 .rank-num { color: #7f8c8d; }
+        .rank-item.rank-3 { border-left: 5px solid var(--rank-3); } .rank-item.rank-3 .rank-num { color: #a0522d; }
+
+        /* --- 歷史紀錄 --- */
+        .history-item {
+            background: #e8f6f3; border-left: 5px solid var(--secondary); padding: 12px; margin-bottom: 10px; border-radius: 4px;
+            display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
+        }
+        .history-info { display: flex; flex-direction: column; gap: 4px; }
+        .history-title { font-weight: bold; color: #34495e; font-size: 0.9rem; }
+        .history-user { font-weight: bold; color: var(--dark); }
+        .history-score { color: var(--primary); font-size: 1.1rem; font-weight: 900; margin-left: 5px; }
+        .delete-history-btn { background: transparent; color: #bdc3c7; border: 1px solid #bdc3c7; width: 32px; height: 32px; border-radius: 50%; padding: 0; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
+
+        /* --- 匯出匯入區 --- */
+        .data-controls { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 2px dashed #eee; }
+        .data-btn-row { display: flex; gap: 10px; }
+
+        /* --- 測驗區與其他 --- */
+        .edit-row { display: flex; gap: 5px; margin-bottom: 10px; align-items: center; background: #fff; padding: 5px; border: 1px solid #eee; border-radius: 8px; }
+        .edit-row input[type="text"] { padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; }
+        .thumb-preview { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; background: #eee; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .file-input { display: none; }
+        .quiz-header { display: flex; justify-content: space-between; font-weight: bold; color: #7f8c8d; margin-bottom: 15px; background: #f1f2f6; padding: 10px; border-radius: 8px; }
+        .timer-badge { background: var(--dark); color: #fff; padding: 2px 8px; border-radius: 4px; font-family: monospace; }
+        .question-area { text-align: center; margin-bottom: 15px; }
+        .q-image-box { height: 140px; display: flex; justify-content: center; align-items: center; margin-bottom: 10px; }
+        .q-image-box img { max-height: 100%; max-width: 100%; border-radius: 8px; }
+        .q-image-box span { font-size: 5rem; }
+        .answer-input { width: 80%; font-size: 2rem; text-align: center; letter-spacing: 5px; padding: 10px; border: 3px solid var(--secondary); border-radius: 10px; font-family: monospace; margin-bottom: 15px; text-transform: lowercase; }
+        .answer-area { display: flex; justify-content: center; gap: 8px; margin-bottom: 30px; min-height: 60px; padding: 10px; background: #fff; border-radius: 10px; }
+        .slot { width: 45px; height: 55px; border-bottom: 4px solid var(--secondary); background-color: #f8f9fa; border-radius: 6px 6px 0 0; display: flex; justify-content: center; align-items: center; position: relative; }
+        .pool-area { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 20px; min-height: 70px; padding: 15px; background: #ecf0f1; border-radius: 10px; border: 2px dashed #bdc3c7; }
+        .tile { width: 42px; height: 42px; background-color: var(--dark); color: white; font-size: 1.6rem; font-weight: bold; display: flex; justify-content: center; align-items: center; border-radius: 8px; cursor: pointer; box-shadow: 0 4px #1a252f; user-select: none; touch-action: none; position: relative; z-index: 10; }
+        .tile.dragging { position: fixed; opacity: 0.8; pointer-events: none; transform: scale(1.2); z-index: 1000; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        .tile.placeholder { opacity: 0.2; box-shadow: none; }
+        
+        /* 結果卡片 */
+        .result-card { text-align: center; padding: 20px; }
+        .final-score { font-size: 5rem; color: var(--primary); margin: 10px 0; font-weight: bold; }
+        .final-accuracy { font-size: 1.5rem; color: #34495e; font-weight: bold; margin-bottom: 5px; background: #e8f6f3; padding: 5px 15px; border-radius: 20px; display: inline-block;}
+        .final-time { font-size: 1.2rem; color: #7f8c8d; margin-bottom: 20px; margin-top: 10px;}
+        
+        .tabs { display: flex; margin-bottom: 15px; border-bottom: 2px solid #eee; }
+        .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #999; font-weight: bold; }
+        .tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+
+    </style>
+</head>
+<body>
+
+    <div id="page-home" class="container active">
+        <h1>🏆 Phonics 拼字闖關王</h1>
+        
+        <div class="user-profile" onclick="changeStudentName()">
+            <span class="user-avatar">🎓</span>
+            <span id="display-student-name" class="user-name">設定學員姓名</span>
+            <span class="user-edit-hint">✎</span>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('quiz')">選擇題庫</div>
+            <div class="tab" onclick="switchTab('history')">全部紀錄</div>
+        </div>
+
+        <div id="tab-quiz-content">
+            <div id="lists-container"></div>
+            <button class="btn-secondary btn-block" onclick="createNewList()">+ 新增自訂題庫</button>
+            
+            <div class="data-controls">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:bold; color:#555;">資料管理</span>
+                    <button class="btn-outline" onclick="toggleSelectAll()">全選 / 取消</button>
+                </div>
+                <div class="data-btn-row">
+                    <button class="btn-link" style="flex:1" onclick="exportSelectedData()">📤 匯出已選題庫</button>
+                    <button class="btn-link" style="flex:1" onclick="triggerImport()">📥 匯入題庫</button>
+                </div>
+                <input type="file" id="import-file" class="file-input" accept=".json" onchange="handleImportData(this)">
+            </div>
+        </div>
+
+        <div id="tab-history-content" style="display:none;">
+            <div id="history-container"></div>
+            <button class="btn-gray btn-block" onclick="clearAllHistory()">清空所有紀錄</button>
+        </div>
+    </div>
+
+    <div id="page-editor" class="container">
+        <h2>✏️ 編輯題庫</h2>
+        <div style="margin-bottom:10px;">
+            <label>題庫名稱：</label>
+            <input type="text" id="list-name-input" style="padding:5px; width:60%;">
+        </div>
+        <div style="background:#e8f6f3; padding:8px; font-size:0.9rem; border-radius:5px; margin-bottom:10px; color:#2c3e50;">
+            💡 點擊圖示框可上傳圖片，或是直接輸入 Emoji 🍎
+        </div>
+        <div id="editor-rows"></div>
+        <button class="btn-gray" onclick="addEditRow()">+ 增加單字</button>
+        <hr>
+        <div style="display:flex; gap:10px;">
+            <button class="btn-gray" style="flex:1" onclick="showPage('page-home')">取消</button>
+            <button class="btn-primary" style="flex:1" onclick="saveList()">儲存</button>
+        </div>
+    </div>
+
+    <div id="page-quiz" class="container">
+        <div class="quiz-header">
+            <span id="q-progress">題號: 1/5</span>
+            <span id="q-timer" class="timer-badge">00:00</span>
+            <span id="q-score">得分: 0</span>
+        </div>
+        <div class="question-area">
+            <div id="q-image-box" class="q-image-box"></div>
+            <button class="btn-accent" onclick="playTargetAudio()">🔊 聽題目發音</button>
+        </div>
+        <div style="text-align:center; color:#7f8c8d; font-size:0.9rem; margin-bottom:5px;">將字母拉到線上拼字</div>
+        <div id="answer-area" class="answer-area"></div>
+        <div id="pool-area" class="pool-area"></div>
+        <div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px;">
+            <button class="btn-secondary" onclick="speakUserSpelling()">👂 聽拼音</button>
+            <button class="btn-gray" onclick="resetCurrentTiles()">⌫ 重置</button>
+        </div>
+        <button class="btn-primary btn-block" style="margin-top: 20px;" onclick="submitAnswer()">送出答案 (Check)</button>
+        <button class="btn-gray btn-block" onclick="quitQuiz()">退出測驗</button>
+    </div>
+
+    <div id="page-result" class="container">
+        <div class="result-card">
+            <h2>🎉 測驗完成！</h2>
+            <div class="final-score" id="final-score">100</div>
+            <div class="final-accuracy" id="final-accuracy">正確: 5/5</div>
+            <div class="final-time" id="final-time">耗時: 01:23</div>
+            <div class="result-msg" id="final-msg" style="font-size:1.2rem; margin-bottom:20px;">太厲害了！</div>
+            <button class="btn-primary btn-block" onclick="showPage('page-home')">回到首頁</button>
+        </div>
+    </div>
+
+    <div id="page-leaderboard" class="container">
+        <h2 id="lb-title">🏆 英雄榜</h2>
+        <p style="text-align:center; color:#666;">依分數與時間排序</p>
+        <div id="lb-container" class="rank-list"></div>
+        <button class="btn-primary btn-block" onclick="showPage('page-home')">關閉榜單</button>
+    </div>
+
+<script>
+    // --- 初始化 ---
+    const DEFAULT_LIST = {
+        id: 'default',
+        name: '預設：動物篇 (Demo)',
+        words: [{word: 'cat', img: '🐱'}, {word: 'dog', img: '🐶'}, {word: 'pig', img: '🐷'}]
+    };
+
+    let allLists = [];
+    let historyLog = [];
+    let studentName = "小小學員";
+    let currentQuizList = []; 
+    let currentListId = null;
+    let currentListName = "";
+    let currentQIndex = 0;
+    let score = 0;
+    let correctCount = 0; // 新增：答對題數
+    let currentTargetWord = "";
+    let editingListId = null;
+    let timerInterval, startTime, pointsPerQuestion;
+
+    window.onload = function() {
+        loadData();
+        renderLists();
+        renderHistory();
+        updateNameDisplay();
+    };
+
+    function loadData() {
+        const storedLists = localStorage.getItem('phonics_lists_v7'); // Version up
+        if (storedLists) { allLists = JSON.parse(storedLists); } 
+        else { allLists = [DEFAULT_LIST]; saveListData(); }
+        
+        const storedHistory = localStorage.getItem('phonics_history_v7');
+        if (storedHistory) { historyLog = JSON.parse(storedHistory); }
+        
+        const storedName = localStorage.getItem('phonics_student_name');
+        if (storedName) studentName = storedName;
+    }
+
+    function saveListData() { localStorage.setItem('phonics_lists_v7', JSON.stringify(allLists)); }
+    function saveHistoryData() { localStorage.setItem('phonics_history_v7', JSON.stringify(historyLog)); }
+    
+    function changeStudentName() {
+        const newName = prompt("請輸入學員名字：", studentName);
+        if (newName && newName.trim() !== "") {
+            studentName = newName.trim();
+            localStorage.setItem('phonics_student_name', studentName);
+            updateNameDisplay();
+        }
+    }
+    function updateNameDisplay() { document.getElementById('display-student-name').innerText = studentName; }
+
+    function showPage(pageId) {
+        document.querySelectorAll('.container').forEach(el => el.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+        if (pageId === 'page-home') { renderLists(); renderHistory(); }
+    }
+
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        event.target.classList.add('active');
+        document.getElementById('tab-quiz-content').style.display = tabName === 'quiz' ? 'block' : 'none';
+        document.getElementById('tab-history-content').style.display = tabName === 'history' ? 'block' : 'none';
+    }
+
+    // --- 列表與匯出 ---
+    function renderLists() {
+        const container = document.getElementById('lists-container');
+        container.innerHTML = '';
+        allLists.forEach((list, index) => {
+            const div = document.createElement('div');
+            div.className = 'list-item';
+            div.innerHTML = `
+                <input type="checkbox" class="list-checkbox" data-index="${index}">
+                <div class="list-content-wrapper">
+                    <div class="list-header">
+                        <div><strong>${list.name}</strong> <small>(${list.words.length}題)</small></div>
+                    </div>
+                    <div class="list-actions">
+                        <button class="btn-gold" onclick="showLeaderboard('${list.id}', '${list.name}')">🏆 榜單</button>
+                        <button class="btn-primary" onclick="startQuizSetup(${index})">開始</button>
+                        <button class="btn-gray" onclick="editList(${index})">編輯</button>
+                        <button class="btn-danger" onclick="deleteList(${index})">刪</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function toggleSelectAll() {
+        const checkboxes = document.querySelectorAll('.list-checkbox');
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        checkboxes.forEach(cb => cb.checked = !allChecked);
+    }
+
+    function exportSelectedData() {
+        const checkboxes = document.querySelectorAll('.list-checkbox:checked');
+        if (checkboxes.length === 0) { alert("請至少勾選一個題庫！"); return; }
+        const selectedLists = [];
+        checkboxes.forEach(cb => { selectedLists.push(allLists[parseInt(cb.dataset.index)]); });
+        const blob = new Blob([JSON.stringify(selectedLists)], {type: "application/json"});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = `phonics_selected_${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }
+
+    function triggerImport() { document.getElementById('import-file').click(); }
+    function handleImportData(input) {
+        const file = input.files[0]; if(!file) return;
+        const r = new FileReader();
+        r.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                if(Array.isArray(data)) { allLists=allLists.concat(data); saveListData(); renderLists(); alert(`匯入 ${data.length} 個題庫`); }
+            } catch(err) { alert("格式錯誤"); }
+            input.value='';
+        };
+        r.readAsText(file);
+    }
+
+    // --- 測驗邏輯 (修正語音重疊) ---
+    function startQuizSetup(index) {
+        const list = allLists[index];
+        currentListId = list.id; 
+        currentListName = list.name;
+        
+        let shuffled = [...list.words].sort(() => 0.5 - Math.random());
+        const maxQ = Math.min(10, shuffled.length);
+        currentQuizList = shuffled.slice(0, maxQ);
+        pointsPerQuestion = Math.round(100 / currentQuizList.length);
+        
+        currentQIndex = 0; score = 0; correctCount = 0; // 重置變數
+        
+        startTime = Date.now();
+        clearInterval(timerInterval); timerInterval = setInterval(updateTimer, 1000);
+        
+        // 播放歡迎語，並在結束後才讀第一題
+        speak(`歡迎${studentName}！測驗開始！`, true, 'zh-TW');
+        
+        // 初始化第一題，並傳入參數指示是第一題 (需要延遲發音)
+        loadQuestion(true);
+        showPage('page-quiz');
+    }
+
+    function loadQuestion(isFirstQuestion = false) {
+        const qData = currentQuizList[currentQIndex];
+        currentTargetWord = qData.word;
+        document.getElementById('q-progress').innerText = `題號: ${currentQIndex+1}/${currentQuizList.length}`;
+        document.getElementById('q-score').innerText = `得分: ${score}`;
+        const imgBox = document.getElementById('q-image-box');
+        if(qData.img.length>10) imgBox.innerHTML=`<img src="${qData.img}">`; else imgBox.innerHTML=`<span>${qData.img}</span>`;
+        
+        const ansArea = document.getElementById('answer-area'); ansArea.innerHTML='';
+        for(let i=0; i<currentTargetWord.length; i++) {
+            const slot=document.createElement('div'); slot.className='slot'; ansArea.appendChild(slot);
+        }
+        const poolArea = document.getElementById('pool-area'); poolArea.innerHTML='';
+        let chars = currentTargetWord.split('').sort(() => 0.5 - Math.random());
+        chars.forEach(char => poolArea.appendChild(createTile(char)));
+        
+        // 修正：如果是第一題，延遲 3.5 秒播放單字音，避開歡迎詞
+        // 如果不是第一題，延遲 0.5 秒即可
+        const delay = isFirstQuestion ? 3500 : 500;
+        setTimeout(() => playTargetAudio(), delay);
+    }
+
+    function submitAnswer() {
+        const userAns = getAnswerString().toLowerCase();
+        const correctAns = currentTargetWord.toLowerCase();
+        if(!userAns) { speak("請先拼字",false,'zh-TW'); return; }
+        
+        if(userAns === correctAns) {
+            score += pointsPerQuestion;
+            correctCount++; // 累加正確題數
+            if(currentQIndex===currentQuizList.length-1 && score>=98) score=100;
+            speak(`太棒了${studentName}，答對了！`, true, 'zh-TW');
+            setTimeout(()=>alert("✅ 答對了！"),100);
+        } else {
+            speak(`${studentName}，再接再厲！`, false, 'zh-TW');
+            setTimeout(()=>alert("❌ 答錯囉！\n正確拼法: "+correctAns),100);
+        }
+        
+        if(currentQIndex < currentQuizList.length-1) { 
+            currentQIndex++; 
+            loadQuestion(false); // 後續題目不需要長延遲
+        }
+        else finishQuiz();
+    }
+
+    function finishQuiz() {
+        clearInterval(timerInterval);
+        showPage('page-result');
+        const timeStr = document.getElementById('q-timer').innerText;
+        document.getElementById('final-score').innerText = score;
+        // 顯示正確題數
+        document.getElementById('final-accuracy').innerText = `正確: ${correctCount} / ${currentQuizList.length}`;
+        document.getElementById('final-time').innerText = `總耗時: ${timeStr}`;
+        
+        let msg = score===100?"太神了！你是拼字大師！🏆":score>=60?"很不錯，再多練習一下會更棒！":"完成測驗就是進步！加油！";
+        document.getElementById('final-msg').innerText = msg;
+        speak(`測驗結束，${studentName}得了${score}分。${msg} 大家都會為你拍手！`, true, 'zh-TW');
+
+        const record = { user:studentName, date:new Date().toLocaleString(), score:score, time:timeStr, listId:currentListId, listName:currentListName };
+        historyLog.unshift(record);
+        saveHistoryData();
+    }
+
+    // ... (其餘輔助函數維持不變) ...
+    function createNewList() { editingListId=null; document.getElementById('list-name-input').value="新題庫"; document.getElementById('editor-rows').innerHTML=''; for(let i=0;i<3;i++)addEditRow(); showPage('page-editor'); }
+    function editList(i) { editingListId=i; const l=allLists[i]; document.getElementById('list-name-input').value=l.name; document.getElementById('editor-rows').innerHTML=''; l.words.forEach(w=>addEditRow(w.word,w.img)); showPage('page-editor'); }
+    function addEditRow(w='',i='') { const d=document.createElement('div'); d.className='edit-row'; let disp=i||'📷'; if(i&&i.length>10) disp=`<img src="${i}" style="width:100%;height:100%;object-fit:cover;">`; d.innerHTML=`<div class="thumb-preview" onclick="this.nextElementSibling.click()">${disp}</div><input type="file" class="file-input" accept="image/*" onchange="handleFileSelect(this)"><input type="hidden" class="img-data" value="${i}"><input type="text" class="word-input" placeholder="英文單字" value="${w}"><button onclick="this.parentElement.remove()" class="btn-danger" style="padding:5px 10px;">×</button>`; document.getElementById('editor-rows').appendChild(d); }
+    function handleFileSelect(input) { if(input.files[0]){ const r=new FileReader(); r.onload=(e)=>{ const i=new Image(); i.src=e.target.result; i.onload=()=>{ const c=document.createElement('canvas'); const ctx=c.getContext('2d'); const s=300/i.width; c.width=300; c.height=i.height*s; ctx.drawImage(i,0,0,c.width,c.height); const d=c.toDataURL('image/jpeg',0.7); input.previousElementSibling.innerHTML=`<img src="${d}" style="width:100%;height:100%;object-fit:cover;">`; input.nextElementSibling.value=d; }; }; r.readAsDataURL(input.files[0]); } }
+    function saveList() { const n=document.getElementById('list-name-input').value; const rs=document.querySelectorAll('.edit-row'); const nws=[]; rs.forEach(r=>{ const i=r.querySelector('.img-data').value; const w=r.querySelector('.word-input').value.trim().toLowerCase(); if(w) nws.push({word:w, img:i||'❓'}); }); if(nws.length<1) return alert("請輸入單字"); const nd={id:editingListId!==null?allLists[editingListId].id:Date.now().toString(),name:n,words:nws}; if(editingListId!==null) allLists[editingListId]=nd; else allLists.push(nd); saveListData(); showPage('page-home'); }
+    function deleteList(i) { if(confirm("刪除？")){allLists.splice(i,1);saveListData();renderLists();} }
+    function updateTimer() { const d=Math.floor((Date.now()-startTime)/1000); const m=Math.floor(d/60).toString().padStart(2,'0'); const s=(d%60).toString().padStart(2,'0'); document.getElementById('q-timer').innerText=`${m}:${s}`; }
+    function createTile(c) { const t=document.createElement('div'); t.className='tile'; t.innerText=c; t.addEventListener('mousedown',handleDragStart); t.addEventListener('touchstart',handleDragStart,{passive:false}); t.onclick=function(){if(t.getAttribute('data-dragged')==='true')return;handleTileClick(t);}; return t; }
+    function handleTileClick(t) { const aa=document.getElementById('answer-area'); if(t.parentElement===document.getElementById('pool-area')){ const e=Array.from(aa.children).find(s=>s.children.length===0); if(e){e.appendChild(t);speak(t.innerText,false,'en-US');} } else document.getElementById('pool-area').appendChild(t); }
+    function handleDragStart(e) { if(e.type==='touchstart'&&e.touches.length>1)return; e.preventDefault(); const t=e.target; t.setAttribute('data-dragged','false'); const touch=e.type==='touchstart'?e.touches[0]:e; const g=t.cloneNode(true); g.classList.add('dragging'); g.style.left=(touch.clientX-20)+'px'; g.style.top=(touch.clientY-20)+'px'; document.body.appendChild(g); t.classList.add('placeholder'); let m=false; function mv(evt){const tc=evt.type==='touchmove'?evt.touches[0]:evt; g.style.left=(tc.clientX-20)+'px'; g.style.top=(tc.clientY-20)+'px'; if(Math.abs(tc.clientX-touch.clientX)>5||Math.abs(tc.clientY-touch.clientY)>5) m=true; t.setAttribute('data-dragged','true');} function ed(evt){document.removeEventListener('mousemove',mv);document.removeEventListener('touchmove',mv);document.removeEventListener('mouseup',ed);document.removeEventListener('touchend',ed); g.remove(); t.classList.remove('placeholder'); if(m){g.style.display='none'; const el=document.elementFromPoint(evt.type==='touchend'?evt.changedTouches[0].clientX:evt.clientX,evt.type==='touchend'?evt.changedTouches[0].clientY:evt.clientY); const s=el?el.closest('.slot'):null; const p=el?el.closest('.pool-area'):null; if(s){if(s.children.length>0)t.parentElement.appendChild(s.children[0]);s.appendChild(t);} else if(p)p.appendChild(t);}} document.addEventListener('mousemove',mv); document.addEventListener('touchmove',mv,{passive:false}); document.addEventListener('mouseup',ed); document.addEventListener('touchend',ed); }
+    function resetCurrentTiles() { document.querySelectorAll('.answer-area .tile').forEach(t=>document.getElementById('pool-area').appendChild(t)); }
+    function getAnswerString() { let a=""; document.querySelectorAll('.slot').forEach(s=>{if(s.children.length>0)a+=s.children[0].innerText}); return a; }
+    function playTargetAudio() { speak(currentTargetWord,false,'en-US'); }
+    function speakUserSpelling() { const t=getAnswerString(); if(t)speak(t,false,'en-US'); else speak("請先拼字",false,'zh-TW'); }
+    function speak(t,e,l) { if('speechSynthesis' in window){window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(t); u.lang=l; u.rate=1; if(e)u.pitch=1.2; window.speechSynthesis.speak(u);} }
+    function quitQuiz() { if(confirm("確定退出？")){clearInterval(timerInterval);showPage('page-home');} }
+    function renderHistory() { const c=document.getElementById('history-container'); c.innerHTML=''; if(historyLog.length===0){c.innerHTML='<p style="text-align:center;color:#999">無紀錄</p>';return;} historyLog.forEach((l,i)=>{const d=document.createElement('div'); d.className='history-item'; d.innerHTML=`<div class="history-info"><span class="history-title">📘 ${l.listName||'未知題庫'}</span><span class="history-user">👤 ${l.user}</span><span class="history-date">📅 ${l.date} | ⏱ ${l.time}</span></div><div style="text-align:right"><span class="history-score">${l.score} 分</span><button class="delete-history-btn" style="margin-top:5px;float:right" onclick="deleteHistoryItem(${i})">×</button></div>`; c.appendChild(d);}); }
+    function deleteHistoryItem(i) { if(confirm("刪除？")){historyLog.splice(i,1);saveHistoryData();renderHistory();} }
+    function clearAllHistory() { if(confirm("清空？")){historyLog=[];saveHistoryData();renderHistory();} }
+    function showLeaderboard(listId, listName) { document.getElementById('lb-title').innerText = `🏆 ${listName} - 英雄榜`; const container = document.getElementById('lb-container'); container.innerHTML = ''; let listLogs = historyLog.filter(log => log.listId === listId); listLogs.sort((a, b) => { if (b.score !== a.score) return b.score - a.score; return a.time.localeCompare(b.time); }); if (listLogs.length === 0) { container.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">還沒有人挑戰過這個題庫，快來當第一名！</p>'; } else { listLogs.forEach((log, index) => { const rank = index + 1; let rankClass = ''; let rankDisplay = rank; if (rank === 1) { rankClass = 'rank-1'; rankDisplay = '🏆'; } else if (rank === 2) rankClass = 'rank-2'; else if (rank === 3) rankClass = 'rank-3'; const div = document.createElement('div'); div.className = `rank-item ${rankClass}`; div.innerHTML = `<div class="rank-num">${rankDisplay}</div><div class="rank-info"><span class="rank-user">${log.user}</span><span class="rank-detail">${log.date}</span></div><div class="rank-score">${log.score}分 <br><small style="color:#666;font-weight:normal">${log.time}</small></div>`; container.appendChild(div); }); } showPage('page-leaderboard'); }
+
+</script>
+
+</body>
+</html>
