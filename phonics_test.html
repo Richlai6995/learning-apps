@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Phonics 拼字闖關王 8.0 (完整優化版)</title>
+    <title>Phonics 拼字闖關王 8.0 (iPad 觸控修正版)</title>
     <style>
         :root {
             --primary: #FF6B6B;
@@ -31,7 +31,8 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            touch-action: manipulation;
+            touch-action: none; /* 禁止瀏覽器預設的手勢，由 JS 接管 */
+            overflow-x: hidden; /* 防止橫向卷軸 */
         }
 
         h1, h2 { margin: 5px 0; color: var(--dark); text-align: center; }
@@ -64,6 +65,7 @@
             transition: transform 0.1s;
             color: white;
             margin: 2px;
+            touch-action: manipulation;
         }
         button:active { transform: scale(0.95); }
         
@@ -148,12 +150,38 @@
         .q-image-box { height: 140px; display: flex; justify-content: center; align-items: center; margin-bottom: 10px; }
         .q-image-box img { max-height: 100%; max-width: 100%; border-radius: 8px; }
         .q-image-box span { font-size: 5rem; }
+        
         .answer-input { width: 80%; font-size: 2rem; text-align: center; letter-spacing: 5px; padding: 10px; border: 3px solid var(--secondary); border-radius: 10px; font-family: monospace; margin-bottom: 15px; text-transform: lowercase; }
         .answer-area { display: flex; justify-content: center; gap: 8px; margin-bottom: 30px; min-height: 60px; padding: 10px; background: #fff; border-radius: 10px; }
         .slot { width: 45px; height: 55px; border-bottom: 4px solid var(--secondary); background-color: #f8f9fa; border-radius: 6px 6px 0 0; display: flex; justify-content: center; align-items: center; position: relative; }
         .pool-area { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 20px; min-height: 70px; padding: 15px; background: #ecf0f1; border-radius: 10px; border: 2px dashed #bdc3c7; }
-        .tile { width: 42px; height: 42px; background-color: var(--dark); color: white; font-size: 1.6rem; font-weight: bold; display: flex; justify-content: center; align-items: center; border-radius: 8px; cursor: pointer; box-shadow: 0 4px #1a252f; user-select: none; touch-action: none; position: relative; z-index: 10; }
-        .tile.dragging { position: fixed; opacity: 0.8; pointer-events: none; transform: scale(1.2); z-index: 1000; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        
+        .tile { 
+            width: 42px; 
+            height: 42px; 
+            background-color: var(--dark); 
+            color: white; 
+            font-size: 1.6rem; 
+            font-weight: bold; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            box-shadow: 0 4px #1a252f; 
+            user-select: none; 
+            touch-action: none; /* 關鍵: 讓JS處理觸控 */
+            position: relative; 
+            z-index: 10; 
+        }
+        .tile.dragging { 
+            position: fixed; /* 拖曳時固定於視窗 */
+            opacity: 0.8; 
+            pointer-events: none; 
+            transform: scale(1.2); 
+            z-index: 1000; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3); 
+        }
         .tile.placeholder { opacity: 0.2; box-shadow: none; }
         
         /* 結果卡片 */
@@ -280,10 +308,14 @@
     let currentListName = "";
     let currentQIndex = 0;
     let score = 0;
-    let correctCount = 0; // 新增：答對題數
+    let correctCount = 0;
     let currentTargetWord = "";
     let editingListId = null;
     let timerInterval, startTime, pointsPerQuestion;
+
+    // 觸控位移修正
+    let touchOffsetX = 0;
+    let touchOffsetY = 0;
 
     window.onload = function() {
         loadData();
@@ -293,7 +325,7 @@
     };
 
     function loadData() {
-        const storedLists = localStorage.getItem('phonics_lists_v7'); // Version up
+        const storedLists = localStorage.getItem('phonics_lists_v7');
         if (storedLists) { allLists = JSON.parse(storedLists); } 
         else { allLists = [DEFAULT_LIST]; saveListData(); }
         
@@ -386,7 +418,7 @@
         r.readAsText(file);
     }
 
-    // --- 測驗邏輯 (修正語音重疊) ---
+    // --- 測驗邏輯 ---
     function startQuizSetup(index) {
         const list = allLists[index];
         currentListId = list.id; 
@@ -397,15 +429,12 @@
         currentQuizList = shuffled.slice(0, maxQ);
         pointsPerQuestion = Math.round(100 / currentQuizList.length);
         
-        currentQIndex = 0; score = 0; correctCount = 0; // 重置變數
+        currentQIndex = 0; score = 0; correctCount = 0;
         
         startTime = Date.now();
         clearInterval(timerInterval); timerInterval = setInterval(updateTimer, 1000);
         
-        // 播放歡迎語，並在結束後才讀第一題
         speak(`歡迎${studentName}！測驗開始！`, true, 'zh-TW');
-        
-        // 初始化第一題，並傳入參數指示是第一題 (需要延遲發音)
         loadQuestion(true);
         showPage('page-quiz');
     }
@@ -426,8 +455,6 @@
         let chars = currentTargetWord.split('').sort(() => 0.5 - Math.random());
         chars.forEach(char => poolArea.appendChild(createTile(char)));
         
-        // 修正：如果是第一題，延遲 3.5 秒播放單字音，避開歡迎詞
-        // 如果不是第一題，延遲 0.5 秒即可
         const delay = isFirstQuestion ? 3500 : 500;
         setTimeout(() => playTargetAudio(), delay);
     }
@@ -439,7 +466,7 @@
         
         if(userAns === correctAns) {
             score += pointsPerQuestion;
-            correctCount++; // 累加正確題數
+            correctCount++;
             if(currentQIndex===currentQuizList.length-1 && score>=98) score=100;
             speak(`太棒了${studentName}，答對了！`, true, 'zh-TW');
             setTimeout(()=>alert("✅ 答對了！"),100);
@@ -450,7 +477,7 @@
         
         if(currentQIndex < currentQuizList.length-1) { 
             currentQIndex++; 
-            loadQuestion(false); // 後續題目不需要長延遲
+            loadQuestion(false);
         }
         else finishQuiz();
     }
@@ -460,7 +487,6 @@
         showPage('page-result');
         const timeStr = document.getElementById('q-timer').innerText;
         document.getElementById('final-score').innerText = score;
-        // 顯示正確題數
         document.getElementById('final-accuracy').innerText = `正確: ${correctCount} / ${currentQuizList.length}`;
         document.getElementById('final-time').innerText = `總耗時: ${timeStr}`;
         
@@ -473,7 +499,113 @@
         saveHistoryData();
     }
 
-    // ... (其餘輔助函數維持不變) ...
+    // --- Tile Interaction (Touch & Mouse Fix) ---
+    function createTile(c) {
+        const t = document.createElement('div'); t.className = 'tile'; t.innerText = c;
+        // Mouse
+        t.addEventListener('mousedown', handleDragStart);
+        // Touch
+        t.addEventListener('touchstart', handleDragStart, {passive: false});
+        // Click as fallback
+        t.onclick = function() { if (t.getAttribute('data-dragged') === 'true') return; handleTileClick(t); };
+        return t;
+    }
+
+    function handleTileClick(tile) {
+        const aa = document.getElementById('answer-area');
+        if (tile.parentElement === document.getElementById('pool-area')) {
+            const empty = Array.from(aa.children).find(s => s.children.length === 0);
+            if (empty) { empty.appendChild(tile); speak(tile.innerText, false, 'en-US'); }
+        } else document.getElementById('pool-area').appendChild(tile);
+    }
+
+    // Drag Logic
+    function handleDragStart(e) {
+        if (e.type === 'touchstart' && e.touches.length > 1) return;
+        e.preventDefault();
+        
+        const tile = e.target;
+        tile.setAttribute('data-dragged', 'false');
+        
+        // Get coordinates
+        const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+        
+        // Calculate offset to keep tile under finger relatively
+        const rect = tile.getBoundingClientRect();
+        touchOffsetX = clientX - rect.left;
+        touchOffsetY = clientY - rect.top;
+
+        // Create ghost
+        const ghost = tile.cloneNode(true);
+        ghost.classList.add('dragging');
+        // Initial position
+        ghost.style.left = (clientX - touchOffsetX) + 'px';
+        ghost.style.top = (clientY - touchOffsetY) + 'px';
+        // Ensure dimensions match
+        ghost.style.width = tile.offsetWidth + 'px';
+        ghost.style.height = tile.offsetHeight + 'px';
+        
+        document.body.appendChild(ghost);
+        tile.classList.add('placeholder');
+
+        let isMoved = false;
+
+        function onMove(evt) {
+            const cx = evt.type === 'touchmove' ? evt.touches[0].clientX : evt.clientX;
+            const cy = evt.type === 'touchmove' ? evt.touches[0].clientY : evt.clientY;
+            
+            ghost.style.left = (cx - touchOffsetX) + 'px';
+            ghost.style.top = (cy - touchOffsetY) + 'px';
+            
+            if (Math.abs(cx - clientX) > 5 || Math.abs(cy - clientY) > 5) {
+                isMoved = true;
+                tile.setAttribute('data-dragged', 'true');
+            }
+        }
+
+        function onEnd(evt) {
+            const cx = evt.type === 'touchend' ? evt.changedTouches[0].clientX : evt.clientX;
+            const cy = evt.type === 'touchend' ? evt.changedTouches[0].clientY : evt.clientY;
+
+            // Cleanup listeners
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('touchmove', onMove);
+            document.removeEventListener('mouseup', onEnd);
+            document.removeEventListener('touchend', onEnd);
+            
+            ghost.remove();
+            tile.classList.remove('placeholder');
+
+            if (isMoved) {
+                ghost.style.display = 'none'; // Hide ghost to detect element below
+                const elBelow = document.elementFromPoint(cx, cy);
+                
+                const slot = elBelow ? elBelow.closest('.slot') : null;
+                const pool = elBelow ? elBelow.closest('.pool-area') : null;
+
+                if (slot) {
+                    if (slot.children.length > 0) {
+                        // Swap: move existing tile back to where dragged tile came from? 
+                        // Or just append to pool. Appending to pool is safer.
+                        document.getElementById('pool-area').appendChild(slot.children[0]);
+                    }
+                    slot.appendChild(tile);
+                    speak(tile.innerText, false, 'en-US');
+                } else if (pool) {
+                    pool.appendChild(tile);
+                }
+                // If dropped elsewhere, it returns to original parent automatically (since we didn't move it in DOM yet)
+            }
+        }
+
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('touchmove', onMove, {passive: false});
+        document.addEventListener('mouseup', onEnd);
+        document.addEventListener('touchend', onEnd);
+    }
+
+    // ... (Other helpers same as before) ...
     function createNewList() { editingListId=null; document.getElementById('list-name-input').value="新題庫"; document.getElementById('editor-rows').innerHTML=''; for(let i=0;i<3;i++)addEditRow(); showPage('page-editor'); }
     function editList(i) { editingListId=i; const l=allLists[i]; document.getElementById('list-name-input').value=l.name; document.getElementById('editor-rows').innerHTML=''; l.words.forEach(w=>addEditRow(w.word,w.img)); showPage('page-editor'); }
     function addEditRow(w='',i='') { const d=document.createElement('div'); d.className='edit-row'; let disp=i||'📷'; if(i&&i.length>10) disp=`<img src="${i}" style="width:100%;height:100%;object-fit:cover;">`; d.innerHTML=`<div class="thumb-preview" onclick="this.nextElementSibling.click()">${disp}</div><input type="file" class="file-input" accept="image/*" onchange="handleFileSelect(this)"><input type="hidden" class="img-data" value="${i}"><input type="text" class="word-input" placeholder="英文單字" value="${w}"><button onclick="this.parentElement.remove()" class="btn-danger" style="padding:5px 10px;">×</button>`; document.getElementById('editor-rows').appendChild(d); }
@@ -481,9 +613,6 @@
     function saveList() { const n=document.getElementById('list-name-input').value; const rs=document.querySelectorAll('.edit-row'); const nws=[]; rs.forEach(r=>{ const i=r.querySelector('.img-data').value; const w=r.querySelector('.word-input').value.trim().toLowerCase(); if(w) nws.push({word:w, img:i||'❓'}); }); if(nws.length<1) return alert("請輸入單字"); const nd={id:editingListId!==null?allLists[editingListId].id:Date.now().toString(),name:n,words:nws}; if(editingListId!==null) allLists[editingListId]=nd; else allLists.push(nd); saveListData(); showPage('page-home'); }
     function deleteList(i) { if(confirm("刪除？")){allLists.splice(i,1);saveListData();renderLists();} }
     function updateTimer() { const d=Math.floor((Date.now()-startTime)/1000); const m=Math.floor(d/60).toString().padStart(2,'0'); const s=(d%60).toString().padStart(2,'0'); document.getElementById('q-timer').innerText=`${m}:${s}`; }
-    function createTile(c) { const t=document.createElement('div'); t.className='tile'; t.innerText=c; t.addEventListener('mousedown',handleDragStart); t.addEventListener('touchstart',handleDragStart,{passive:false}); t.onclick=function(){if(t.getAttribute('data-dragged')==='true')return;handleTileClick(t);}; return t; }
-    function handleTileClick(t) { const aa=document.getElementById('answer-area'); if(t.parentElement===document.getElementById('pool-area')){ const e=Array.from(aa.children).find(s=>s.children.length===0); if(e){e.appendChild(t);speak(t.innerText,false,'en-US');} } else document.getElementById('pool-area').appendChild(t); }
-    function handleDragStart(e) { if(e.type==='touchstart'&&e.touches.length>1)return; e.preventDefault(); const t=e.target; t.setAttribute('data-dragged','false'); const touch=e.type==='touchstart'?e.touches[0]:e; const g=t.cloneNode(true); g.classList.add('dragging'); g.style.left=(touch.clientX-20)+'px'; g.style.top=(touch.clientY-20)+'px'; document.body.appendChild(g); t.classList.add('placeholder'); let m=false; function mv(evt){const tc=evt.type==='touchmove'?evt.touches[0]:evt; g.style.left=(tc.clientX-20)+'px'; g.style.top=(tc.clientY-20)+'px'; if(Math.abs(tc.clientX-touch.clientX)>5||Math.abs(tc.clientY-touch.clientY)>5) m=true; t.setAttribute('data-dragged','true');} function ed(evt){document.removeEventListener('mousemove',mv);document.removeEventListener('touchmove',mv);document.removeEventListener('mouseup',ed);document.removeEventListener('touchend',ed); g.remove(); t.classList.remove('placeholder'); if(m){g.style.display='none'; const el=document.elementFromPoint(evt.type==='touchend'?evt.changedTouches[0].clientX:evt.clientX,evt.type==='touchend'?evt.changedTouches[0].clientY:evt.clientY); const s=el?el.closest('.slot'):null; const p=el?el.closest('.pool-area'):null; if(s){if(s.children.length>0)t.parentElement.appendChild(s.children[0]);s.appendChild(t);} else if(p)p.appendChild(t);}} document.addEventListener('mousemove',mv); document.addEventListener('touchmove',mv,{passive:false}); document.addEventListener('mouseup',ed); document.addEventListener('touchend',ed); }
     function resetCurrentTiles() { document.querySelectorAll('.answer-area .tile').forEach(t=>document.getElementById('pool-area').appendChild(t)); }
     function getAnswerString() { let a=""; document.querySelectorAll('.slot').forEach(s=>{if(s.children.length>0)a+=s.children[0].innerText}); return a; }
     function playTargetAudio() { speak(currentTargetWord,false,'en-US'); }
