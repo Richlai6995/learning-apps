@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Phonics 拼字闖關王 8.0 (iPad 觸控修正版)</title>
+    <title>Phonics 拼字闖關王 8.1 (iPad 完美修正版)</title>
     <style>
         :root {
             --primary: #FF6B6B;
@@ -31,8 +31,9 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            touch-action: none; /* 禁止瀏覽器預設的手勢，由 JS 接管 */
-            overflow-x: hidden; /* 防止橫向卷軸 */
+            /* 關鍵：防止 iPad 預設的雙擊縮放和捲動干擾拖曳 */
+            touch-action: none; 
+            overflow-x: hidden;
         }
 
         h1, h2 { margin: 5px 0; color: var(--dark); text-align: center; }
@@ -65,7 +66,7 @@
             transition: transform 0.1s;
             color: white;
             margin: 2px;
-            touch-action: manipulation;
+            touch-action: manipulation; /* 允許按鈕的正常觸控 */
         }
         button:active { transform: scale(0.95); }
         
@@ -170,7 +171,8 @@
             cursor: pointer; 
             box-shadow: 0 4px #1a252f; 
             user-select: none; 
-            touch-action: none; /* 關鍵: 讓JS處理觸控 */
+            /* 關鍵: 讓JS處理觸控 */
+            touch-action: none; 
             position: relative; 
             z-index: 10; 
         }
@@ -418,7 +420,7 @@
         r.readAsText(file);
     }
 
-    // --- 測驗邏輯 ---
+    // --- 測驗邏輯 (修正) ---
     function startQuizSetup(index) {
         const list = allLists[index];
         currentListId = list.id; 
@@ -499,50 +501,53 @@
         saveHistoryData();
     }
 
-    // --- Tile Interaction (Touch & Mouse Fix) ---
+    // --- Tile Interaction (Touch & Mouse Fix - Updated) ---
     function createTile(c) {
         const t = document.createElement('div'); t.className = 'tile'; t.innerText = c;
         // Mouse
         t.addEventListener('mousedown', handleDragStart);
         // Touch
         t.addEventListener('touchstart', handleDragStart, {passive: false});
-        // Click as fallback
-        t.onclick = function() { if (t.getAttribute('data-dragged') === 'true') return; handleTileClick(t); };
+        
+        // IMPORTANT FIX: Do NOT check 'data-dragged' here for click logic in the separate handler.
+        // The logic is fully handled by onEnd (for tap) or Drag.
+        // We remove onclick here to avoid conflicts.
+        // t.onclick = ... (REMOVED)
+        
         return t;
     }
 
     function handleTileClick(tile) {
         const aa = document.getElementById('answer-area');
-        if (tile.parentElement === document.getElementById('pool-area')) {
+        const pa = document.getElementById('pool-area');
+        // If in pool -> move to first empty slot
+        if (tile.parentElement === pa) {
             const empty = Array.from(aa.children).find(s => s.children.length === 0);
             if (empty) { empty.appendChild(tile); speak(tile.innerText, false, 'en-US'); }
-        } else document.getElementById('pool-area').appendChild(tile);
+        } 
+        // If in slot -> move back to pool
+        else {
+            pa.appendChild(tile);
+        }
     }
 
-    // Drag Logic
     function handleDragStart(e) {
         if (e.type === 'touchstart' && e.touches.length > 1) return;
-        e.preventDefault();
+        e.preventDefault(); // Prevent scrolling
         
         const tile = e.target;
-        tile.setAttribute('data-dragged', 'false');
+        const touch = e.type === 'touchstart' ? e.touches[0] : e;
         
-        // Get coordinates
-        const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-        const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
-        
-        // Calculate offset to keep tile under finger relatively
+        // Calculate offset
         const rect = tile.getBoundingClientRect();
-        touchOffsetX = clientX - rect.left;
-        touchOffsetY = clientY - rect.top;
+        touchOffsetX = touch.clientX - rect.left;
+        touchOffsetY = touch.clientY - rect.top;
 
-        // Create ghost
+        // Create Ghost
         const ghost = tile.cloneNode(true);
         ghost.classList.add('dragging');
-        // Initial position
-        ghost.style.left = (clientX - touchOffsetX) + 'px';
-        ghost.style.top = (clientY - touchOffsetY) + 'px';
-        // Ensure dimensions match
+        ghost.style.left = (touch.clientX - touchOffsetX) + 'px';
+        ghost.style.top = (touch.clientY - touchOffsetY) + 'px';
         ghost.style.width = tile.offsetWidth + 'px';
         ghost.style.height = tile.offsetHeight + 'px';
         
@@ -558,17 +563,24 @@
             ghost.style.left = (cx - touchOffsetX) + 'px';
             ghost.style.top = (cy - touchOffsetY) + 'px';
             
-            if (Math.abs(cx - clientX) > 5 || Math.abs(cy - clientY) > 5) {
+            // Determine if user actually dragged (moved more than 5px)
+            if (Math.abs(cx - touch.clientX) > 5 || Math.abs(cy - touch.clientY) > 5) {
                 isMoved = true;
-                tile.setAttribute('data-dragged', 'true');
             }
         }
 
         function onEnd(evt) {
-            const cx = evt.type === 'touchend' ? evt.changedTouches[0].clientX : evt.clientX;
-            const cy = evt.type === 'touchend' ? evt.changedTouches[0].clientY : evt.clientY;
+            // Get end coordinates
+            let cx, cy;
+            if (evt.type === 'touchend') {
+                cx = evt.changedTouches[0].clientX;
+                cy = evt.changedTouches[0].clientY;
+            } else {
+                cx = evt.clientX;
+                cy = evt.clientY;
+            }
 
-            // Cleanup listeners
+            // Cleanup
             document.removeEventListener('mousemove', onMove);
             document.removeEventListener('touchmove', onMove);
             document.removeEventListener('mouseup', onEnd);
@@ -577,8 +589,13 @@
             ghost.remove();
             tile.classList.remove('placeholder');
 
-            if (isMoved) {
-                ghost.style.display = 'none'; // Hide ghost to detect element below
+            // Logic Branch: Drag or Click?
+            if (!isMoved) {
+                // Case A: It was a TAP (Click)
+                handleTileClick(tile);
+            } else {
+                // Case B: It was a DRAG
+                ghost.style.display = 'none'; // Hide ghost to see what's below
                 const elBelow = document.elementFromPoint(cx, cy);
                 
                 const slot = elBelow ? elBelow.closest('.slot') : null;
@@ -586,8 +603,7 @@
 
                 if (slot) {
                     if (slot.children.length > 0) {
-                        // Swap: move existing tile back to where dragged tile came from? 
-                        // Or just append to pool. Appending to pool is safer.
+                        // Swap: existing tile goes to pool (or swap, but pool is safer)
                         document.getElementById('pool-area').appendChild(slot.children[0]);
                     }
                     slot.appendChild(tile);
@@ -595,7 +611,7 @@
                 } else if (pool) {
                     pool.appendChild(tile);
                 }
-                // If dropped elsewhere, it returns to original parent automatically (since we didn't move it in DOM yet)
+                // If dropped in no-man's land, it automatically stays in original parent (DOM didn't change)
             }
         }
 
