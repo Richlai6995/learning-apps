@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Phonics 拼字闖關王 8.1 (iPad 完美修正版)</title>
+    <title>Phonics 拼字闖關王 8.3 (觸控點選修復版)</title>
     <style>
         :root {
             --primary: #FF6B6B;
@@ -31,9 +31,10 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            /* 關鍵：防止 iPad 預設的雙擊縮放和捲動干擾拖曳 */
+            /* 關鍵：防止 iPad 預設手勢干擾 */
             touch-action: none; 
             overflow-x: hidden;
+            overflow-y: auto; 
         }
 
         h1, h2 { margin: 5px 0; color: var(--dark); text-align: center; }
@@ -66,7 +67,7 @@
             transition: transform 0.1s;
             color: white;
             margin: 2px;
-            touch-action: manipulation; /* 允許按鈕的正常觸控 */
+            touch-action: manipulation;
         }
         button:active { transform: scale(0.95); }
         
@@ -171,13 +172,12 @@
             cursor: pointer; 
             box-shadow: 0 4px #1a252f; 
             user-select: none; 
-            /* 關鍵: 讓JS處理觸控 */
-            touch-action: none; 
+            touch-action: none; /* 關鍵: JS 接管觸控 */
             position: relative; 
             z-index: 10; 
         }
         .tile.dragging { 
-            position: fixed; /* 拖曳時固定於視窗 */
+            position: fixed; 
             opacity: 0.8; 
             pointer-events: none; 
             transform: scale(1.2); 
@@ -195,6 +195,8 @@
         .tabs { display: flex; margin-bottom: 15px; border-bottom: 2px solid #eee; }
         .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #999; font-weight: bold; }
         .tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+
+        .version-tag { margin-top: 30px; color: #ccc; font-size: 0.8rem; text-align: center; }
 
     </style>
 </head>
@@ -235,6 +237,8 @@
             <div id="history-container"></div>
             <button class="btn-gray btn-block" onclick="clearAllHistory()">清空所有紀錄</button>
         </div>
+
+        <div class="version-tag">版本：v8.3 (iPad 觸控點選修復)</div>
     </div>
 
     <div id="page-editor" class="container">
@@ -314,10 +318,6 @@
     let currentTargetWord = "";
     let editingListId = null;
     let timerInterval, startTime, pointsPerQuestion;
-
-    // 觸控位移修正
-    let touchOffsetX = 0;
-    let touchOffsetY = 0;
 
     window.onload = function() {
         loadData();
@@ -420,7 +420,7 @@
         r.readAsText(file);
     }
 
-    // --- 測驗邏輯 (修正) ---
+    // --- 測驗邏輯 ---
     function startQuizSetup(index) {
         const list = allLists[index];
         currentListId = list.id; 
@@ -501,127 +501,168 @@
         saveHistoryData();
     }
 
-    // --- Tile Interaction (Touch & Mouse Fix - Updated) ---
+    // --- Tile Interaction (iPad Fix v8.3: 點選延遲邏輯) ---
+    
     function createTile(c) {
-        const t = document.createElement('div'); t.className = 'tile'; t.innerText = c;
-        // Mouse
-        t.addEventListener('mousedown', handleDragStart);
-        // Touch
-        t.addEventListener('touchstart', handleDragStart, {passive: false});
+        const t = document.createElement('div'); 
+        t.className = 'tile'; 
+        t.innerText = c;
         
-        // IMPORTANT FIX: Do NOT check 'data-dragged' here for click logic in the separate handler.
-        // The logic is fully handled by onEnd (for tap) or Drag.
-        // We remove onclick here to avoid conflicts.
-        // t.onclick = ... (REMOVED)
+        // 滑鼠事件
+        t.addEventListener('mousedown', handleDragStartMouse);
+        
+        // 觸控事件 (Key logic here)
+        t.addEventListener('touchstart', handleTouchStart, {passive: false});
+        t.addEventListener('touchmove', handleTouchMove, {passive: false});
+        t.addEventListener('touchend', handleTouchEnd);
         
         return t;
     }
 
+    // --- 滑鼠邏輯 (PC) ---
+    function handleDragStartMouse(e) {
+        e.preventDefault();
+        initDrag(e.target, e.clientX, e.clientY, 'mouse');
+    }
+
+    // --- 觸控邏輯 (iPad/Mobile) ---
+    let activeTouchId = null;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let isDragging = false;
+    let currentGhost = null;
+    let currentTile = null;
+    let touchOffsetX = 0;
+    let touchOffsetY = 0;
+
+    function handleTouchStart(e) {
+        if (e.touches.length > 1) return;
+        e.preventDefault(); // 防止捲動
+        
+        const touch = e.touches[0];
+        activeTouchId = touch.identifier;
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        
+        currentTile = e.target;
+        isDragging = false; // 預設為非拖曳 (準備點擊)
+        
+        // 計算 offset
+        const rect = currentTile.getBoundingClientRect();
+        touchOffsetX = touch.clientX - rect.left;
+        touchOffsetY = touch.clientY - rect.top;
+    }
+
+    function handleTouchMove(e) {
+        const touch = Array.from(e.touches).find(t => t.identifier === activeTouchId);
+        if (!touch) return;
+        
+        const cx = touch.clientX;
+        const cy = touch.clientY;
+
+        // 判斷是否超過移動閾值 (10px)
+        if (!isDragging && (Math.abs(cx - touchStartX) > 10 || Math.abs(cy - touchStartY) > 10)) {
+            isDragging = true;
+            createGhost(currentTile, cx, cy);
+        }
+
+        if (isDragging && currentGhost) {
+            currentGhost.style.left = (cx - touchOffsetX) + 'px';
+            currentGhost.style.top = (cy - touchOffsetY) + 'px';
+        }
+    }
+
+    function handleTouchEnd(e) {
+        const touch = Array.from(e.changedTouches).find(t => t.identifier === activeTouchId);
+        if (!touch) return;
+
+        if (!isDragging) {
+            // 沒移動 -> 觸發點擊
+            handleTileClick(currentTile);
+        } else {
+            // 拖曳結束 -> 放置
+            finishDrag(touch.clientX, touch.clientY);
+        }
+        
+        // 清理
+        if (currentGhost) { currentGhost.remove(); currentGhost = null; }
+        if (currentTile) { currentTile.classList.remove('placeholder'); currentTile = null; }
+        activeTouchId = null;
+    }
+
+    // --- 拖曳共用邏輯 ---
+    
+    function createGhost(tile, x, y) {
+        currentGhost = tile.cloneNode(true);
+        currentGhost.classList.add('dragging');
+        currentGhost.style.width = tile.offsetWidth + 'px';
+        currentGhost.style.height = tile.offsetHeight + 'px';
+        currentGhost.style.left = (x - touchOffsetX) + 'px';
+        currentGhost.style.top = (y - touchOffsetY) + 'px';
+        document.body.appendChild(currentGhost);
+        tile.classList.add('placeholder');
+    }
+
+    function finishDrag(x, y) {
+        if(currentGhost) currentGhost.style.display = 'none'; // Hide to find element below
+        const elBelow = document.elementFromPoint(x, y);
+        const slot = elBelow ? elBelow.closest('.slot') : null;
+        const pool = elBelow ? elBelow.closest('.pool-area') : null;
+
+        if (slot) {
+            if (slot.children.length > 0) {
+                document.getElementById('pool-area').appendChild(slot.children[0]);
+            }
+            slot.appendChild(currentTile);
+            speak(currentTile.innerText, false, 'en-US');
+        } else if (pool) {
+            pool.appendChild(currentTile);
+        }
+    }
+
+    // --- 滑鼠拖曳實作 (PC Compatibility) ---
+    function initDrag(tile, startX, startY, type) {
+        currentTile = tile;
+        const rect = tile.getBoundingClientRect();
+        touchOffsetX = startX - rect.left;
+        touchOffsetY = startY - rect.top;
+        
+        createGhost(tile, startX, startY);
+        
+        function onMouseMove(e) {
+            currentGhost.style.left = (e.clientX - touchOffsetX) + 'px';
+            currentGhost.style.top = (e.clientY - touchOffsetY) + 'px';
+        }
+        
+        function onMouseUp(e) {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+            finishDrag(e.clientX, e.clientY);
+            if(currentGhost) { currentGhost.remove(); currentGhost = null; }
+            if(currentTile) { currentTile.classList.remove('placeholder'); currentTile = null; }
+        }
+        
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    }
+
+    // --- 點擊邏輯 ---
     function handleTileClick(tile) {
         const aa = document.getElementById('answer-area');
         const pa = document.getElementById('pool-area');
-        // If in pool -> move to first empty slot
+        
         if (tile.parentElement === pa) {
             const empty = Array.from(aa.children).find(s => s.children.length === 0);
-            if (empty) { empty.appendChild(tile); speak(tile.innerText, false, 'en-US'); }
-        } 
-        // If in slot -> move back to pool
-        else {
+            if (empty) { 
+                empty.appendChild(tile); 
+                speak(tile.innerText, false, 'en-US'); 
+            }
+        } else {
             pa.appendChild(tile);
         }
     }
 
-    function handleDragStart(e) {
-        if (e.type === 'touchstart' && e.touches.length > 1) return;
-        e.preventDefault(); // Prevent scrolling
-        
-        const tile = e.target;
-        const touch = e.type === 'touchstart' ? e.touches[0] : e;
-        
-        // Calculate offset
-        const rect = tile.getBoundingClientRect();
-        touchOffsetX = touch.clientX - rect.left;
-        touchOffsetY = touch.clientY - rect.top;
-
-        // Create Ghost
-        const ghost = tile.cloneNode(true);
-        ghost.classList.add('dragging');
-        ghost.style.left = (touch.clientX - touchOffsetX) + 'px';
-        ghost.style.top = (touch.clientY - touchOffsetY) + 'px';
-        ghost.style.width = tile.offsetWidth + 'px';
-        ghost.style.height = tile.offsetHeight + 'px';
-        
-        document.body.appendChild(ghost);
-        tile.classList.add('placeholder');
-
-        let isMoved = false;
-
-        function onMove(evt) {
-            const cx = evt.type === 'touchmove' ? evt.touches[0].clientX : evt.clientX;
-            const cy = evt.type === 'touchmove' ? evt.touches[0].clientY : evt.clientY;
-            
-            ghost.style.left = (cx - touchOffsetX) + 'px';
-            ghost.style.top = (cy - touchOffsetY) + 'px';
-            
-            // Determine if user actually dragged (moved more than 5px)
-            if (Math.abs(cx - touch.clientX) > 5 || Math.abs(cy - touch.clientY) > 5) {
-                isMoved = true;
-            }
-        }
-
-        function onEnd(evt) {
-            // Get end coordinates
-            let cx, cy;
-            if (evt.type === 'touchend') {
-                cx = evt.changedTouches[0].clientX;
-                cy = evt.changedTouches[0].clientY;
-            } else {
-                cx = evt.clientX;
-                cy = evt.clientY;
-            }
-
-            // Cleanup
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('touchmove', onMove);
-            document.removeEventListener('mouseup', onEnd);
-            document.removeEventListener('touchend', onEnd);
-            
-            ghost.remove();
-            tile.classList.remove('placeholder');
-
-            // Logic Branch: Drag or Click?
-            if (!isMoved) {
-                // Case A: It was a TAP (Click)
-                handleTileClick(tile);
-            } else {
-                // Case B: It was a DRAG
-                ghost.style.display = 'none'; // Hide ghost to see what's below
-                const elBelow = document.elementFromPoint(cx, cy);
-                
-                const slot = elBelow ? elBelow.closest('.slot') : null;
-                const pool = elBelow ? elBelow.closest('.pool-area') : null;
-
-                if (slot) {
-                    if (slot.children.length > 0) {
-                        // Swap: existing tile goes to pool (or swap, but pool is safer)
-                        document.getElementById('pool-area').appendChild(slot.children[0]);
-                    }
-                    slot.appendChild(tile);
-                    speak(tile.innerText, false, 'en-US');
-                } else if (pool) {
-                    pool.appendChild(tile);
-                }
-                // If dropped in no-man's land, it automatically stays in original parent (DOM didn't change)
-            }
-        }
-
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('touchmove', onMove, {passive: false});
-        document.addEventListener('mouseup', onEnd);
-        document.addEventListener('touchend', onEnd);
-    }
-
-    // ... (Other helpers same as before) ...
+    // ... (其餘輔助函數) ...
     function createNewList() { editingListId=null; document.getElementById('list-name-input').value="新題庫"; document.getElementById('editor-rows').innerHTML=''; for(let i=0;i<3;i++)addEditRow(); showPage('page-editor'); }
     function editList(i) { editingListId=i; const l=allLists[i]; document.getElementById('list-name-input').value=l.name; document.getElementById('editor-rows').innerHTML=''; l.words.forEach(w=>addEditRow(w.word,w.img)); showPage('page-editor'); }
     function addEditRow(w='',i='') { const d=document.createElement('div'); d.className='edit-row'; let disp=i||'📷'; if(i&&i.length>10) disp=`<img src="${i}" style="width:100%;height:100%;object-fit:cover;">`; d.innerHTML=`<div class="thumb-preview" onclick="this.nextElementSibling.click()">${disp}</div><input type="file" class="file-input" accept="image/*" onchange="handleFileSelect(this)"><input type="hidden" class="img-data" value="${i}"><input type="text" class="word-input" placeholder="英文單字" value="${w}"><button onclick="this.parentElement.remove()" class="btn-danger" style="padding:5px 10px;">×</button>`; document.getElementById('editor-rows').appendChild(d); }
