@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>除法闖關王 2.0 (題庫版)</title>
+    <title>除法闖關王 2.1 (大字語音版)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -13,6 +13,12 @@
             --success: #27ae60;
             --danger: #c0392b;
             --warning: #f39c12;
+            
+            /* 放大版面設定 */
+            --cell-size: 50px; /* 格子變大 */
+            --font-base: 1.2rem;
+            --font-large: 1.8rem;
+            --font-huge: 2.5rem;
         }
 
         body {
@@ -20,19 +26,21 @@
             background-color: var(--light);
             color: var(--dark);
             margin: 0;
-            padding: 10px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            touch-action: manipulation;
         }
 
-        h1, h2 { color: var(--primary); margin: 10px 0; text-align: center; }
+        h1 { color: var(--primary); margin: 10px 0 20px 0; text-align: center; font-size: 2rem; }
+        h2 { font-size: 1.5rem; }
 
         /* --- 容器 --- */
         .container {
-            width: 100%; max-width: 800px; background: white; border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px;
+            width: 100%; max-width: 900px; background: white; border-radius: 15px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15); padding: 25px; margin-bottom: 20px;
             display: none;
         }
         .container.active { display: block; animation: fadeIn 0.3s; }
@@ -40,67 +48,97 @@
 
         /* --- 按鈕 --- */
         button {
-            border: none; border-radius: 6px; padding: 8px 15px; font-size: 1rem; font-weight: bold;
-            cursor: pointer; color: white; margin: 2px; transition: 0.2s;
+            border: none; border-radius: 10px; padding: 12px 24px; 
+            font-size: 1.2rem; font-weight: bold;
+            cursor: pointer; color: white; margin: 5px; transition: 0.2s;
         }
+        button:active { transform: scale(0.95); }
         .btn-primary { background-color: var(--primary); }
         .btn-secondary { background-color: var(--secondary); }
         .btn-success { background-color: var(--success); }
         .btn-danger { background-color: var(--danger); }
         .btn-warning { background-color: var(--warning); }
         .btn-gray { background-color: #95a5a6; }
-        .btn-block { width: 100%; padding: 12px; margin-top: 10px; }
+        .btn-block { width: 100%; padding: 15px; margin-top: 15px; font-size: 1.4rem; }
 
         /* --- 列表 --- */
         .list-item {
-            background: #f8f9fa; border: 1px solid #ddd; padding: 10px; margin-bottom: 8px;
-            border-radius: 6px; display: flex; justify-content: space-between; align-items: center;
+            background: #f8f9fa; border: 2px solid #ddd; padding: 15px; margin-bottom: 10px;
+            border-radius: 10px; display: flex; justify-content: space-between; align-items: center;
+            font-size: 1.3rem;
         }
         
         /* --- 編輯區 --- */
-        .gen-controls { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap; background: #eef; padding: 10px; border-radius: 8px;}
-        .gen-controls input { padding: 5px; width: 60px; text-align: center; }
-        .edit-row { display: flex; gap: 5px; margin-bottom: 5px; }
-        .edit-row input { padding: 5px; flex: 1; text-align: center; }
+        .gen-controls { 
+            display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; 
+            background: #eef; padding: 15px; border-radius: 10px; font-size: 1.2rem;
+        }
+        .gen-controls input { padding: 8px; width: 70px; text-align: center; font-size: 1.2rem; border-radius: 5px; border: 1px solid #ccc;}
+        
+        .edit-row { display: flex; gap: 10px; margin-bottom: 8px; align-items: center; }
+        .edit-row input { padding: 10px; flex: 1; text-align: center; font-size: 1.3rem; border-radius: 5px; border: 1px solid #ccc; }
 
-        /* --- 測驗區 --- */
-        .quiz-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 15px; background: #eee; padding: 10px; border-radius: 6px; }
-        .quiz-nav { display: flex; justify-content: space-between; margin-top: 20px; }
+        /* --- 測驗區 (放大版) --- */
+        .quiz-header { 
+            display: flex; justify-content: space-between; align-items: center;
+            font-weight: bold; margin-bottom: 20px; background: #eee; padding: 15px; border-radius: 10px; 
+            font-size: 1.3rem;
+        }
+        .quiz-nav { display: flex; justify-content: space-between; margin-top: 30px; }
         
         /* 除法直式 (教學模式用) */
         .grid-container {
-            display: grid; grid-auto-rows: 40px; justify-content: center; margin: 20px 0;
+            display: grid; grid-auto-rows: var(--cell-size); justify-content: center; margin: 20px 0;
+            gap: 2px;
         }
         .grid-cell {
-            width: 30px; height: 40px; display: flex; justify-content: center; align-items: center;
-            font-family: 'Courier New', monospace; font-weight: bold; font-size: 1.4rem; position: relative;
+            width: var(--cell-size); height: var(--cell-size); 
+            display: flex; justify-content: center; align-items: center;
+            font-family: 'Courier New', monospace; font-weight: bold; 
+            font-size: 1.8rem; position: relative;
         }
-        .bracket-cell { border-right: 2px solid #333; border-top-right-radius: 10px; margin-right: 2px; }
-        .dividend-cell { border-top: 2px solid #333; margin-top: -2px; }
-        .subtraction-line { border-bottom: 2px solid #333; }
+        .bracket-cell { border-right: 3px solid #333; border-top-right-radius: 15px; margin-right: 2px; }
+        .dividend-cell { border-top: 3px solid #333; margin-top: -3px; }
+        .subtraction-line { border-bottom: 3px solid #333; }
+        
         .game-input { 
-            width: 26px; height: 30px; font-size: 1.2rem; text-align: center; 
-            border: 2px solid var(--primary); border-radius: 4px; background: #fff3cd;
+            width: 45px; height: 45px; font-size: 1.5rem; text-align: center; 
+            border: 3px solid var(--primary); border-radius: 8px; background: #fff3cd;
+            font-weight: bold; outline: none;
+        }
+        .game-input:focus { border-color: var(--warning); background: #fff; }
+
+        /* 教學引導文字框 */
+        #teach-msg {
+            background-color: #e8f6f3;
+            border-left: 6px solid var(--success);
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 1.4rem;
+            line-height: 1.5;
+            color: #2c3e50;
+            border-radius: 5px;
+            min-height: 60px;
         }
         
         /* 測驗模式 (簡易版) */
-        .test-mode-box { text-align: center; padding: 20px; font-size: 1.5rem; }
-        .test-input { font-size: 1.2rem; padding: 5px; width: 80px; text-align: center; margin: 5px; }
+        .test-mode-box { text-align: center; padding: 30px; font-size: 2rem; }
+        .test-input { font-size: 1.8rem; padding: 10px; width: 100px; text-align: center; margin: 10px; border-radius: 8px; border: 2px solid #ccc;}
 
         /* 英雄榜 */
-        .rank-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
-        .rank-1 { color: #f39c12; font-weight: bold; }
+        .rank-item { display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #eee; font-size: 1.3rem;}
+        .rank-1 { color: #f39c12; font-weight: bold; background-color: #fff9db; }
 
-        .tabs { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 15px; }
-        .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #777; font-weight: bold; }
-        .tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+        .tabs { display: flex; border-bottom: 3px solid #ddd; margin-bottom: 20px; }
+        .tab { flex: 1; text-align: center; padding: 15px; cursor: pointer; color: #777; font-weight: bold; font-size: 1.3rem;}
+        .tab.active { color: var(--primary); border-bottom: 5px solid var(--primary); }
 
     </style>
 </head>
 <body>
 
     <div id="page-home" class="container active">
-        <h1>➗ 除法闖關王 2.0</h1>
+        <h1>➗ 除法闖關王</h1>
         
         <div class="tabs">
             <div class="tab active" onclick="switchTab('quiz')">選擇題庫</div>
@@ -110,9 +148,9 @@
         <div id="tab-quiz">
             <div id="lists-container"></div>
             <button class="btn-secondary btn-block" onclick="createNewList()">+ 新增/生成題庫</button>
-            <div style="margin-top:15px; border-top:1px dashed #ccc; padding-top:10px;">
-                <button class="btn-gray" onclick="exportData()">匯出題庫</button>
-                <button class="btn-gray" onclick="document.getElementById('import-file').click()">匯入題庫</button>
+            <div style="margin-top:20px; border-top:2px dashed #ccc; padding-top:15px; display:flex; gap:10px;">
+                <button class="btn-gray" style="flex:1" onclick="exportData()">匯出題庫</button>
+                <button class="btn-gray" style="flex:1" onclick="document.getElementById('import-file').click()">匯入題庫</button>
                 <input type="file" id="import-file" style="display:none" accept=".json" onchange="handleImport(this)">
             </div>
         </div>
@@ -125,24 +163,24 @@
 
     <div id="page-editor" class="container">
         <h2>✏️ 編輯題庫</h2>
-        <div style="margin-bottom:10px;">
-            題庫名稱: <input type="text" id="list-name" style="padding:5px; width:200px;">
+        <div style="margin-bottom:15px; font-size: 1.2rem;">
+            題庫名稱: <input type="text" id="list-name" style="padding:8px; width:250px; font-size:1.2rem;">
         </div>
         
         <div class="gen-controls">
             <span>自動生成:</span>
-            題目數 <input type="number" id="gen-count" value="5">
+            題數 <input type="number" id="gen-count" value="5">
             被除數位數 <input type="number" id="gen-len-a" value="3">
             除數位數 <input type="number" id="gen-len-b" value="1">
             <button class="btn-warning" onclick="autoGenerate()">生成</button>
         </div>
 
-        <div style="max-height: 300px; overflow-y: auto;">
+        <div style="max-height: 350px; overflow-y: auto;">
             <div id="editor-rows"></div>
         </div>
-        <button class="btn-gray" onclick="addEditRow()">+ 手動增加</button>
+        <button class="btn-gray" onclick="addEditRow()" style="margin-top:10px;">+ 手動增加一題</button>
         
-        <div style="margin-top:15px; display:flex; gap:10px;">
+        <div style="margin-top:25px; display:flex; gap:15px;">
             <button class="btn-gray" style="flex:1" onclick="showPage('page-home')">取消</button>
             <button class="btn-primary" style="flex:1" onclick="saveList()">儲存</button>
         </div>
@@ -151,78 +189,104 @@
     <div id="page-mode" class="container">
         <h2>選擇模式</h2>
         <div style="text-align: center;">
-            <p><strong>教學模式</strong>：一步一步引導填空，即時回饋。</p>
-            <button class="btn-success btn-block" onclick="startQuiz('teach')">進入 教學模式</button>
-            <br><br>
-            <p><strong>測驗模式</strong>：自行計算，最後輸入答案，送出才計分。</p>
-            <button class="btn-danger btn-block" onclick="startQuiz('test')">進入 測驗模式</button>
-            <br>
-            <button class="btn-gray" onclick="showPage('page-home')" style="margin-top:20px;">返回</button>
+            <div style="margin-bottom: 30px; background:#f0f9eb; padding:15px; border-radius:10px;">
+                <h3 style="color: var(--success);">📖 教學模式</h3>
+                <p style="font-size:1.2rem; color:#555;">電腦老師會一步一步教你算，<br>還有語音解說喔！</p>
+                <button class="btn-success btn-block" onclick="startQuiz('teach')">開始 教學模式</button>
+            </div>
+            
+            <div style="background:#fdedec; padding:15px; border-radius:10px;">
+                <h3 style="color: var(--danger);">📝 測驗模式</h3>
+                <p style="font-size:1.2rem; color:#555;">自己在紙上算，最後填答案，<br>挑戰 100 分！</p>
+                <button class="btn-danger btn-block" onclick="startQuiz('test')">開始 測驗模式</button>
+            </div>
+            
+            <button class="btn-gray" onclick="showPage('page-home')" style="margin-top:30px; width:50%;">返回</button>
         </div>
     </div>
 
     <div id="page-quiz" class="container">
         <div class="quiz-header">
-            <span id="q-info">題目 1/5</span>
-            <span id="q-timer">00:00</span>
-            <span id="q-mode">模式</span>
+            <span id="q-info">第 1 / 5 題</span>
+            <span id="q-timer" style="background:#333; color:#fff; padding:5px 10px; border-radius:5px;">00:00</span>
+            <button class="btn-danger" style="padding:5px 15px; font-size:1rem;" onclick="quitQuiz()">🚪 退出</button>
         </div>
 
         <div id="teach-area" style="display:none;">
+            <div id="teach-msg">準備開始...</div>
             <div class="grid-container" id="gridBoard"></div>
-            <div id="teach-msg" style="text-align:center; color:#2980b9; min-height:30px;"></div>
         </div>
 
         <div id="test-area" style="display:none;">
             <div class="test-mode-box">
-                <div id="test-q-text" style="font-size:2rem; margin-bottom:20px;"></div>
+                <div id="test-q-text" style="font-size:3rem; margin-bottom:30px; font-family: monospace;"></div>
                 商: <input type="number" id="test-quo" class="test-input"> <br>
                 餘: <input type="number" id="test-rem" class="test-input">
             </div>
         </div>
 
         <div class="quiz-nav">
-            <button class="btn-gray" id="btn-prev" onclick="navQuestion(-1)">上一題</button>
-            <button class="btn-primary" id="btn-next" onclick="navQuestion(1)">下一題</button>
-            <button class="btn-success" id="btn-submit" onclick="submitTest()" style="display:none;">交卷</button>
+            <button class="btn-gray" id="btn-prev" onclick="navQuestion(-1)" style="font-size:1.2rem;">⬅ 上一題</button>
+            <button class="btn-primary" id="btn-next" onclick="navQuestion(1)" style="font-size:1.2rem;">下一題 ➡</button>
+            <button class="btn-success" id="btn-submit" onclick="submitTest()" style="display:none; font-size:1.2rem;">交卷計分</button>
         </div>
     </div>
 
     <div id="page-result" class="container">
         <div style="text-align: center;">
             <h2>測驗結果</h2>
-            <div style="font-size: 3rem; color: var(--primary); font-weight: bold;" id="res-score">100</div>
-            <div id="res-detail" style="font-size: 1.2rem; margin: 10px;">答對 5 / 5 題</div>
-            <div id="res-time" style="color:#777;">耗時 01:20</div>
+            <div style="font-size: 5rem; color: var(--primary); font-weight: bold; margin: 20px 0;" id="res-score">100</div>
+            <div id="res-detail" style="font-size: 1.5rem; margin: 15px; color: var(--dark);">答對 5 / 5 題</div>
+            <div id="res-time" style="color:#777; font-size:1.2rem;">耗時 01:20</div>
             
-            <div style="margin-top:20px;">
-                你的名字: <input type="text" id="player-name" value="學員" style="padding:5px;">
-                <button class="btn-warning" onclick="saveRank()">登記榜單</button>
+            <div style="margin-top:30px; padding: 20px; background: #fff9c4; border-radius: 10px;">
+                <label style="font-size:1.2rem;">你的名字: </label>
+                <input type="text" id="player-name" value="小小學員" style="padding:8px; font-size:1.2rem; width:150px; text-align:center;">
+                <button class="btn-warning" onclick="saveRank()">登記英雄榜</button>
             </div>
             <button class="btn-gray btn-block" onclick="showPage('page-home')">回首頁</button>
         </div>
     </div>
 
 <script>
+    // --- 語音引擎 ---
+    function speak(text) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel(); // 中斷前一句
+            // 移除 HTML 標籤，確保語音乾淨
+            let cleanText = text.replace(/<[^>]*>/g, '');
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = 'zh-TW';
+            utterance.rate = 1; 
+            utterance.pitch = 1.1;
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
     // --- 資料 ---
     let allLists = [];
     let currentList = null;
-    let quizData = []; // 實際測驗的題目資料 (含使用者答案)
+    let quizData = [];
     let currentQIdx = 0;
-    let currentMode = ''; // 'teach' or 'test'
+    let currentMode = '';
     let editingId = null;
     let timerInt, startTime;
     let rankData = [];
 
     // --- 初始化 ---
     window.onload = function() {
-        if(localStorage.getItem('div_lists')) allLists = JSON.parse(localStorage.getItem('div_lists'));
-        if(localStorage.getItem('div_rank')) rankData = JSON.parse(localStorage.getItem('div_rank'));
+        if(localStorage.getItem('div_lists_v2')) allLists = JSON.parse(localStorage.getItem('div_lists_v2'));
+        else {
+            // 預設題庫
+            allLists = [{name: "初級練習 (3位除1位)", qs: [{a:842, b:2}, {a:639, b:3}, {a:484, b:4}, {a:555, b:5}]}];
+            saveData();
+        }
+        if(localStorage.getItem('div_rank_v2')) rankData = JSON.parse(localStorage.getItem('div_rank_v2'));
         renderLists();
     };
 
-    function saveData() { localStorage.setItem('div_lists', JSON.stringify(allLists)); }
-    function saveRankData() { localStorage.setItem('div_rank', JSON.stringify(rankData)); }
+    function saveData() { localStorage.setItem('div_lists_v2', JSON.stringify(allLists)); }
+    function saveRankData() { localStorage.setItem('div_rank_v2', JSON.stringify(rankData)); }
 
     // --- 導航 ---
     function showPage(pid) {
@@ -241,11 +305,11 @@
     // --- 題庫管理 ---
     function renderLists() {
         const c = document.getElementById('lists-container'); c.innerHTML='';
-        if(allLists.length===0) c.innerHTML='<p style="text-align:center">目前無題庫，請新增。</p>';
+        if(allLists.length===0) c.innerHTML='<p style="text-align:center; font-size:1.2rem;">目前無題庫，請新增。</p>';
         allLists.forEach((l,i) => {
             const d = document.createElement('div'); d.className='list-item';
             d.innerHTML = `
-                <div><strong>${l.name}</strong> (${l.qs.length}題)</div>
+                <div><strong>${l.name}</strong> <br><small>(${l.qs.length}題)</small></div>
                 <div>
                     <button class="btn-primary" onclick="prepareQuiz(${i})">開始</button>
                     <button class="btn-gray" onclick="editList(${i})">編輯</button>
@@ -340,60 +404,77 @@
 
     function startQuiz(mode) {
         currentMode = mode;
-        // 初始化測驗資料，加上使用者狀態
         quizData = currentList.qs.map(q => ({
             a: q.a, b: q.b, 
-            userQ: null, userR: null, // 測驗模式的答案
-            steps: [], stepIdx: 0, done: false // 教學模式的狀態
+            userQ: null, userR: null, 
+            steps: [], stepIdx: 0, done: false 
         }));
         
         currentQIdx = 0;
         startTime = Date.now();
         clearInterval(timerInt); timerInt = setInterval(updTime, 1000);
         
-        document.getElementById('q-mode').innerText = mode==='teach'?'教學模式':'測驗模式';
-        // 介面切換
-        document.getElementById('teach-area').style.display = mode==='teach'?'block':'none';
-        document.getElementById('test-area').style.display = mode==='test'?'block':'none';
-        
-        // 教學模式需要先生成步驟
+        // 教學模式需生成步驟
         if(mode === 'teach') {
             quizData.forEach(q => { q.steps = generateDivSteps(q.a, q.b); });
         }
 
         showPage('page-quiz');
+        
+        // 播放開場語音
+        const modeName = mode==='teach' ? "教學模式" : "測驗模式";
+        speak(`歡迎來到${modeName}，請準備開始！`);
+        
         loadQuestion();
+    }
+
+    function quitQuiz() {
+        if(confirm("確定要中斷測驗並返回首頁嗎？")) {
+            clearInterval(timerInt);
+            window.speechSynthesis.cancel();
+            showPage('page-home');
+        }
     }
 
     function updTime() {
         const s = Math.floor((Date.now()-startTime)/1000);
-        document.getElementById('q-timer').innerText = new Date(s*1000).toISOString().substr(14,5);
+        const m = Math.floor(s/60).toString().padStart(2,'0');
+        const sec = (s%60).toString().padStart(2,'0');
+        document.getElementById('q-timer').innerText = `${m}:${sec}`;
     }
 
     function loadQuestion() {
         const q = quizData[currentQIdx];
         document.getElementById('q-info').innerText = `題目 ${currentQIdx+1} / ${quizData.length}`;
         
-        // 按鈕狀態
+        // 教學模式：如果剛開始該題，讀題目
+        if(currentMode === 'teach' && q.stepIdx === 0) {
+            // 語音在 renderTeachGrid 裡觸發比較準確
+        }
+
         document.getElementById('btn-prev').style.visibility = currentQIdx===0 ? 'hidden' : 'visible';
+        
         if(currentMode === 'test') {
             document.getElementById('btn-next').style.display = currentQIdx===quizData.length-1 ? 'none' : 'inline-block';
             document.getElementById('btn-submit').style.display = currentQIdx===quizData.length-1 ? 'inline-block' : 'none';
+            document.getElementById('teach-area').style.display = 'none';
+            document.getElementById('test-area').style.display = 'block';
             
-            // 測驗模式介面
             document.getElementById('test-q-text').innerText = `${q.a} ÷ ${q.b} = ?`;
             document.getElementById('test-quo').value = q.userQ !== null ? q.userQ : '';
             document.getElementById('test-rem').value = q.userR !== null ? q.userR : '';
+            
+            speak(`第${currentQIdx+1}題，${q.a} 除以 ${q.b}，請算出商和餘數。`);
         } else {
-            // 教學模式：每一題都要完成才能下一題
-            document.getElementById('btn-next').style.display = 'none'; // 透過步驟完成自動跳轉或顯示
+            document.getElementById('btn-next').style.display = 'none'; 
             document.getElementById('btn-submit').style.display = 'none';
+            document.getElementById('test-area').style.display = 'none';
+            document.getElementById('teach-area').style.display = 'block';
             
             renderTeachGrid(q);
         }
     }
 
-    // 測驗模式：切換題目時儲存當前輸入
     function navQuestion(dir) {
         if(currentMode === 'test') {
             const q = quizData[currentQIdx];
@@ -404,9 +485,7 @@
         loadQuestion();
     }
 
-    // 測驗模式：交卷
     function submitTest() {
-        // 存最後一題
         const q = quizData[currentQIdx];
         q.userQ = document.getElementById('test-quo').value;
         q.userR = document.getElementById('test-rem').value;
@@ -416,7 +495,9 @@
         quizData.forEach(item => {
             const ansQ = Math.floor(item.a / item.b);
             const ansR = item.a % item.b;
-            if(parseInt(item.userQ) === ansQ && parseInt(item.userR) === ansR) correct++;
+            // 寬鬆判斷：若餘數為空視為0
+            let uR = item.userR === '' ? 0 : parseInt(item.userR);
+            if(parseInt(item.userQ) === ansQ && uR === ansR) correct++;
         });
         
         const total = quizData.length;
@@ -425,13 +506,13 @@
         showResult(finalScore, correct, total);
     }
 
-    // --- 教學模式核心邏輯 (移植自除法小家教) ---
+    // --- 教學模式核心邏輯 (附帶詳細文字與語音) ---
     function generateDivSteps(dividend, divisor) {
         let dStr = dividend.toString();
         let steps = [];
         let curRem = 0;
         let row = 1;
-        let offset = 6 - dStr.length; // 簡單對齊用
+        let offset = 6 - dStr.length;
 
         for(let i=0; i<dStr.length; i++) {
             let digit = parseInt(dStr[i]);
@@ -441,31 +522,30 @@
             let rem = working - prod;
             let col = offset + i;
 
-            // 步驟 1: 輸入商
-            if(!(i===0 && quo===0)) { // 首位0不填
-                steps.push({ type:'quo', r:0, c:col, ans:quo, hint:`${working} ÷ ${divisor} 商是多少?` });
-            }
-            // 步驟 2: 輸入乘積 (若商0且非首位, prod=0也要填)
-            if(!(i===0 && quo===0)) {
-                steps.push({ type:'prod', r:row+1, c:col, ans:prod, hint:`${quo} × ${divisor} = ?`, align:'right' });
-                row += 2;
-                // 步驟 3: 輸入餘數
-                steps.push({ type:'rem', r:row, c:col, ans:rem, hint:`${working} - ${prod} = ?`, align:'right' });
+            // 步驟 1: 商 (不夠除時商0，若非首位則顯示)
+            if(!(i===0 && quo===0)) { 
+                let text = `現在看 ${working} 除以 ${divisor}。想一下，${divisor} 乘多少最接近 ${working} 又不超過它？`;
+                steps.push({ type:'quo', r:0, c:col, ans:quo, hint: text });
             } else {
-                // 首位不夠除，直接帶入餘數給下一位
-                rem = working; // 其實就是 digit
+                // 首位不夠除，跳過，但要更新餘數
+                curRem = working; 
+                continue;
             }
 
-            // 步驟 4: 降位
+            // 步驟 2: 乘
+            let textProd = `好，商是 ${quo}。現在算 ${quo} 乘以 ${divisor} 等於多少？寫在下面。`;
+            steps.push({ type:'prod', r:row+1, c:col, ans:prod, hint: textProd, align:'right' });
+            row += 2;
+
+            // 步驟 3: 減
+            let textRem = `${working} 減去 ${prod} 等於多少？算出餘數。`;
+            steps.push({ type:'rem', r:row, c:col, ans:rem, hint: textRem, align:'right' });
+
+            // 步驟 4: 降
             if(i < dStr.length - 1) {
                 let next = dStr[i+1];
-                // 如果前面沒運算(首位0)，降位位置不同，這裡簡化處理：總是降到 row
-                // 若剛才發生了運算，row已經+2了。若沒運算，row還在1(dividend那行)
-                // 修正：若首位0，row沒變，降位應該直接顯示在題目上(不需要動作)，
-                // 但為了邏輯一致，教學模式通常省略首位0的步驟。
-                if(!(i===0 && quo===0)) {
-                    steps.push({ type:'drop', r:row, c:col+1, ans:next, hint:`把 ${next} 降下來` });
-                }
+                let textDrop = `還有數字喔！把旁邊的 ${next} 降下來。`;
+                steps.push({ type:'drop', r:row, c:col+1, ans:next, hint: textDrop });
             }
             curRem = rem;
         }
@@ -476,11 +556,9 @@
         const box = document.getElementById('gridBoard'); box.innerHTML='';
         const msg = document.getElementById('teach-msg');
         
-        // 設定 Grid
         const cols = 8;
-        box.style.gridTemplateColumns = `repeat(${cols}, 30px)`;
+        box.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
         
-        // 畫格子
         for(let r=0; r<20; r++) {
             for(let c=0; c<cols; c++) {
                 const cell = document.createElement('div');
@@ -489,7 +567,7 @@
             }
         }
 
-        // 填靜態題目
+        // 填題目
         const dStr = q.a.toString();
         const offset = 6 - dStr.length;
         document.getElementById(`c-1-${offset-2}`).innerText = q.b;
@@ -500,52 +578,62 @@
             cell.classList.add('dividend-cell');
         }
 
-        // 執行到目前的步驟
-        let currentStep = q.steps[q.stepIdx];
-        
-        // 渲染已完成的步驟
+        // 渲染已完成
         for(let i=0; i<q.stepIdx; i++) {
             const s = q.steps[i];
             fillCell(s.r, s.c, s.ans, s.type);
         }
 
         if(q.stepIdx >= q.steps.length) {
-            msg.innerText = "本題完成！";
-            // 顯示下一題按鈕
+            msg.innerHTML = "<span style='color:green'>太棒了！本題完成。</span>";
+            speak("太棒了！本題完成。");
             const btn = document.createElement('button'); 
             btn.className='btn-primary'; 
+            btn.style.fontSize = "1.5rem";
             
             if(currentQIdx < quizData.length-1) {
-                btn.innerText = "下一題";
+                btn.innerText = "下一題 ➡";
                 btn.onclick = () => { currentQIdx++; loadQuestion(); };
             } else {
-                btn.innerText = "完成測驗";
-                btn.onclick = () => { submitTest(); }; // 教學模式算全對? 或不計分? 這裡給滿分
+                btn.innerText = "查看成績 🏆";
+                btn.onclick = () => { submitTest(); }; // 教學模式視為滿分
             }
             msg.appendChild(document.createElement('br'));
             msg.appendChild(btn);
             return;
         }
 
-        // 顯示當前步驟輸入框
+        // 當前步驟
+        let currentStep = q.steps[q.stepIdx];
         msg.innerText = currentStep.hint;
+        speak(currentStep.hint); // 播放語音
+
         const targetCell = document.getElementById(`c-${currentStep.r}-${currentStep.c}`);
-        
-        // 清空該格以放 input
         targetCell.innerHTML = '';
         const inp = document.createElement('input');
-        inp.type='number'; inp.className='game-input';
-        inp.onkeydown = (e) => {
-            if(e.key === 'Enter') checkTeachAnswer(inp, currentStep, q);
-        };
+        inp.type='tel'; // 手機數字鍵盤
+        inp.className='game-input';
+        // 自動聚焦
+        setTimeout(()=>inp.focus(), 100);
+        
+        // 按鈕確認 (避免手機鍵盤 Enter 問題)
+        const checkBtn = document.createElement('button');
+        checkBtn.className = 'btn-warning';
+        checkBtn.innerText = 'OK';
+        checkBtn.style.marginLeft = '10px';
+        checkBtn.onclick = () => checkTeachAnswer(inp, currentStep, q);
+        
+        // 鍵盤 Enter 支援
+        inp.onkeydown = (e) => { if(e.key === 'Enter') checkTeachAnswer(inp, currentStep, q); };
+        
+        // 將輸入框放入格子，確認按鈕放入下方訊息區
         targetCell.appendChild(inp);
-        setTimeout(()=>inp.focus(), 50);
+        msg.appendChild(document.createElement('br'));
+        msg.appendChild(checkBtn);
     }
 
     function fillCell(r, c, val, type) {
-        // 處理多位數顯示 (例如乘積 12)
         const str = val.toString();
-        // 簡單靠右對齊邏輯
         for(let i=0; i<str.length; i++) {
             let tc = c - (str.length-1) + i; 
             let cell = document.getElementById(`c-${r}-${tc}`);
@@ -558,21 +646,26 @@
 
     function checkTeachAnswer(inp, step, q) {
         if(parseInt(inp.value) === parseInt(step.ans)) {
-            // 答對
+            speak("答對了！");
             q.stepIdx++;
             renderTeachGrid(q);
         } else {
-            alert("算錯囉！再試一次");
+            speak("算錯囉，再試一次。");
+            inp.classList.add('wrong'); // 可加 CSS 震動
+            setTimeout(()=>inp.classList.remove('wrong'), 500);
             inp.value=''; inp.focus();
         }
     }
 
-    // --- 結果與榜單 ---
+    // --- 結果 ---
     function showResult(score, correct, total) {
         showPage('page-result');
         document.getElementById('res-score').innerText = score;
         document.getElementById('res-detail').innerText = `答對 ${correct} / ${total} 題`;
         document.getElementById('res-time').innerText = `耗時 ${document.getElementById('q-timer').innerText}`;
+        
+        let praise = score===100 ? "太神了！全部答對！" : "完成挑戰，很棒喔！";
+        speak(`測驗結束，你得了${score}分。${praise}`);
     }
 
     function saveRank() {
@@ -589,14 +682,15 @@
 
     function renderRank() {
         const box = document.getElementById('rank-container'); box.innerHTML = '';
-        // 排序：分數高 -> 時間短 (字串比較簡易處理)
         rankData.sort((a,b) => b.score - a.score || a.time.localeCompare(b.time));
         
+        if(rankData.length===0) box.innerHTML="<p style='text-align:center'>暫無紀錄</p>";
+
         rankData.forEach((r, i) => {
             const div = document.createElement('div'); div.className='rank-item';
             if(i===0) div.classList.add('rank-1');
             div.innerHTML = `
-                <span>${i+1}. ${r.name} (${r.list})</span>
+                <span>${i+1}. ${r.name} <small>(${r.list})</small></span>
                 <span>${r.score}分 <small>${r.time}</small></span>
             `;
             box.appendChild(div);
