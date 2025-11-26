@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>乘法闖關王 2.5 (最終修復版)</title>
+    <title>乘法闖關王 2.7 (手動送出版)</title>
     <style>
         :root {
             --primary: #8e44ad;
@@ -13,7 +13,7 @@
             --success: #27ae60;
             --danger: #c0392b;
             --warning: #f39c12;
-            --cell-size: 50px; /* 稍微加大格子 */
+            --cell-size: 50px; 
         }
 
         body {
@@ -51,6 +51,21 @@
         .btn-help { background-color: #e67e22; box-shadow: 0 4px #d35400; }
         .btn-help:active { box-shadow: 0 0 #d35400; transform: translateY(4px); }
         .btn-block { width: 100%; padding: 12px; margin-top: 10px; }
+        
+        /* 下一題大按鈕 */
+        .btn-next-level {
+            background-color: #27ae60;
+            color: white;
+            font-size: 1.5rem;
+            padding: 15px 30px;
+            border-radius: 50px;
+            box-shadow: 0 6px #1e8449;
+            margin-top: 20px;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: none; /* 預設隱藏 */
+        }
+        .btn-next-level:active { transform: translateY(6px); box-shadow: 0 0 #1e8449; }
+        @keyframes popIn { from {transform: scale(0);} to {transform: scale(1);} }
 
         .list-item {
             background: #fdf2ff; border: 1px solid #e1bee7; padding: 10px; margin-bottom: 8px;
@@ -70,8 +85,7 @@
             grid-auto-rows: 50px; 
             justify-content: center; 
             margin: 20px 0;
-            /* 修正線條斷裂問題：水平間距設為0 */
-            gap: 2px 0; 
+            gap: 0; /* 消除間隙以確保直線連續 */
         }
         .grid-cell {
             width: var(--cell-size); 
@@ -83,8 +97,6 @@
             font-weight: bold; 
             font-size: 1.8rem; 
             position: relative;
-            /* 輔助除錯：若想看格子邊界可打開下面註解 */
-            /* border: 1px solid #eee; */
         }
         
         /* 一般輸入框 (答案) */
@@ -93,27 +105,29 @@
             border: 3px solid var(--primary); border-radius: 8px; background: #fff; outline: none;
             z-index: 10;
         }
+        /* 答對時的綠色樣式 */
+        .game-input.correct { border-color: #27ae60; background-color: #d5f5e3; color: #27ae60; }
         .game-input:focus { border-color: #2ecc71; background: #e8f8f5; box-shadow: 0 0 10px rgba(46, 204, 113, 0.5); }
 
-        /* 進位註記輸入框 (較小，圓形，位於上方) */
+        /* 進位註記輸入框 */
         .carry-input {
             width: 28px; height: 28px; font-size: 1.1rem; text-align: center;
             border: 2px solid #e67e22; border-radius: 50%; background: #fef5e7; outline: none;
-            position: absolute; bottom: 2px; /* 靠下對齊 */
+            position: absolute; bottom: 2px;
             color: #d35400;
             z-index: 10;
         }
+        .carry-input.correct { border-color: #27ae60; background-color: #d5f5e3; color: #27ae60; }
         .carry-input:focus { transform: scale(1.2); border-color: #d35400; }
 
         .game-input.wrong, .carry-input.wrong { background: #fadbd8; border-color: var(--danger); animation: shake 0.4s; }
         
-        /* 修正線條樣式：直線 */
+        /* 修正線條樣式：使用 border-bottom 畫在格子容器上，而非個別格子 */
         .multiplication-line { 
             border-bottom: 3px solid #333; 
         }
         .operator { color: var(--primary); }
 
-        /* 求助訊息框 */
         .help-box {
             background: #fff8e1; border-left: 5px solid #ffc107; padding: 10px; margin: 10px 0;
             border-radius: 5px; display: none; font-size: 1.1rem; text-align: left;
@@ -145,7 +159,7 @@
 <body>
 
     <div id="page-home" class="container active">
-        <h1>✖️ 乘法闖關王 2.5</h1>
+        <h1>✖️ 乘法闖關王 2.7</h1>
         
         <div class="tabs">
             <div class="tab active" onclick="switchTab('quiz')">選擇題庫</div>
@@ -167,7 +181,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v2.5 (直線修復+輸入框修正版)</div>
+        <div class="version-tag">版本：v2.7 (手動送出+直線修復)</div>
     </div>
 
     <div id="page-editor" class="container">
@@ -175,7 +189,6 @@
         <div style="margin-bottom:10px;">
             名稱: <input type="text" id="list-name" style="padding:5px; width:200px;">
         </div>
-        
         <div class="gen-controls">
             <span>生成:</span>
             題數<input type="number" id="gen-count" value="5">
@@ -183,12 +196,10 @@
             乘數位數<input type="number" id="gen-len-b" value="1">
             <button class="btn-warning" onclick="autoGenerate()">生成</button>
         </div>
-
         <div style="max-height: 300px; overflow-y: auto;">
             <div id="editor-rows"></div>
         </div>
         <button class="btn-gray" onclick="addEditRow()">+ 手動增加</button>
-        
         <div style="margin-top:15px; display:flex; gap:10px;">
             <button class="btn-gray" style="flex:1" onclick="showPage('page-home')">取消</button>
             <button class="btn-primary" style="flex:1" onclick="saveList()">儲存</button>
@@ -217,7 +228,12 @@
                 <button id="btn-help-trigger" class="btn-help" onclick="toggleHelp()">💡 求助：這一步怎麼算？</button>
                 <div id="help-content" class="help-box"></div>
             </div>
+            
             <div class="grid-container" id="gridBoard"></div>
+            
+            <div style="text-align: center;">
+                <button id="btn-next-q" class="btn-next-level" onclick="goToNextQuestion()">🎉 本題完成！進入下一題 ➡</button>
+            </div>
         </div>
 
         <div id="test-area" style="display:none;">
@@ -252,7 +268,6 @@
     </div>
 
 <script>
-    // --- 語音引擎 ---
     function speak(text) {
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
@@ -263,19 +278,12 @@
         }
     }
 
-    // --- 資料變數 ---
-    let allLists = [];
-    let currentList = null;
-    let quizData = []; 
-    let currentQIdx = 0;
-    let currentMode = '';
-    let editingId = null;
-    let timerInt, startTime;
-    let rankData = [];
+    let allLists = [], currentList = null, quizData = [], currentQIdx = 0, currentMode = '', editingId = null;
+    let timerInt, startTime, rankData = [];
 
-    // KEY 更新，避免舊資料干擾
-    const STORAGE_KEY_LISTS = 'mul_v2_5_lists';
-    const STORAGE_KEY_RANK = 'mul_v2_5_rank';
+    // 使用 v2.7 key
+    const STORAGE_KEY_LISTS = 'mul_v2_7_lists';
+    const STORAGE_KEY_RANK = 'mul_v2_7_rank';
 
     window.onload = function() {
         if(localStorage.getItem(STORAGE_KEY_LISTS)) {
@@ -306,7 +314,6 @@
         event.target.classList.add('active');
     }
 
-    // --- 題庫管理 ---
     function renderLists() {
         const c = document.getElementById('lists-container'); c.innerHTML='';
         if(allLists.length===0) c.innerHTML='<p style="text-align:center">無題庫</p>';
@@ -382,15 +389,12 @@
         }; r.readAsText(f);
     }
 
-    // --- 測驗邏輯 ---
     function prepareQuiz(i) { currentList = allLists[i]; showPage('page-mode'); }
 
     function startQuiz(mode) {
         currentMode = mode;
         quizData = currentList.qs.map(q => ({
-            a: q.a, b: q.b, 
-            userAns: null, 
-            steps: [], stepIdx: 0
+            a: q.a, b: q.b, userAns: null, steps: [], stepIdx: 0
         }));
         
         if(mode === 'teach') {
@@ -419,6 +423,7 @@
         const q = quizData[currentQIdx];
         document.getElementById('q-info').innerText = `題目 ${currentQIdx+1} / ${quizData.length}`;
         document.getElementById('btn-prev').style.visibility = currentQIdx===0 ? 'hidden' : 'visible';
+        document.getElementById('btn-next-q').style.display = 'none'; // 隱藏下一題按鈕
         
         if(currentMode === 'test') {
             document.getElementById('btn-next').style.display = currentQIdx===quizData.length-1 ? 'none' : 'inline-block';
@@ -438,6 +443,15 @@
         loadQuestion();
     }
 
+    function goToNextQuestion() {
+        if(currentQIdx < quizData.length - 1) {
+            currentQIdx++;
+            loadQuestion();
+        } else {
+            submitTest();
+        }
+    }
+
     function submitTest() {
         quizData[currentQIdx].userAns = document.getElementById('test-ans').value;
         clearInterval(timerInt);
@@ -448,7 +462,6 @@
         showResult(Math.round((correct/quizData.length)*100), correct, quizData.length);
     }
 
-    // --- 詳細微步驟生成 ---
     function generateDetailedSteps(a, b) {
         let sA = a.toString();
         let sB = b.toString();
@@ -498,13 +511,11 @@
                 currentCarry = newCarry;
             }
         } else {
-            // Fallback
             steps.push({type:'simple', ans: a*b, hint:'多位數乘法請直接計算總和'});
         }
         return steps;
     }
 
-    // --- ★★★ 核心渲染修復 ★★★ ---
     function renderTeachGrid(q) {
         const box = document.getElementById('gridBoard'); box.innerHTML = '';
         const msg = document.getElementById('teach-msg');
@@ -519,7 +530,6 @@
         
         box.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
 
-        // 1. 先畫格子
         for(let r=0; r<totalRows; r++) {
             for(let c=0; c<cols; c++) {
                 let cell = document.createElement('div');
@@ -529,7 +539,6 @@
             }
         }
 
-        // 2. 填入題目與畫線
         for(let i=0; i<sA.length; i++) {
             document.getElementById(`c-1-${cols-sA.length+i}`).innerText = sA[i];
         }
@@ -539,20 +548,18 @@
         for(let i=0; i<sB.length; i++) {
             document.getElementById(`c-2-${cols-sB.length+i}`).innerText = sB[i];
         }
-        // ★ 畫直線：使用 CSS gap:0 讓這些 border 連在一起
         for(let c=0; c<cols; c++) {
              document.getElementById(`c-2-${c}`).classList.add('multiplication-line');
         }
 
-        // 3. 多位數 Fallback
         if(q.steps.length > 0 && q.steps[0].type === 'simple') {
             msg.innerText = q.steps[0].hint;
             document.getElementById('btn-help-trigger').style.display = 'none';
-            // 按鈕略
-            return;
+            document.getElementById('btn-next-q').style.display = 'block';
+            return; 
         }
 
-        // 4. 填入已完成步驟
+        // Render completed steps
         for(let i=0; i<q.stepIdx; i++) {
             let s = q.steps[i];
             let ansCell = document.getElementById(`c-${s.ansRow}-${s.ansCol}`);
@@ -565,28 +572,25 @@
             }
         }
 
-        // 5. 完成判斷
+        // Current Step
         if(q.stepIdx >= q.steps.length) {
+            // 全對，顯示完成狀態
             msg.innerText = "太棒了！本題完成。";
             document.getElementById('btn-help-trigger').style.display = 'none';
-            q.userAns = q.a * q.b; 
-            let btn = document.createElement('button');
-            btn.className = 'btn-primary';
-            if(currentQIdx < quizData.length-1) {
-                btn.innerText = "下一題 ➡"; btn.onclick = () => {currentQIdx++; loadQuestion();};
-            } else {
-                btn.innerText = "查看成績 🏆"; btn.onclick = () => submitTest();
-            }
-            msg.appendChild(document.createElement('br')); msg.appendChild(btn);
+            q.userAns = q.a * q.b;
+            
+            // 顯示下一題大按鈕
+            let btnNext = document.getElementById('btn-next-q');
+            btnNext.style.display = 'block';
+            if(currentQIdx >= quizData.length - 1) btnNext.innerText = "全部完成！查看成績 🏆";
+            else btnNext.innerText = "🎉 本題完成！進入下一題 ➡";
             return;
         }
 
-        // 6. 產生輸入框 (確保執行)
         let cur = q.steps[q.stepIdx];
         msg.innerText = cur.hint;
         speak(cur.hint);
         
-        // 使用 setTimeout 確保 DOM 渲染完畢後再插入 Input (解決偶發的消失問題)
         setTimeout(() => {
             createStepInputs(cur, q);
         }, 50);
@@ -594,7 +598,6 @@
 
     function createStepInputs(step, q) {
         let ansCell = document.getElementById(`c-${step.ansRow}-${step.ansCol}`);
-        // 確保清空並插入
         if(!ansCell) return; 
         ansCell.innerHTML = '';
         
@@ -602,18 +605,15 @@
             let tenCell = document.getElementById(`c-${step.ansRow}-${step.ansCol-1}`);
             tenCell.innerHTML = '';
             
-            let inpTen = document.createElement('input');
-            inpTen.type='tel'; inpTen.className='game-input'; inpTen.id = 'inp-ans-ten';
+            let inpTen = createInput('inp-ans-ten', 'game-input', step, q);
             tenCell.appendChild(inpTen);
             
-            let inpUnit = document.createElement('input');
-            inpUnit.type='tel'; inpUnit.className='game-input'; inpUnit.id = 'inp-ans-unit';
+            let inpUnit = createInput('inp-ans-unit', 'game-input', step, q);
             ansCell.appendChild(inpUnit);
             
             inpUnit.focus();
         } else {
-            let inp = document.createElement('input');
-            inp.type='tel'; inp.className='game-input'; inp.id = 'inp-ans';
+            let inp = createInput('inp-ans', 'game-input', step, q);
             ansCell.appendChild(inp);
             inp.focus();
         }
@@ -622,65 +622,105 @@
             let carryCell = document.getElementById(`c-${step.carryRow}-${step.carryCol}`);
             if(carryCell) {
                 carryCell.innerHTML = ''; 
-                let cinp = document.createElement('input');
-                cinp.type='tel'; cinp.className='carry-input'; cinp.id = 'inp-carry';
+                let cinp = createInput('inp-carry', 'carry-input', step, q);
                 carryCell.appendChild(cinp);
             }
         }
 
-        // 插入確認按鈕 (避免被覆蓋)
+        // 加入確認按鈕
         let msgArea = document.getElementById('teach-msg');
-        // 清除舊按鈕
         let oldBtn = msgArea.querySelector('button');
         if(oldBtn) oldBtn.remove();
         
         let btn = document.createElement('button');
         btn.className = 'btn-warning'; btn.innerText = 'OK';
         btn.style.marginLeft = "10px";
-        btn.onclick = () => checkStepAnswer(step, q);
+        btn.onclick = () => checkStepAnswer(step, q, false); 
         msgArea.appendChild(btn);
     }
 
-    function checkStepAnswer(step, q) {
-        let allCorrect = true;
+    function createInput(id, className, step, q) {
+        let inp = document.createElement('input');
+        inp.type = 'tel';
+        inp.className = className;
+        inp.id = id;
         
+        inp.onkeydown = (e) => { 
+            if(e.key === 'Enter') checkStepAnswer(step, q, false); 
+        };
+        
+        inp.oninput = () => {
+             inp.classList.remove('wrong');
+             checkStepAnswer(step, q, true);
+        };
+        return inp;
+    }
+
+    function checkStepAnswer(step, q, isAuto) {
+        let allCorrect = true;
+        let allFilled = true;
+
+        let iTen = document.getElementById('inp-ans-ten');
+        let iUnit = document.getElementById('inp-ans-unit');
+        let iAns = document.getElementById('inp-ans');
+        let iCarry = document.getElementById('inp-carry');
+
+        // 檢查填寫狀態
+        if(step.isLast && step.totalProd >= 10) {
+            if(!iTen || !iUnit || iTen.value==='' || iUnit.value==='') allFilled = false;
+        } else {
+            if(!iAns || iAns.value==='') allFilled = false;
+        }
+        if(!step.isLast && step.writeCarry > 0) {
+            if(!iCarry || iCarry.value==='') allFilled = false;
+        }
+
+        if(isAuto && !allFilled) return; 
+
+        // 數值檢查
         if(step.isLast && step.totalProd >= 10) {
             let tenVal = Math.floor(step.totalProd / 10);
             let unitVal = step.totalProd % 10;
-            let iTen = document.getElementById('inp-ans-ten');
-            let iUnit = document.getElementById('inp-ans-unit');
             
-            if(iTen && parseInt(iTen.value) !== tenVal) { iTen.classList.add('wrong'); allCorrect = false; }
-            else if(iTen) iTen.classList.remove('wrong');
+            if(parseInt(iTen.value) !== tenVal) { 
+                if(!isAuto) iTen.classList.add('wrong'); 
+                allCorrect = false; 
+            } else { iTen.classList.remove('wrong'); if(isAuto) iTen.classList.add('correct'); }
             
-            if(iUnit && parseInt(iUnit.value) !== unitVal) { iUnit.classList.add('wrong'); allCorrect = false; }
-            else if(iUnit) iUnit.classList.remove('wrong');
+            if(parseInt(iUnit.value) !== unitVal) { 
+                if(!isAuto) iUnit.classList.add('wrong'); 
+                allCorrect = false; 
+            } else { iUnit.classList.remove('wrong'); if(isAuto) iUnit.classList.add('correct'); }
+
         } else {
-            let inp = document.getElementById('inp-ans');
-            if(inp && parseInt(inp.value) !== step.writeAns) {
-                inp.classList.add('wrong'); allCorrect = false;
-            } else if(inp) {
-                inp.classList.remove('wrong');
-            }
+            if(parseInt(iAns.value) !== step.writeAns) {
+                if(!isAuto) iAns.classList.add('wrong');
+                allCorrect = false;
+            } else { iAns.classList.remove('wrong'); if(isAuto) iAns.classList.add('correct'); }
         }
 
         if(!step.isLast && step.writeCarry > 0) {
-            let cinp = document.getElementById('inp-carry');
-            if(!cinp || parseInt(cinp.value) !== step.writeCarry) {
-                if(cinp) cinp.classList.add('wrong');
+            if(parseInt(iCarry.value) !== step.writeCarry) {
+                if(!isAuto) iCarry.classList.add('wrong');
                 allCorrect = false;
-                speak("進位註記也要填寫喔！");
-            } else {
-                if(cinp) cinp.classList.remove('wrong');
-            }
+            } else { iCarry.classList.remove('wrong'); if(isAuto) iCarry.classList.add('correct'); }
         }
 
         if(allCorrect) {
-            speak("答對了！");
-            q.stepIdx++;
-            renderTeachGrid(q);
+            if(!isAuto) speak("答對了！"); else speak("叮咚！");
+            
+            if(iTen) iTen.disabled = true;
+            if(iUnit) iUnit.disabled = true;
+            if(iAns) iAns.disabled = true;
+            if(iCarry) iCarry.disabled = true;
+
+            // 進入下一步
+            setTimeout(() => {
+                q.stepIdx++;
+                renderTeachGrid(q);
+            }, 500);
         } else {
-            speak("算錯囉，請檢查紅色格子。");
+            if(!isAuto) speak("算錯囉，請檢查紅色格子。");
         }
     }
 
