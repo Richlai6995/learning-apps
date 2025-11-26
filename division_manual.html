@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>除法闖關王 3.1 (已修復)</title>
+    <title>除法闖關王 3.2 (含智慧求助)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -13,6 +13,7 @@
             --success: #27ae60;
             --danger: #c0392b;
             --warning: #f39c12;
+            --help: #8e44ad;
             
             /* 放大版面設定 */
             --cell-size: 50px; 
@@ -69,6 +70,7 @@
         .btn-success { background-color: var(--success); }
         .btn-danger { background-color: var(--danger); }
         .btn-warning { background-color: var(--warning); }
+        .btn-help { background-color: var(--help); }
         .btn-gray { background-color: #95a5a6; }
         .btn-block { width: 100%; padding: 15px; margin-top: 15px; font-size: 1.3rem; }
 
@@ -116,12 +118,30 @@
             border: 3px solid var(--primary); border-radius: 8px; background: #fff;
             font-weight: bold; outline: none;
         }
-        /* 重點：作用中的輸入框樣式 */
         .game-input.active-input {
-            background-color: #ffab40 !important; /* 橙色底 */
+            background-color: #ffab40 !important; 
             border-color: #d35400;
             box-shadow: 0 0 10px rgba(255, 171, 64, 0.5);
         }
+
+        /* --- 求助區塊 --- */
+        .help-box {
+            display: none;
+            background-color: #f4ecf7;
+            border-left: 6px solid #8e44ad;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 8px;
+            text-align: left;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            animation: slideDown 0.3s;
+        }
+        @keyframes slideDown { from{opacity:0; transform: translateY(-10px);} to{opacity:1; transform: translateY(0);} }
+        .help-table { width: 100%; margin-top: 5px; font-family: monospace; }
+        .help-row { display: flex; justify-content: space-between; padding: 2px 0; }
+        .help-correct { color: #27ae60; font-weight: bold; background: #d5f5e3; padding: 0 5px; border-radius: 4px; }
+        .help-wrong { color: #c0392b; opacity: 0.7; }
 
         /* 測驗模式 */
         .test-mode-box { text-align: center; padding: 30px; font-size: 1.8rem; }
@@ -184,7 +204,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v3.1 (除法闖關王 - 已修復)</div>
+        <div class="version-tag">版本：v3.2 (含智慧求助)</div>
     </div>
 
     <div id="page-editor" class="container">
@@ -224,7 +244,13 @@
         </div>
 
         <div id="teach-area" style="display:none;">
-            <div id="teach-msg"></div>
+            <div id="teach-msg" style="font-weight:bold; font-size:1.3rem;"></div>
+            
+            <div style="margin: 10px 0;">
+                <button class="btn-help" onclick="toggleHelp()">💡 我卡住了，求助！</button>
+                <div id="help-content" class="help-box"></div>
+            </div>
+
             <div class="grid-container" id="gridBoard"></div>
         </div>
 
@@ -273,9 +299,7 @@
     let currentQIdx = 0, currentMode = '', studentName = '小小學員';
     let timerInt, startTime;
     let rankData = [];
-    
-    // ★★★ 修復點 1：全域宣告編輯ID，避免 undefined 問題 ★★★
-    let editingId = null;
+    let editingId = null; 
 
     window.onload = function() {
         if(localStorage.getItem('div_v3_lists')) allLists = JSON.parse(localStorage.getItem('div_v3_lists'));
@@ -321,7 +345,6 @@
         });
     }
     
-    // ★★★ 修復點 2：新增題庫時確實重置 editingId 為 null ★★★
     function createNewList() { 
         editingId = null; 
         document.getElementById('list-name').value="新題庫"; 
@@ -339,7 +362,6 @@
         rs.forEach(r=>{const a=parseInt(r.querySelector('.inp-a').value); const b=parseInt(r.querySelector('.inp-b').value); if(a&&b)qs.push({a,b})}); 
         if(qs.length<1)return alert("請輸入題目"); 
         
-        // 修正後的判斷邏輯
         if(editingId===null) allLists.push({name:n,qs}); 
         else allLists[editingId]={name:n,qs}; 
         
@@ -358,7 +380,6 @@
 
     function startQuiz(mode) {
         currentMode = mode;
-        // 初始化資料：加上使用者作答紀錄
         quizData = currentList.qs.map(q => ({
             a: q.a, b: q.b, 
             userQ: null, userR: null, isCorrect: false,
@@ -397,13 +418,14 @@
             document.getElementById('test-rem').value = '';
             document.getElementById('test-quo').focus();
         } else {
+            document.getElementById('test-area').style.display = 'block';
             document.getElementById('test-area').style.display = 'none';
             document.getElementById('teach-area').style.display = 'block';
             renderTeachGrid(q);
         }
     }
 
-    // --- 測驗模式：立即判定 ---
+    // --- 測驗模式 ---
     function checkTestAnswer() {
         const q = quizData[currentQIdx];
         const uQ = document.getElementById('test-quo').value;
@@ -427,7 +449,6 @@
             alert(`❌ 錯誤！\n正確答案：商 ${ansQ} ... 餘 ${ansR}`);
         }
 
-        // 下一題或結束
         if(currentQIdx < quizData.length - 1) {
             currentQIdx++;
             loadQuestion();
@@ -436,9 +457,8 @@
         }
     }
 
-    // --- 教學模式：自動聚焦與顏色 ---
+    // --- 教學模式 & 步驟生成 ---
     function generateDivSteps(dividend, divisor) {
-        /* 同前版邏輯，產生除法步驟 */
         let dStr = dividend.toString();
         let steps = [];
         let curRem = 0;
@@ -447,20 +467,25 @@
 
         for(let i=0; i<dStr.length; i++) {
             let digit = parseInt(dStr[i]);
-            let working = curRem * 10 + digit;
+            let working = curRem * 10 + digit; // 這裡就是目前的「被除數」片段 (如 585)
             let quo = Math.floor(working / divisor);
             let prod = quo * divisor;
             let rem = working - prod;
             let col = offset + i;
 
             if(!(i===0 && quo===0)) { 
-                steps.push({ type:'quo', r:0, c:col, ans:quo, hint: `看 ${working} ÷ ${divisor}，商多少？` });
+                // ★ 改良：將 working 數值存在 step 中，以便求助功能使用
+                steps.push({ 
+                    type:'quo', r:0, c:col, ans:quo, 
+                    hint: `看 ${working} ÷ ${divisor}，商多少？`,
+                    currVal: working // 儲存當前被除數
+                });
             } else {
                 curRem = working; continue;
             }
-            steps.push({ type:'prod', r:row+1, c:col, ans:prod, hint: `${quo} × ${divisor} = ?`, align:'right' });
+            steps.push({ type:'prod', r:row+1, c:col, ans:prod, hint: `${quo} × ${divisor} = ?`, align:'right', quoVal: quo });
             row += 2;
-            steps.push({ type:'rem', r:row, c:col, ans:rem, hint: `${working} - ${prod} = ?`, align:'right' });
+            steps.push({ type:'rem', r:row, c:col, ans:rem, hint: `${working} - ${prod} = ?`, align:'right', working: working, prod: prod });
 
             if(i < dStr.length - 1) {
                 let next = dStr[i+1];
@@ -474,10 +499,12 @@
     function renderTeachGrid(q) {
         const box = document.getElementById('gridBoard'); box.innerHTML='';
         const msg = document.getElementById('teach-msg');
+        // 重置求助區塊
+        document.getElementById('help-content').style.display = 'none';
+        
         const cols = 8;
         box.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
         
-        // 繪製空網格
         for(let r=0; r<20; r++) {
             for(let c=0; c<cols; c++) {
                 const cell = document.createElement('div');
@@ -485,7 +512,6 @@
                 box.appendChild(cell);
             }
         }
-        // 填題目數字
         const dStr = q.a.toString();
         const offset = 6 - dStr.length;
         document.getElementById(`c-1-${offset-2}`).innerText = q.b;
@@ -496,16 +522,15 @@
             cell.classList.add('dividend-cell');
         }
 
-        // 填入已完成步驟
         for(let i=0; i<q.stepIdx; i++) {
             const s = q.steps[i];
             fillCell(s.r, s.c, s.ans, s.type);
         }
 
-        // 判斷是否完成
         if(q.stepIdx >= q.steps.length) {
             msg.innerText = "太棒了！本題完成。";
-            q.isCorrect = true; // 教學模式完成視為正確
+            q.isCorrect = true; 
+            document.querySelector('.btn-help').style.display = 'none'; // 隱藏求助
             
             const btn = document.createElement('button'); btn.className='btn-primary';
             if(currentQIdx < quizData.length-1) {
@@ -520,7 +545,7 @@
             return;
         }
 
-        // 顯示當前步驟輸入框
+        document.querySelector('.btn-help').style.display = 'inline-block'; // 顯示求助
         let cur = q.steps[q.stepIdx];
         msg.innerText = cur.hint;
         speak(cur.hint);
@@ -529,9 +554,8 @@
         targetCell.innerHTML = '';
         const inp = document.createElement('input');
         inp.type='tel'; 
-        inp.className='game-input active-input'; // 加入 active class 顯示橙色
+        inp.className='game-input active-input';
         
-        // 自動聚焦
         setTimeout(() => inp.focus(), 100);
 
         inp.onkeydown = (e) => { if(e.key === 'Enter') checkTeachAnswer(inp, cur, q); };
@@ -565,6 +589,65 @@
         }
     }
 
+    // ★★★ 新增：智慧求助功能 ★★★
+    function toggleHelp() {
+        const helpBox = document.getElementById('help-content');
+        if(helpBox.style.display === 'block') {
+            helpBox.style.display = 'none';
+            return;
+        }
+
+        const q = quizData[currentQIdx];
+        const step = q.steps[q.stepIdx];
+        const divisor = q.b;
+        let html = '';
+
+        if(step.type === 'quo') {
+            // 商的求助：列出乘法表
+            const target = step.currVal;
+            const ans = parseInt(step.ans);
+            html += `<strong>🔍 正在思考：${divisor} 乘多少最接近 ${target} 且不超過它？</strong><br>`;
+            html += `<div class="help-table">`;
+            
+            // 顯示 答案-1, 答案, 答案+1 的算式
+            let start = Math.max(1, ans - 1);
+            let end = Math.min(9, ans + 1);
+            if(ans === 0) { start = 0; end = 1; } // 特殊情況
+
+            for(let i=start; i<=end; i++) {
+                let res = divisor * i;
+                let status = '';
+                if(i === ans) status = '<span class="help-correct">✔ 最接近!</span>';
+                else if(res > target) status = '<span class="help-wrong">(太大了)</span>';
+                else status = '<span class="help-wrong">(太小了)</span>';
+                
+                html += `<div class="help-row"><span>${divisor} × ${i} = ${res}</span> ${status}</div>`;
+            }
+            html += `</div>`;
+            html += `所以這格要填：<strong style="color:var(--primary)">${ans}</strong>`;
+
+        } else if(step.type === 'prod') {
+            // 乘積求助
+            html += `這裡是計算乘法：商 × 除數<br>`;
+            html += `算式：<strong>${step.quoVal} × ${divisor} = ?</strong><br>`;
+            html += `答案是：<strong style="color:var(--primary)">${step.ans}</strong>`;
+
+        } else if(step.type === 'rem') {
+            // 餘數求助
+            html += `這裡是計算餘數：被除數 - 乘積<br>`;
+            html += `算式：<strong>${step.working} - ${step.prod} = ?</strong><br>`;
+            html += `答案是：<strong style="color:var(--primary)">${step.ans}</strong>`;
+
+        } else if(step.type === 'drop') {
+            // 降位求助
+            html += `把被除數的下一位數字 <strong>${step.ans}</strong> 抄下來放在旁邊。`;
+        }
+
+        helpBox.innerHTML = html;
+        helpBox.style.display = 'block';
+        speak("別擔心，看看下面的提示");
+    }
+
     // --- 結算畫面 ---
     function finishQuiz() {
         clearInterval(timerInt);
@@ -576,7 +659,6 @@
         document.getElementById('res-score').innerText = score;
         document.getElementById('res-summary').innerText = `${studentName}，你答對了 ${correctCount} / ${quizData.length} 題！`;
         
-        // 生成詳細報表
         const tbody = document.getElementById('res-table-body');
         tbody.innerHTML = '';
         quizData.forEach(q => {
@@ -584,7 +666,6 @@
             const ansQ = Math.floor(q.a/q.b);
             const ansR = q.a%q.b;
             
-            // 教學模式沒有 userQ，直接當作通過
             let userTxt = (currentMode==='teach') ? "(教學完成)" : `商${q.userQ} 餘${q.userR}`;
             let status = q.isCorrect ? '<span class="res-correct">O</span>' : '<span class="res-wrong">X</span>';
             
