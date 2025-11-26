@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>乘法闖關王 2.4 (畫面修復版)</title>
+    <title>乘法闖關王 2.5 (最終修復版)</title>
     <style>
         :root {
             --primary: #8e44ad;
@@ -13,7 +13,7 @@
             --success: #27ae60;
             --danger: #c0392b;
             --warning: #f39c12;
-            --cell-size: 45px;
+            --cell-size: 50px; /* 稍微加大格子 */
         }
 
         body {
@@ -66,33 +66,51 @@
         
         /* Grid 系統 */
         .grid-container {
-            display: grid; grid-auto-rows: 50px; justify-content: center; margin: 20px 0;
-            gap: 2px;
+            display: grid; 
+            grid-auto-rows: 50px; 
+            justify-content: center; 
+            margin: 20px 0;
+            /* 修正線條斷裂問題：水平間距設為0 */
+            gap: 2px 0; 
         }
         .grid-cell {
-            width: var(--cell-size); height: 50px; display: flex; justify-content: center; align-items: center;
-            font-family: 'Courier New', monospace; font-weight: bold; font-size: 1.6rem; position: relative;
+            width: var(--cell-size); 
+            height: 50px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            font-family: 'Courier New', monospace; 
+            font-weight: bold; 
+            font-size: 1.8rem; 
+            position: relative;
+            /* 輔助除錯：若想看格子邊界可打開下面註解 */
+            /* border: 1px solid #eee; */
         }
         
         /* 一般輸入框 (答案) */
         .game-input { 
-            width: 35px; height: 35px; font-size: 1.4rem; text-align: center; 
-            border: 2px solid var(--primary); border-radius: 8px; background: #fff; outline: none;
+            width: 40px; height: 40px; font-size: 1.5rem; text-align: center; 
+            border: 3px solid var(--primary); border-radius: 8px; background: #fff; outline: none;
+            z-index: 10;
         }
-        .game-input:focus { border-color: #2ecc71; background: #e8f8f5; }
+        .game-input:focus { border-color: #2ecc71; background: #e8f8f5; box-shadow: 0 0 10px rgba(46, 204, 113, 0.5); }
 
         /* 進位註記輸入框 (較小，圓形，位於上方) */
         .carry-input {
-            width: 25px; height: 25px; font-size: 1rem; text-align: center;
+            width: 28px; height: 28px; font-size: 1.1rem; text-align: center;
             border: 2px solid #e67e22; border-radius: 50%; background: #fef5e7; outline: none;
-            position: absolute; bottom: 5px; /* 靠下對齊 */
+            position: absolute; bottom: 2px; /* 靠下對齊 */
             color: #d35400;
+            z-index: 10;
         }
         .carry-input:focus { transform: scale(1.2); border-color: #d35400; }
 
         .game-input.wrong, .carry-input.wrong { background: #fadbd8; border-color: var(--danger); animation: shake 0.4s; }
         
-        .multiplication-line { border-bottom: 3px solid #333; }
+        /* 修正線條樣式：直線 */
+        .multiplication-line { 
+            border-bottom: 3px solid #333; 
+        }
         .operator { color: var(--primary); }
 
         /* 求助訊息框 */
@@ -110,10 +128,9 @@
         .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #777; font-weight: bold; }
         .tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
 
-        /* 版本號標籤 */
         .version-tag {
             margin-top: 30px;
-            color: #e74c3c;
+            color: #27ae60;
             font-size: 1rem;
             text-align: center;
             font-family: monospace;
@@ -128,7 +145,7 @@
 <body>
 
     <div id="page-home" class="container active">
-        <h1>✖️ 乘法闖關王 2.4</h1>
+        <h1>✖️ 乘法闖關王 2.5</h1>
         
         <div class="tabs">
             <div class="tab active" onclick="switchTab('quiz')">選擇題庫</div>
@@ -150,7 +167,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v2.4 (畫面修復版)</div>
+        <div class="version-tag">版本：v2.5 (直線修復+輸入框修正版)</div>
     </div>
 
     <div id="page-editor" class="container">
@@ -196,11 +213,11 @@
 
         <div id="teach-area" style="display:none;">
             <div style="text-align: center; margin-bottom: 10px;">
-                <div id="teach-msg" style="color:#8e44ad; font-weight:bold; font-size:1.2rem; min-height:1.5em;"></div>
+                <div id="teach-msg" style="color:#8e44ad; font-weight:bold; font-size:1.2rem; min-height:1.5em; margin-bottom:10px;"></div>
                 <button id="btn-help-trigger" class="btn-help" onclick="toggleHelp()">💡 求助：這一步怎麼算？</button>
                 <div id="help-content" class="help-box"></div>
             </div>
-            <div class="grid-container" id="gridBoard" style="min-height: 200px; background-color: #fff;"></div>
+            <div class="grid-container" id="gridBoard"></div>
         </div>
 
         <div id="test-area" style="display:none;">
@@ -256,15 +273,14 @@
     let timerInt, startTime;
     let rankData = [];
 
-    // ★★★ 使用 v2_4 的 Key 確保資料乾淨 ★★★
-    const STORAGE_KEY_LISTS = 'mul_v2_4_lists';
-    const STORAGE_KEY_RANK = 'mul_v2_4_rank';
+    // KEY 更新，避免舊資料干擾
+    const STORAGE_KEY_LISTS = 'mul_v2_5_lists';
+    const STORAGE_KEY_RANK = 'mul_v2_5_rank';
 
     window.onload = function() {
         if(localStorage.getItem(STORAGE_KEY_LISTS)) {
             allLists = JSON.parse(localStorage.getItem(STORAGE_KEY_LISTS));
         } else {
-            // 預設題庫 (進位練習)
             allLists = [{name: "進位練習 (2位乘1位)", qs: [{a:56, b:9}, {a:48, b:5}, {a:75, b:4}]}];
             saveData();
         }
@@ -377,7 +393,6 @@
             steps: [], stepIdx: 0
         }));
         
-        // 教學模式需預先生成詳細微步驟
         if(mode === 'teach') {
             quizData.forEach(q => { q.steps = generateDetailedSteps(q.a, q.b); });
         }
@@ -483,23 +498,20 @@
                 currentCarry = newCarry;
             }
         } else {
-            // Fallback for multi-digit
+            // Fallback
             steps.push({type:'simple', ans: a*b, hint:'多位數乘法請直接計算總和'});
         }
         return steps;
     }
 
-    // ★★★ 修復重點：絕對優先畫格子 ★★★
+    // --- ★★★ 核心渲染修復 ★★★ ---
     function renderTeachGrid(q) {
         const box = document.getElementById('gridBoard'); box.innerHTML = '';
         const msg = document.getElementById('teach-msg');
         document.getElementById('help-content').style.display = 'none'; 
         document.getElementById('btn-help-trigger').style.display = 'inline-block';
 
-        if(!q || q.a === undefined) {
-             msg.innerText = "題目錯誤";
-             return;
-        }
+        if(!q || q.a === undefined) { msg.innerText = "題目錯誤"; return; }
 
         const sA = q.a.toString(), sB = q.b.toString();
         const cols = sA.length + sB.length + 1;
@@ -507,7 +519,7 @@
         
         box.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
 
-        // 1. 【強制執行】先畫格子，不管步驟如何
+        // 1. 先畫格子
         for(let r=0; r<totalRows; r++) {
             for(let c=0; c<cols; c++) {
                 let cell = document.createElement('div');
@@ -517,57 +529,43 @@
             }
         }
 
-        // 2. 【強制執行】填入題目數字
+        // 2. 填入題目與畫線
         for(let i=0; i<sA.length; i++) {
-            let cell = document.getElementById(`c-1-${cols-sA.length+i}`);
-            if(cell) cell.innerText = sA[i];
+            document.getElementById(`c-1-${cols-sA.length+i}`).innerText = sA[i];
         }
         let opCell = document.getElementById(`c-2-${cols-sB.length-1}`);
-        if(opCell) {
-            opCell.innerText = '×';
-            opCell.classList.add('operator');
-        }
+        opCell.innerText = '×'; opCell.classList.add('operator');
+        
         for(let i=0; i<sB.length; i++) {
-            let cell = document.getElementById(`c-2-${cols-sB.length+i}`);
-            if(cell) cell.innerText = sB[i];
+            document.getElementById(`c-2-${cols-sB.length+i}`).innerText = sB[i];
         }
+        // ★ 畫直線：使用 CSS gap:0 讓這些 border 連在一起
         for(let c=0; c<cols; c++) {
-             let lCell = document.getElementById(`c-2-${c}`);
-             if(lCell) lCell.classList.add('multiplication-line');
+             document.getElementById(`c-2-${c}`).classList.add('multiplication-line');
         }
 
-        // 3. 【判定】如果是多位數乘法 (simple mode)
+        // 3. 多位數 Fallback
         if(q.steps.length > 0 && q.steps[0].type === 'simple') {
             msg.innerText = q.steps[0].hint;
             document.getElementById('btn-help-trigger').style.display = 'none';
-            
-            // 讓使用者跳下一題
-            let btn = document.createElement('button');
-            btn.className = 'btn-primary';
-            if(currentQIdx < quizData.length-1) {
-                btn.innerText = "下一題 ➡"; btn.onclick = () => {currentQIdx++; loadQuestion();};
-            } else {
-                btn.innerText = "查看成績 🏆"; btn.onclick = () => submitTest();
-            }
-            msg.appendChild(document.createElement('br')); msg.appendChild(btn);
-            return; // 這裡 return 安全，因為格子已經畫好了
+            // 按鈕略
+            return;
         }
 
-        // 4. 【正常流程】填入步驟與建立輸入框
+        // 4. 填入已完成步驟
         for(let i=0; i<q.stepIdx; i++) {
             let s = q.steps[i];
             let ansCell = document.getElementById(`c-${s.ansRow}-${s.ansCol}`);
-            if(ansCell) {
-                if(s.isLast) ansCell.innerText = s.totalProd; 
-                else ansCell.innerText = s.writeAns;
-            }
+            if(s.isLast) ansCell.innerText = s.totalProd; 
+            else ansCell.innerText = s.writeAns;
             
             if(!s.isLast && s.writeCarry > 0) {
                 let carryCell = document.getElementById(`c-${s.carryRow}-${s.carryCol}`);
-                if(carryCell) carryCell.innerHTML = `<span style="font-size:1rem; color:#d35400;">${s.writeCarry}</span>`;
+                carryCell.innerHTML = `<span style="font-size:1rem; color:#d35400;">${s.writeCarry}</span>`;
             }
         }
 
+        // 5. 完成判斷
         if(q.stepIdx >= q.steps.length) {
             msg.innerText = "太棒了！本題完成。";
             document.getElementById('btn-help-trigger').style.display = 'none';
@@ -583,19 +581,27 @@
             return;
         }
 
+        // 6. 產生輸入框 (確保執行)
         let cur = q.steps[q.stepIdx];
         msg.innerText = cur.hint;
         speak(cur.hint);
         
-        createStepInputs(cur, q);
+        // 使用 setTimeout 確保 DOM 渲染完畢後再插入 Input (解決偶發的消失問題)
+        setTimeout(() => {
+            createStepInputs(cur, q);
+        }, 50);
     }
 
     function createStepInputs(step, q) {
         let ansCell = document.getElementById(`c-${step.ansRow}-${step.ansCol}`);
+        // 確保清空並插入
+        if(!ansCell) return; 
         ansCell.innerHTML = '';
         
         if(step.isLast && step.totalProd >= 10) {
             let tenCell = document.getElementById(`c-${step.ansRow}-${step.ansCol-1}`);
+            tenCell.innerHTML = '';
+            
             let inpTen = document.createElement('input');
             inpTen.type='tel'; inpTen.className='game-input'; inpTen.id = 'inp-ans-ten';
             tenCell.appendChild(inpTen);
@@ -604,27 +610,35 @@
             inpUnit.type='tel'; inpUnit.className='game-input'; inpUnit.id = 'inp-ans-unit';
             ansCell.appendChild(inpUnit);
             
-            setTimeout(()=>inpUnit.focus(), 100);
+            inpUnit.focus();
         } else {
             let inp = document.createElement('input');
             inp.type='tel'; inp.className='game-input'; inp.id = 'inp-ans';
             ansCell.appendChild(inp);
-            setTimeout(()=>inp.focus(), 100);
+            inp.focus();
         }
 
         if(!step.isLast && step.writeCarry > 0) {
             let carryCell = document.getElementById(`c-${step.carryRow}-${step.carryCol}`);
-            carryCell.innerHTML = ''; 
-            let cinp = document.createElement('input');
-            cinp.type='tel'; cinp.className='carry-input'; cinp.id = 'inp-carry';
-            carryCell.appendChild(cinp);
+            if(carryCell) {
+                carryCell.innerHTML = ''; 
+                let cinp = document.createElement('input');
+                cinp.type='tel'; cinp.className='carry-input'; cinp.id = 'inp-carry';
+                carryCell.appendChild(cinp);
+            }
         }
 
+        // 插入確認按鈕 (避免被覆蓋)
+        let msgArea = document.getElementById('teach-msg');
+        // 清除舊按鈕
+        let oldBtn = msgArea.querySelector('button');
+        if(oldBtn) oldBtn.remove();
+        
         let btn = document.createElement('button');
         btn.className = 'btn-warning'; btn.innerText = 'OK';
+        btn.style.marginLeft = "10px";
         btn.onclick = () => checkStepAnswer(step, q);
-        document.getElementById('teach-msg').appendChild(document.createElement('br'));
-        document.getElementById('teach-msg').appendChild(btn);
+        msgArea.appendChild(btn);
     }
 
     function checkStepAnswer(step, q) {
@@ -636,16 +650,16 @@
             let iTen = document.getElementById('inp-ans-ten');
             let iUnit = document.getElementById('inp-ans-unit');
             
-            if(parseInt(iTen.value) !== tenVal) { iTen.classList.add('wrong'); allCorrect = false; }
-            else iTen.classList.remove('wrong');
+            if(iTen && parseInt(iTen.value) !== tenVal) { iTen.classList.add('wrong'); allCorrect = false; }
+            else if(iTen) iTen.classList.remove('wrong');
             
-            if(parseInt(iUnit.value) !== unitVal) { iUnit.classList.add('wrong'); allCorrect = false; }
-            else iUnit.classList.remove('wrong');
+            if(iUnit && parseInt(iUnit.value) !== unitVal) { iUnit.classList.add('wrong'); allCorrect = false; }
+            else if(iUnit) iUnit.classList.remove('wrong');
         } else {
             let inp = document.getElementById('inp-ans');
-            if(parseInt(inp.value) !== step.writeAns) {
+            if(inp && parseInt(inp.value) !== step.writeAns) {
                 inp.classList.add('wrong'); allCorrect = false;
-            } else {
+            } else if(inp) {
                 inp.classList.remove('wrong');
             }
         }
