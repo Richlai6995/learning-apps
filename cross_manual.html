@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>乘法闖關王 2.2 (修復版)</title>
+    <title>乘法闖關王 2.3 (修復顯示版)</title>
     <style>
         :root {
             --primary: #8e44ad;
@@ -116,7 +116,7 @@
 <body>
 
     <div id="page-home" class="container active">
-        <h1>✖️ 乘法闖關王 2.2</h1>
+        <h1>✖️ 乘法闖關王 2.3</h1>
         
         <div class="tabs">
             <div class="tab active" onclick="switchTab('quiz')">選擇題庫</div>
@@ -242,9 +242,9 @@
     let timerInt, startTime;
     let rankData = [];
 
-    // ★ 關鍵修復：更換 Storage Key 以確保資料格式正確，避免舊資料干擾 ★
-    const STORAGE_KEY_LISTS = 'mul_v2_fixed_lists';
-    const STORAGE_KEY_RANK = 'mul_v2_fixed_rank';
+    // 使用新的 Key 確保資料乾淨
+    const STORAGE_KEY_LISTS = 'mul_v2_fixed_lists_final';
+    const STORAGE_KEY_RANK = 'mul_v2_fixed_rank_final';
 
     window.onload = function() {
         if(localStorage.getItem(STORAGE_KEY_LISTS)) {
@@ -471,27 +471,22 @@
             }
         } else {
             // 多位數 fallback
-            steps.push({type:'simple', ans: a*b, hint:'多位數乘法請直接計算總和'});
+            steps.push({type:'simple', ans: a*b, hint:'目前版本僅支援「乘數為1位」的進位教學，多位數請使用測驗模式。'});
         }
         return steps;
     }
 
+    // ★★★ 修復重點：Grid 渲染邏輯調整 ★★★
     function renderTeachGrid(q) {
         const box = document.getElementById('gridBoard'); box.innerHTML = '';
         const msg = document.getElementById('teach-msg');
         document.getElementById('help-content').style.display = 'none'; 
         document.getElementById('btn-help-trigger').style.display = 'inline-block'; // 重置按鈕顯示
 
-        // ★ 防呆：如果沒有題目資料，避免報錯 ★
+        // 防呆
         if(!q || q.a === undefined) {
              msg.innerText = "題目載入錯誤，請刪除題庫重試";
              return;
-        }
-        
-        // 若是 fallback 的簡單模式
-        if(q.steps.length > 0 && q.steps[0].type === 'simple') {
-            msg.innerText = "此題為多位數乘法，請直接計算。";
-            return;
         }
 
         const sA = q.a.toString(), sB = q.b.toString();
@@ -500,7 +495,7 @@
         
         box.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
 
-        // 建立格子
+        // 1. 先畫格子 (解決空白問題)
         for(let r=0; r<totalRows; r++) {
             for(let c=0; c<cols; c++) {
                 let cell = document.createElement('div');
@@ -510,7 +505,7 @@
             }
         }
 
-        // 填題目
+        // 2. 填入題目數字
         for(let i=0; i<sA.length; i++) {
             let cell = document.getElementById(`c-1-${cols-sA.length+i}`);
             if(cell) cell.innerText = sA[i];
@@ -529,7 +524,25 @@
              if(lCell) lCell.classList.add('multiplication-line');
         }
 
-        // 填入「已完成」的步驟
+        // 3. 檢查是否為多位數 (Fallback模式)
+        // 畫完格子後再判斷，這樣至少看得到題目
+        if(q.steps.length > 0 && q.steps[0].type === 'simple') {
+            msg.innerText = q.steps[0].hint;
+            document.getElementById('btn-help-trigger').style.display = 'none';
+            
+            // 讓使用者可以直接跳下一題
+            let btn = document.createElement('button');
+            btn.className = 'btn-primary';
+            if(currentQIdx < quizData.length-1) {
+                btn.innerText = "下一題 ➡"; btn.onclick = () => {currentQIdx++; loadQuestion();};
+            } else {
+                btn.innerText = "查看成績 🏆"; btn.onclick = () => submitTest();
+            }
+            msg.appendChild(document.createElement('br')); msg.appendChild(btn);
+            return;
+        }
+
+        // 4. 正常模式：填入「已完成」的步驟
         for(let i=0; i<q.stepIdx; i++) {
             let s = q.steps[i];
             let ansCell = document.getElementById(`c-${s.ansRow}-${s.ansCol}`);
