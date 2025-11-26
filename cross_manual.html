@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>乘法闖關王 2.3 (修復顯示版)</title>
+    <title>乘法闖關王 2.4 (畫面修復版)</title>
     <style>
         :root {
             --primary: #8e44ad;
@@ -110,13 +110,25 @@
         .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #777; font-weight: bold; }
         .tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
 
+        /* 版本號標籤 */
+        .version-tag {
+            margin-top: 30px;
+            color: #e74c3c;
+            font-size: 1rem;
+            text-align: center;
+            font-family: monospace;
+            border-top: 1px dashed #eee;
+            padding-top: 10px;
+            font-weight: bold;
+        }
+
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
     </style>
 </head>
 <body>
 
     <div id="page-home" class="container active">
-        <h1>✖️ 乘法闖關王 2.3</h1>
+        <h1>✖️ 乘法闖關王 2.4</h1>
         
         <div class="tabs">
             <div class="tab active" onclick="switchTab('quiz')">選擇題庫</div>
@@ -137,6 +149,8 @@
             <div id="rank-container"></div>
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
+
+        <div class="version-tag">版本：v2.4 (畫面修復版)</div>
     </div>
 
     <div id="page-editor" class="container">
@@ -186,7 +200,7 @@
                 <button id="btn-help-trigger" class="btn-help" onclick="toggleHelp()">💡 求助：這一步怎麼算？</button>
                 <div id="help-content" class="help-box"></div>
             </div>
-            <div class="grid-container" id="gridBoard"></div>
+            <div class="grid-container" id="gridBoard" style="min-height: 200px; background-color: #fff;"></div>
         </div>
 
         <div id="test-area" style="display:none;">
@@ -242,15 +256,15 @@
     let timerInt, startTime;
     let rankData = [];
 
-    // 使用新的 Key 確保資料乾淨
-    const STORAGE_KEY_LISTS = 'mul_v2_fixed_lists_final';
-    const STORAGE_KEY_RANK = 'mul_v2_fixed_rank_final';
+    // ★★★ 使用 v2_4 的 Key 確保資料乾淨 ★★★
+    const STORAGE_KEY_LISTS = 'mul_v2_4_lists';
+    const STORAGE_KEY_RANK = 'mul_v2_4_rank';
 
     window.onload = function() {
         if(localStorage.getItem(STORAGE_KEY_LISTS)) {
             allLists = JSON.parse(localStorage.getItem(STORAGE_KEY_LISTS));
         } else {
-            // 預設題庫
+            // 預設題庫 (進位練習)
             allLists = [{name: "進位練習 (2位乘1位)", qs: [{a:56, b:9}, {a:48, b:5}, {a:75, b:4}]}];
             saveData();
         }
@@ -428,7 +442,6 @@
         let cols = sA.length + sB.length + 1;
         let baseRow = 2; 
         
-        // 單個位數乘法 (如 56 * 9)
         if(sB.length === 1) {
             let mult = parseInt(sB);
             let currentCarry = 0;
@@ -470,22 +483,21 @@
                 currentCarry = newCarry;
             }
         } else {
-            // 多位數 fallback
-            steps.push({type:'simple', ans: a*b, hint:'目前版本僅支援「乘數為1位」的進位教學，多位數請使用測驗模式。'});
+            // Fallback for multi-digit
+            steps.push({type:'simple', ans: a*b, hint:'多位數乘法請直接計算總和'});
         }
         return steps;
     }
 
-    // ★★★ 修復重點：Grid 渲染邏輯調整 ★★★
+    // ★★★ 修復重點：絕對優先畫格子 ★★★
     function renderTeachGrid(q) {
         const box = document.getElementById('gridBoard'); box.innerHTML = '';
         const msg = document.getElementById('teach-msg');
         document.getElementById('help-content').style.display = 'none'; 
-        document.getElementById('btn-help-trigger').style.display = 'inline-block'; // 重置按鈕顯示
+        document.getElementById('btn-help-trigger').style.display = 'inline-block';
 
-        // 防呆
         if(!q || q.a === undefined) {
-             msg.innerText = "題目載入錯誤，請刪除題庫重試";
+             msg.innerText = "題目錯誤";
              return;
         }
 
@@ -495,7 +507,7 @@
         
         box.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
 
-        // 1. 先畫格子 (解決空白問題)
+        // 1. 【強制執行】先畫格子，不管步驟如何
         for(let r=0; r<totalRows; r++) {
             for(let c=0; c<cols; c++) {
                 let cell = document.createElement('div');
@@ -505,7 +517,7 @@
             }
         }
 
-        // 2. 填入題目數字
+        // 2. 【強制執行】填入題目數字
         for(let i=0; i<sA.length; i++) {
             let cell = document.getElementById(`c-1-${cols-sA.length+i}`);
             if(cell) cell.innerText = sA[i];
@@ -524,13 +536,12 @@
              if(lCell) lCell.classList.add('multiplication-line');
         }
 
-        // 3. 檢查是否為多位數 (Fallback模式)
-        // 畫完格子後再判斷，這樣至少看得到題目
+        // 3. 【判定】如果是多位數乘法 (simple mode)
         if(q.steps.length > 0 && q.steps[0].type === 'simple') {
             msg.innerText = q.steps[0].hint;
             document.getElementById('btn-help-trigger').style.display = 'none';
             
-            // 讓使用者可以直接跳下一題
+            // 讓使用者跳下一題
             let btn = document.createElement('button');
             btn.className = 'btn-primary';
             if(currentQIdx < quizData.length-1) {
@@ -539,10 +550,10 @@
                 btn.innerText = "查看成績 🏆"; btn.onclick = () => submitTest();
             }
             msg.appendChild(document.createElement('br')); msg.appendChild(btn);
-            return;
+            return; // 這裡 return 安全，因為格子已經畫好了
         }
 
-        // 4. 正常模式：填入「已完成」的步驟
+        // 4. 【正常流程】填入步驟與建立輸入框
         for(let i=0; i<q.stepIdx; i++) {
             let s = q.steps[i];
             let ansCell = document.getElementById(`c-${s.ansRow}-${s.ansCol}`);
@@ -557,10 +568,9 @@
             }
         }
 
-        // 判斷是否全對完成
         if(q.stepIdx >= q.steps.length) {
             msg.innerText = "太棒了！本題完成。";
-            document.getElementById('btn-help-trigger').style.display = 'none'; // 隱藏求助
+            document.getElementById('btn-help-trigger').style.display = 'none';
             q.userAns = q.a * q.b; 
             let btn = document.createElement('button');
             btn.className = 'btn-primary';
@@ -595,7 +605,6 @@
             ansCell.appendChild(inpUnit);
             
             setTimeout(()=>inpUnit.focus(), 100);
-            
         } else {
             let inp = document.createElement('input');
             inp.type='tel'; inp.className='game-input'; inp.id = 'inp-ans';
@@ -632,7 +641,6 @@
             
             if(parseInt(iUnit.value) !== unitVal) { iUnit.classList.add('wrong'); allCorrect = false; }
             else iUnit.classList.remove('wrong');
-            
         } else {
             let inp = document.getElementById('inp-ans');
             if(parseInt(inp.value) !== step.writeAns) {
@@ -668,7 +676,7 @@
             box.style.display = 'none';
         } else {
             const q = quizData[currentQIdx];
-            if(!q || q.stepIdx >= q.steps.length) return; // 防呆
+            if(!q || q.stepIdx >= q.steps.length) return; 
 
             const step = q.steps[q.stepIdx];
             let html = `<strong>步驟詳解：</strong><br>`;
