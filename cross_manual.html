@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>乘法闖關王 2.8 (多位數完全教學版)</title>
+    <title>乘法闖關王 2.9 (思考引導+嚴格對齊版)</title>
     <style>
         :root {
             --primary: #8e44ad;
@@ -13,7 +13,7 @@
             --success: #27ae60;
             --danger: #c0392b;
             --warning: #f39c12;
-            --cell-size: 45px; 
+            --cell-size: 50px; 
         }
 
         body {
@@ -78,13 +78,13 @@
 
         .quiz-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 15px; background: #eee; padding: 10px; border-radius: 6px; }
         
-        /* Grid 系統 */
+        /* Grid 系統 - 嚴格對齊 */
         .grid-container {
             display: grid; 
             grid-auto-rows: 50px; 
             justify-content: center; 
             margin: 20px 0;
-            gap: 0;
+            gap: 0; /* 確保無縫隙 */
         }
         .grid-cell {
             width: var(--cell-size); 
@@ -96,6 +96,7 @@
             font-weight: bold; 
             font-size: 1.8rem; 
             position: relative;
+            /* border: 1px solid #f0f0f0; 開啟此行可除錯格子位置 */
         }
         
         /* 一般輸入框 (答案) */
@@ -120,7 +121,10 @@
 
         .game-input.wrong, .carry-input.wrong { background: #fadbd8; border-color: var(--danger); animation: shake 0.4s; }
         
-        .multiplication-line { border-bottom: 3px solid #333; }
+        /* 直線樣式 */
+        .multiplication-line { 
+            border-bottom: 3px solid #333; 
+        }
         .operator { color: var(--primary); }
 
         .help-box {
@@ -154,7 +158,7 @@
 <body>
 
     <div id="page-home" class="container active">
-        <h1>✖️ 乘法闖關王 2.8</h1>
+        <h1>✖️ 乘法闖關王 2.9</h1>
         
         <div class="tabs">
             <div class="tab active" onclick="switchTab('quiz')">選擇題庫</div>
@@ -176,7 +180,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v2.8 (支援多位數乘數教學)</div>
+        <div class="version-tag">版本：v2.9 (引導思考+嚴格對齊版)</div>
     </div>
 
     <div id="page-editor" class="container">
@@ -276,16 +280,15 @@
     let allLists = [], currentList = null, quizData = [], currentQIdx = 0, currentMode = '', editingId = null;
     let timerInt, startTime, rankData = [];
 
-    // 更新 Key 確保乾淨資料
-    const STORAGE_KEY_LISTS = 'mul_v2_8_lists';
-    const STORAGE_KEY_RANK = 'mul_v2_8_rank';
+    // v2.9 Key
+    const STORAGE_KEY_LISTS = 'mul_v2_9_lists';
+    const STORAGE_KEY_RANK = 'mul_v2_9_rank';
 
     window.onload = function() {
         if(localStorage.getItem(STORAGE_KEY_LISTS)) {
             allLists = JSON.parse(localStorage.getItem(STORAGE_KEY_LISTS));
         } else {
-            // 預設題庫 (含兩位數練習)
-            allLists = [{name: "進階練習 (兩位數)", qs: [{a:56, b:29}, {a:48, b:5}, {a:75, b:14}]}];
+            allLists = [{name: "進階練習 (2位數)", qs: [{a:56, b:29}, {a:48, b:5}, {a:75, b:14}]}];
             saveData();
         }
         if(localStorage.getItem(STORAGE_KEY_RANK)) {
@@ -419,7 +422,7 @@
         const q = quizData[currentQIdx];
         document.getElementById('q-info').innerText = `題目 ${currentQIdx+1} / ${quizData.length}`;
         document.getElementById('btn-prev').style.visibility = currentQIdx===0 ? 'hidden' : 'visible';
-        document.getElementById('btn-next-q').style.display = 'none'; // 隱藏下一題按鈕
+        document.getElementById('btn-next-q').style.display = 'none'; 
         
         if(currentMode === 'test') {
             document.getElementById('btn-next').style.display = currentQIdx===quizData.length-1 ? 'none' : 'inline-block';
@@ -458,7 +461,7 @@
         showResult(Math.round((correct/quizData.length)*100), correct, quizData.length);
     }
 
-    // --- 核心演算法：支援多位數乘法詳細步驟 ---
+    // --- 邏輯升級：問題引導 & 嚴格位數拆解 ---
     function generateDetailedSteps(a, b) {
         let sA = a.toString();
         let sB = b.toString();
@@ -467,23 +470,15 @@
         let cols = sA.length + sB.length + 1;
         let baseRow = 2; 
         
-        // 用來儲存部分積，以便最後做加法步驟
-        let partialProducts = []; // array of {val: int, shift: int, row: int}
-
-        // 1. 計算每個乘數位數的部分積
         for(let j = sB.length - 1; j >= 0; j--) {
             let digitB = parseInt(sB[j]);
             let currentCarry = 0;
-            let shift = (sB.length - 1) - j; // 根據位數向左移
-            let currentRow = baseRow + 2 + (sB.length - 1 - j); // 計算結果要填寫的行數
+            let shift = (sB.length - 1) - j; 
+            let currentRow = baseRow + 2 + (sB.length - 1 - j); 
             
-            // 清除進位列的步驟 (如果是第二層開始)
             if(shift > 0) {
                 steps.push({ type: 'clear_carry', hint: `開始計算乘數的十位數，先清空進位。` });
             }
-
-            let rowValue = 0; // 用於之後加法計算
-            let powerOf10 = 1;
 
             for(let i = sA.length - 1; i >= 0; i--) {
                 let digitA = parseInt(sA[i]);
@@ -491,10 +486,6 @@
                 let product = rawProd + currentCarry;
                 let unit = product % 10;
                 let newCarry = Math.floor(product / 10);
-                
-                // Grid column index (從左算起)
-                // 總寬度 cols
-                // 該位數在 grid 的位置 = cols - 1 - shift - (sA.length - 1 - i)
                 let gridCol = cols - 1 - shift - (sA.length - 1 - i);
                 
                 let step = {
@@ -508,65 +499,48 @@
                     writeCarry: newCarry,
                     ansRow: currentRow,
                     ansCol: gridCol,
-                    carryRow: 0, // 固定在最上方
+                    carryRow: 0, 
                     carryCol: gridCol - 1,
                     isLastInRow: (i === 0),
                     isMultiDigit: true
                 };
                 
-                let hint = `用 ${digitB} 乘以 ${digitA} = ${rawProd}。`;
-                if(currentCarry > 0) hint += ` 加上進位 ${currentCarry} 等於 ${product}。`;
+                // ★ 修改：引導式提示，不直接給答案
+                let hint = `請計算 ${digitA} 乘以 ${digitB} 是多少？`;
+                if(currentCarry > 0) hint += ` (別忘了加上進位 ${currentCarry})`;
                 
-                if(step.isLastInRow) {
-                    // 該行最後一位，如果有進位要一起寫出來
-                    if(newCarry > 0) {
-                        step.writeAns = product; // 寫全數
-                        hint += ` 這是最後一位，寫 ${product}。`;
-                    } else {
-                        hint += ` 寫 ${unit}。`;
-                    }
-                } else {
-                    if(newCarry > 0) hint += ` 寫 ${unit}，進位註記 ${newCarry}。`;
-                    else hint += ` 寫 ${unit}。`;
-                }
                 step.hint = hint;
-                steps.push(step);
                 
+                // ★ 幫助內容則保留詳細算式
+                step.fullExplanation = `
+                    計算：${digitA} × ${digitB} = ${rawProd}<br>
+                    ${currentCarry > 0 ? `加上進位：${rawProd} + ${currentCarry} = ${product}<br>` : ''}
+                    填寫：個位 ${unit} ${newCarry > 0 ? `，進位 ${newCarry}` : ''}
+                `;
+
+                steps.push(step);
                 currentCarry = newCarry;
-                rowValue += product * powerOf10;
-                powerOf10 *= 10;
             }
-            
-            partialProducts.push({val: rowValue * Math.pow(10, shift), row: currentRow});
         }
 
-        // 2. 如果乘數大於1位，加入加法步驟
         if(sB.length > 1) {
             steps.push({ type: 'line', row: baseRow + 2 + sB.length, hint: '畫線準備相加。' });
             
             let sumRow = baseRow + 2 + sB.length + 1;
             let totalSum = a * b;
             let sTotal = totalSum.toString();
-            let currentSumCarry = 0;
-            
-            // 從個位開始加
-            // 為了簡化教學，這裡採用 column-by-column 的加法邏輯
-            // 我們需要遍歷每一欄 (從最右邊 gridCol = cols - 1 到最左邊)
             
             for(let c = 0; c < sTotal.length; c++) {
-                // 對應 sTotal 的第 c 位 (從右邊數 0, 1, 2...)
                 let digitSum = parseInt(sTotal[sTotal.length - 1 - c]);
                 let gridCol = cols - 1 - c;
-                
-                // 這裡簡化：直接讓使用者填寫加總結果，因為部分積已經列在上面了
-                // 實際運算邏輯會很複雜去解釋每一行的數字，這邊採取「直觀加法」提示
                 
                 let step = {
                     type: 'add',
                     writeAns: digitSum,
                     ansRow: sumRow,
                     ansCol: gridCol,
-                    hint: `將上面這一直行的數字相加 (含進位)，這格填 ${digitSum}。`,
+                    hint: `將這一行的數字相加 (含進位)，這格該填多少？`,
+                    fullExplanation: `這一行的總和是 ${digitSum}。`,
                     isLast: (c === sTotal.length - 1)
                 };
                 steps.push(step);
@@ -586,9 +560,8 @@
 
         const sA = q.a.toString(), sB = q.b.toString();
         const cols = sA.length + sB.length + 1;
-        // 計算總行數：Carry(1) + A(1) + B(1) + Line(1) + Partial(sB.length) + [Line(1)+Res(1)]?
         let totalRows = 4 + sB.length;
-        if(sB.length > 1) totalRows += 2; // 加法線與結果列
+        if(sB.length > 1) totalRows += 2; 
         
         box.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
 
@@ -614,31 +587,37 @@
              document.getElementById(`c-2-${c}`).classList.add('multiplication-line');
         }
 
-        // 渲染已完成步驟
+        // Render Completed Steps
         for(let i=0; i<q.stepIdx; i++) {
             let s = q.steps[i];
-            
             if(s.type === 'clear_carry') {
-                // 清除進位列顯示
-                for(let c=0; c<cols; c++) {
-                    let cc = document.getElementById(`c-0-${c}`);
-                    if(cc) cc.innerHTML = '';
-                }
+                for(let c=0; c<cols; c++) { if(document.getElementById(`c-0-${c}`)) document.getElementById(`c-0-${c}`).innerHTML = ''; }
                 continue;
             }
-            
             if(s.type === 'line') {
                 for(let c=0; c<cols; c++) {
                     document.getElementById(`c-${s.row}-${c}`).classList.add('multiplication-line');
-                    if(c===0) document.getElementById(`c-${s.row}-${c}`).innerText = '+'; // 示意
+                    if(c===0) document.getElementById(`c-${s.row}-${c}`).innerText = '+';
                 }
                 continue;
             }
 
-            let ansCell = document.getElementById(`c-${s.ansRow}-${s.ansCol}`);
-            if(ansCell) {
-                if(s.type === 'mul' && s.isLastInRow && s.totalProd >= 10) ansCell.innerText = s.totalProd; 
-                else ansCell.innerText = s.writeAns;
+            // ★ 嚴格對齊渲染：若之前是拆兩位數，現在要分別填回兩個格子
+            if(s.type === 'mul' && s.isLastInRow && s.totalProd >= 10) {
+                // 拆解
+                let strVal = s.totalProd.toString(); // "45"
+                let tenVal = strVal[0];
+                let unitVal = strVal[1];
+                
+                let unitCell = document.getElementById(`c-${s.ansRow}-${s.ansCol}`);
+                if(unitCell) unitCell.innerText = unitVal;
+                
+                let tenCell = document.getElementById(`c-${s.ansRow}-${s.ansCol-1}`);
+                if(tenCell) tenCell.innerText = tenVal;
+                
+            } else {
+                let ansCell = document.getElementById(`c-${s.ansRow}-${s.ansCol}`);
+                if(ansCell) ansCell.innerText = s.writeAns;
             }
             
             if(s.writeCarry > 0 && s.type !== 'add') {
@@ -651,13 +630,7 @@
             msg.innerText = "太棒了！本題完成。";
             document.getElementById('btn-help-trigger').style.display = 'none';
             q.userAns = q.a * q.b; 
-            
-            // 確保進位列最後是乾淨的
-            for(let c=0; c<cols; c++) {
-                let cc = document.getElementById(`c-0-${c}`);
-                if(cc) cc.innerHTML = '';
-            }
-
+            for(let c=0; c<cols; c++) { if(document.getElementById(`c-0-${c}`)) document.getElementById(`c-0-${c}`).innerHTML = ''; }
             document.getElementById('btn-next-q').style.display = 'block';
             let btnNext = document.getElementById('btn-next-q');
             if(currentQIdx >= quizData.length - 1) btnNext.innerText = "全部完成！查看成績 🏆";
@@ -667,7 +640,6 @@
 
         let cur = q.steps[q.stepIdx];
         
-        // 自動處理非輸入型步驟 (如清空進位、畫線)
         if(cur.type === 'clear_carry' || cur.type === 'line') {
             q.stepIdx++;
             renderTeachGrid(q);
@@ -682,32 +654,44 @@
         }, 50);
     }
 
+    // ★ 嚴格對齊輸入框生成 ★
     function createStepInputs(step, q) {
-        let ansCell = document.getElementById(`c-${step.ansRow}-${step.ansCol}`);
-        if(!ansCell) return; 
-        ansCell.innerHTML = '';
-        
-        // 答案輸入
+        // 清除舊按鈕
+        let msgArea = document.getElementById('teach-msg');
+        let oldBtn = msgArea.querySelector('button');
+        if(oldBtn) oldBtn.remove();
+
+        // 情況 1: 該行最後一步且結果 >= 10，需要兩個獨立的格子
         if(step.type === 'mul' && step.isLastInRow && step.totalProd >= 10) {
-            // 最後一位填兩位數 (簡易處理：拆成兩格)
+            // 左邊(十位)
             let tenCell = document.getElementById(`c-${step.ansRow}-${step.ansCol-1}`);
             if(tenCell) {
                 tenCell.innerHTML = '';
                 let inpTen = createInput('inp-ans-ten', 'game-input', step, q);
                 tenCell.appendChild(inpTen);
             }
-            
-            let inpUnit = createInput('inp-ans-unit', 'game-input', step, q);
-            ansCell.appendChild(inpUnit);
-            inpUnit.focus();
-        } else {
-            let inp = createInput('inp-ans', 'game-input', step, q);
-            ansCell.appendChild(inp);
-            inp.focus();
+            // 右邊(個位)
+            let unitCell = document.getElementById(`c-${step.ansRow}-${step.ansCol}`);
+            if(unitCell) {
+                unitCell.innerHTML = '';
+                let inpUnit = createInput('inp-ans-unit', 'game-input', step, q);
+                unitCell.appendChild(inpUnit);
+                inpUnit.focus();
+            }
+        } 
+        // 情況 2: 普通單格
+        else {
+            let ansCell = document.getElementById(`c-${step.ansRow}-${step.ansCol}`);
+            if(ansCell) {
+                ansCell.innerHTML = '';
+                let inp = createInput('inp-ans', 'game-input', step, q);
+                ansCell.appendChild(inp);
+                inp.focus();
+            }
         }
 
-        // 進位輸入 (只在乘法階段且非該行最後一步顯示)
-        if(step.type === 'mul' && !step.isLastInRow && step.writeCarry > 0) {
+        // 進位輸入框
+        if(!step.isLastInRow && step.writeCarry > 0) {
             let carryCell = document.getElementById(`c-${step.carryRow}-${step.carryCol}`);
             if(carryCell) {
                 carryCell.innerHTML = ''; 
@@ -716,11 +700,7 @@
             }
         }
 
-        // 插入確認按鈕
-        let msgArea = document.getElementById('teach-msg');
-        let oldBtn = msgArea.querySelector('button');
-        if(oldBtn) oldBtn.remove();
-        
+        // 確認按鈕
         let btn = document.createElement('button');
         btn.className = 'btn-warning'; btn.innerText = 'OK';
         btn.style.marginLeft = "10px";
@@ -750,12 +730,13 @@
         let iAns = document.getElementById('inp-ans');
         let iCarry = document.getElementById('inp-carry');
 
+        // 檢查填寫
         if(step.type === 'mul' && step.isLastInRow && step.totalProd >= 10) {
             if(!iTen || !iUnit || iTen.value==='' || iUnit.value==='') allFilled = false;
         } else {
             if(!iAns || iAns.value==='') allFilled = false;
         }
-        if(step.type === 'mul' && !step.isLastInRow && step.writeCarry > 0) {
+        if(!step.isLastInRow && step.writeCarry > 0) {
             if(!iCarry || iCarry.value==='') allFilled = false;
         }
 
@@ -803,8 +784,8 @@
         
         const q = quizData[currentQIdx];
         const step = q.steps[q.stepIdx];
-        let html = `<strong>提示：</strong> ${step.hint}`;
-        box.innerHTML = html;
+        // 顯示詳細解說
+        box.innerHTML = step.fullExplanation || `<strong>提示：</strong> ${step.hint}`;
         box.style.display = 'block';
     }
 
