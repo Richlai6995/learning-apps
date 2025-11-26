@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>乘法闖關王 2.1 (含進位註記)</title>
+    <title>乘法闖關王 2.2 (修復版)</title>
     <style>
         :root {
             --primary: #8e44ad;
@@ -116,7 +116,7 @@
 <body>
 
     <div id="page-home" class="container active">
-        <h1>✖️ 乘法闖關王 2.1</h1>
+        <h1>✖️ 乘法闖關王 2.2</h1>
         
         <div class="tabs">
             <div class="tab active" onclick="switchTab('quiz')">選擇題庫</div>
@@ -183,7 +183,7 @@
         <div id="teach-area" style="display:none;">
             <div style="text-align: center; margin-bottom: 10px;">
                 <div id="teach-msg" style="color:#8e44ad; font-weight:bold; font-size:1.2rem; min-height:1.5em;"></div>
-                <button class="btn-help" onclick="toggleHelp()">💡 求助：這一步怎麼算？</button>
+                <button id="btn-help-trigger" class="btn-help" onclick="toggleHelp()">💡 求助：這一步怎麼算？</button>
                 <div id="help-content" class="help-box"></div>
             </div>
             <div class="grid-container" id="gridBoard"></div>
@@ -242,18 +242,26 @@
     let timerInt, startTime;
     let rankData = [];
 
+    // ★ 關鍵修復：更換 Storage Key 以確保資料格式正確，避免舊資料干擾 ★
+    const STORAGE_KEY_LISTS = 'mul_v2_fixed_lists';
+    const STORAGE_KEY_RANK = 'mul_v2_fixed_rank';
+
     window.onload = function() {
-        if(localStorage.getItem('mul_v2_lists')) allLists = JSON.parse(localStorage.getItem('mul_v2_lists'));
-        else {
+        if(localStorage.getItem(STORAGE_KEY_LISTS)) {
+            allLists = JSON.parse(localStorage.getItem(STORAGE_KEY_LISTS));
+        } else {
+            // 預設題庫
             allLists = [{name: "進位練習 (2位乘1位)", qs: [{a:56, b:9}, {a:48, b:5}, {a:75, b:4}]}];
             saveData();
         }
-        if(localStorage.getItem('mul_v2_rank')) rankData = JSON.parse(localStorage.getItem('mul_v2_rank'));
+        if(localStorage.getItem(STORAGE_KEY_RANK)) {
+            rankData = JSON.parse(localStorage.getItem(STORAGE_KEY_RANK));
+        }
         renderLists();
     };
 
-    function saveData() { localStorage.setItem('mul_v2_lists', JSON.stringify(allLists)); }
-    function saveRankData() { localStorage.setItem('mul_v2_rank', JSON.stringify(rankData)); }
+    function saveData() { localStorage.setItem(STORAGE_KEY_LISTS, JSON.stringify(allLists)); }
+    function saveRankData() { localStorage.setItem(STORAGE_KEY_RANK, JSON.stringify(rankData)); }
 
     function showPage(pid) {
         document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
@@ -411,35 +419,26 @@
         showResult(Math.round((correct/quizData.length)*100), correct, quizData.length);
     }
 
-    // --- 詳細微步驟生成 (核心修改) ---
+    // --- 詳細微步驟生成 ---
     function generateDetailedSteps(a, b) {
         let sA = a.toString();
         let sB = b.toString();
         let steps = [];
         
-        // 為了簡化 2.0 版，若乘數大於1位，這裡先做簡易處理(後續可擴充)
-        // 此處專注於 單個位數乘法 的進位邏輯 (如 56 * 9)
-        // 若是 56 * 19，先拆解成 56*9 和 56*10
-        
         let cols = sA.length + sB.length + 1;
-        let baseRow = 2; // 被乘數所在的列 (0是進位列, 1是被乘數, 2是乘數, 3是橫線, 4開始是積)
+        let baseRow = 2; 
         
-        // 目前只實作 1位數乘數 的詳細進位，多位數乘數還是用舊的 Row 邏輯
+        // 單個位數乘法 (如 56 * 9)
         if(sB.length === 1) {
             let mult = parseInt(sB);
             let currentCarry = 0;
             
-            // 從被乘數個位開始往左算
             for(let i = sA.length - 1; i >= 0; i--) {
                 let digitA = parseInt(sA[i]);
                 let product = digitA * mult + currentCarry;
                 let unit = product % 10;
                 let newCarry = Math.floor(product / 10);
                 
-                // 定位：Grid 的 Column 是從左到右 (0開始)
-                // sA 在 Grid 中的起始 col 是 (cols - sA.length)
-                // i 是 sA 的 index (從0開始)
-                // 所以 digitA 在 Grid 的 col 是 (cols - sA.length + i)
                 let gridCol = cols - sA.length + i;
                 
                 let step = {
@@ -451,20 +450,13 @@
                     totalProd: product,
                     writeAns: unit,
                     writeCarry: newCarry,
-                    
-                    // 座標
-                    ansRow: baseRow + 2, // 0:carry, 1:A, 2:B, 3:line, 4:Result
+                    ansRow: baseRow + 2, 
                     ansCol: gridCol,
-                    
-                    // 進位註記位置：通常記在下一個高位上方 (即 gridCol - 1)
-                    // 如果是最後一位(i=0)且有進位，這個進位直接寫在答案列，不寫在註記列
                     carryRow: 0,
                     carryCol: gridCol - 1,
-                    
                     isLast: (i === 0)
                 };
                 
-                // 提示文字
                 let hint = `${digitA} × ${mult} = ${step.rawProd}。`;
                 if(currentCarry > 0) hint += ` 加上進位 ${currentCarry} 等於 ${product}。`;
                 if(step.isLast) {
@@ -474,24 +466,27 @@
                     else hint += ` 寫 ${unit}。`;
                 }
                 step.hint = hint;
-                
                 steps.push(step);
                 currentCarry = newCarry;
             }
         } else {
-            // 多位數乘數的 fallback (舊邏輯)
-            // 這裡為了保持範例 "56*9" 的完整性，我們暫時保留單數邏輯
-            // 若需要多位數，需更複雜的 grid 管理
-            steps.push({type:'simple', ans: a*b, hint:'多位數乘法暫時以整行顯示，請直接計算總和'});
+            // 多位數 fallback
+            steps.push({type:'simple', ans: a*b, hint:'多位數乘法請直接計算總和'});
         }
-        
         return steps;
     }
 
     function renderTeachGrid(q) {
         const box = document.getElementById('gridBoard'); box.innerHTML = '';
         const msg = document.getElementById('teach-msg');
-        document.getElementById('help-content').style.display = 'none'; // 重置求助
+        document.getElementById('help-content').style.display = 'none'; 
+        document.getElementById('btn-help-trigger').style.display = 'inline-block'; // 重置按鈕顯示
+
+        // ★ 防呆：如果沒有題目資料，避免報錯 ★
+        if(!q || q.a === undefined) {
+             msg.innerText = "題目載入錯誤，請刪除題庫重試";
+             return;
+        }
         
         // 若是 fallback 的簡單模式
         if(q.steps.length > 0 && q.steps[0].type === 'simple') {
@@ -501,7 +496,7 @@
 
         const sA = q.a.toString(), sB = q.b.toString();
         const cols = sA.length + sB.length + 1;
-        const totalRows = 6; // 0:Carry, 1:A, 2:B, 3:Line, 4:Result
+        const totalRows = 6; 
         
         box.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
 
@@ -510,48 +505,50 @@
             for(let c=0; c<cols; c++) {
                 let cell = document.createElement('div');
                 cell.className='grid-cell'; cell.id=`c-${r}-${c}`;
-                // 第0列特別處理 (進位列)
                 if(r===0) cell.style.height = '30px'; 
                 box.appendChild(cell);
             }
         }
 
-        // 填題目 (Row 1: 被乘數)
+        // 填題目
         for(let i=0; i<sA.length; i++) {
             let cell = document.getElementById(`c-1-${cols-sA.length+i}`);
-            cell.innerText = sA[i];
+            if(cell) cell.innerText = sA[i];
         }
-        // 填題目 (Row 2: 乘數)
-        document.getElementById(`c-2-${cols-sB.length-1}`).innerText = '×';
-        document.getElementById(`c-2-${cols-sB.length-1}`).classList.add('operator');
+        let opCell = document.getElementById(`c-2-${cols-sB.length-1}`);
+        if(opCell) {
+            opCell.innerText = '×';
+            opCell.classList.add('operator');
+        }
         for(let i=0; i<sB.length; i++) {
             let cell = document.getElementById(`c-2-${cols-sB.length+i}`);
-            cell.innerText = sB[i];
+            if(cell) cell.innerText = sB[i];
         }
-        // 畫線 (Row 3)
         for(let c=0; c<cols; c++) {
-             document.getElementById(`c-2-${c}`).classList.add('multiplication-line');
+             let lCell = document.getElementById(`c-2-${c}`);
+             if(lCell) lCell.classList.add('multiplication-line');
         }
 
         // 填入「已完成」的步驟
         for(let i=0; i<q.stepIdx; i++) {
             let s = q.steps[i];
-            // 填寫答案
             let ansCell = document.getElementById(`c-${s.ansRow}-${s.ansCol}`);
-            if(s.isLast) ansCell.innerText = s.totalProd; // 最後一步寫全數
-            else ansCell.innerText = s.writeAns;
+            if(ansCell) {
+                if(s.isLast) ansCell.innerText = s.totalProd; 
+                else ansCell.innerText = s.writeAns;
+            }
             
-            // 填寫進位 (如果有)
             if(!s.isLast && s.writeCarry > 0) {
                 let carryCell = document.getElementById(`c-${s.carryRow}-${s.carryCol}`);
-                carryCell.innerHTML = `<span style="font-size:1rem; color:#d35400;">${s.writeCarry}</span>`;
+                if(carryCell) carryCell.innerHTML = `<span style="font-size:1rem; color:#d35400;">${s.writeCarry}</span>`;
             }
         }
 
         // 判斷是否全對完成
         if(q.stepIdx >= q.steps.length) {
             msg.innerText = "太棒了！本題完成。";
-            q.userAns = q.a * q.b; // 自動填入
+            document.getElementById('btn-help-trigger').style.display = 'none'; // 隱藏求助
+            q.userAns = q.a * q.b; 
             let btn = document.createElement('button');
             btn.className = 'btn-primary';
             if(currentQIdx < quizData.length-1) {
@@ -563,34 +560,23 @@
             return;
         }
 
-        // 當前步驟
         let cur = q.steps[q.stepIdx];
         msg.innerText = cur.hint;
         speak(cur.hint);
         
-        // 產生輸入框
         createStepInputs(cur, q);
     }
 
     function createStepInputs(step, q) {
-        // 1. 答案輸入框
         let ansCell = document.getElementById(`c-${step.ansRow}-${step.ansCol}`);
         ansCell.innerHTML = '';
         
         if(step.isLast && step.totalProd >= 10) {
-            // 最後一步如果大於10，可能要填兩個數字 (例如 5*9=45，要填45)
-            // 這裡簡化，直接給一個寬一點的 input 或是兩個 input
-            // 為了教學一致性，我們讓學員在當格填個位，左邊格填十位
-            let unit = step.totalProd % 10;
-            let ten = Math.floor(step.totalProd / 10);
-            
-            // 十位
             let tenCell = document.getElementById(`c-${step.ansRow}-${step.ansCol-1}`);
             let inpTen = document.createElement('input');
             inpTen.type='tel'; inpTen.className='game-input'; inpTen.id = 'inp-ans-ten';
             tenCell.appendChild(inpTen);
             
-            // 個位
             let inpUnit = document.createElement('input');
             inpUnit.type='tel'; inpUnit.className='game-input'; inpUnit.id = 'inp-ans-unit';
             ansCell.appendChild(inpUnit);
@@ -598,23 +584,20 @@
             setTimeout(()=>inpUnit.focus(), 100);
             
         } else {
-            // 一般單格輸入
             let inp = document.createElement('input');
             inp.type='tel'; inp.className='game-input'; inp.id = 'inp-ans';
             ansCell.appendChild(inp);
             setTimeout(()=>inp.focus(), 100);
         }
 
-        // 2. 進位輸入框 (若有進位且非最後一步)
         if(!step.isLast && step.writeCarry > 0) {
             let carryCell = document.getElementById(`c-${step.carryRow}-${step.carryCol}`);
-            carryCell.innerHTML = ''; // 清空
+            carryCell.innerHTML = ''; 
             let cinp = document.createElement('input');
             cinp.type='tel'; cinp.className='carry-input'; cinp.id = 'inp-carry';
             carryCell.appendChild(cinp);
         }
 
-        // OK 按鈕
         let btn = document.createElement('button');
         btn.className = 'btn-warning'; btn.innerText = 'OK';
         btn.onclick = () => checkStepAnswer(step, q);
@@ -625,7 +608,6 @@
     function checkStepAnswer(step, q) {
         let allCorrect = true;
         
-        // 檢查答案
         if(step.isLast && step.totalProd >= 10) {
             let tenVal = Math.floor(step.totalProd / 10);
             let unitVal = step.totalProd % 10;
@@ -647,7 +629,6 @@
             }
         }
 
-        // 檢查進位註記 (這是本次重點功能)
         if(!step.isLast && step.writeCarry > 0) {
             let cinp = document.getElementById('inp-carry');
             if(!cinp || parseInt(cinp.value) !== step.writeCarry) {
@@ -668,13 +649,14 @@
         }
     }
 
-    // --- 求助功能 ---
     function toggleHelp() {
         const box = document.getElementById('help-content');
         if(box.style.display === 'block') {
             box.style.display = 'none';
         } else {
             const q = quizData[currentQIdx];
+            if(!q || q.stepIdx >= q.steps.length) return; // 防呆
+
             const step = q.steps[q.stepIdx];
             let html = `<strong>步驟詳解：</strong><br>`;
             
@@ -703,7 +685,6 @@
         }
     }
 
-    // --- 結果與榜單 ---
     function showResult(score, correct, total) {
         showPage('page-result');
         document.getElementById('res-score').innerText = score;
