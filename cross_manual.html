@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>乘法闖關王 3.1 (箭頭引導版)</title>
+    <title>乘法闖關王 3.2 (精修版)</title>
     <style>
         :root {
             --primary: #8e44ad;
@@ -32,7 +32,6 @@
 
         h1 { color: var(--primary); margin: 10px 0; text-align: center; font-size: 1.8rem;}
 
-        /* --- 學員名牌 --- */
         .user-profile {
             background-color: #fff3cd;
             border: 2px dashed #f39c12;
@@ -96,14 +95,13 @@
 
         .quiz-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 15px; background: #eee; padding: 10px; border-radius: 6px; }
         
-        /* Grid 系統 */
         .grid-container {
             display: grid; 
             grid-auto-rows: 50px; 
             justify-content: center; 
             margin: 20px 0;
             gap: 0;
-            position: relative; /* 重要：為了定位箭頭 SVG */
+            position: relative; 
         }
         .grid-cell {
             width: var(--cell-size); 
@@ -115,21 +113,20 @@
             font-weight: bold; 
             font-size: 1.8rem; 
             position: relative;
-            z-index: 2; /* 確保文字在箭頭之上 */
+            z-index: 2; 
         }
         
-        /* ★★★ 箭頭層 (SVG) ★★★ */
+        /* SVG 層 */
         .arrow-layer {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            pointer-events: none; /* 讓點擊穿透，不影響輸入 */
+            pointer-events: none; 
             z-index: 1;
         }
 
-        /* 一般輸入框 (答案) */
         .game-input { 
             width: 90%; height: 90%; margin: auto;
             font-size: 1.5rem; text-align: center; 
@@ -139,7 +136,6 @@
         .game-input.correct { border-color: #27ae60; background-color: #d5f5e3; color: #27ae60; }
         .game-input:focus { border-color: #2ecc71; background: #e8f8f5; box-shadow: 0 0 10px rgba(46, 204, 113, 0.5); }
 
-        /* 進位註記輸入框 */
         .carry-input {
             width: 28px; height: 28px; font-size: 1.1rem; text-align: center;
             border: 2px solid #e67e22; border-radius: 50%; background: #fef5e7; outline: none;
@@ -152,7 +148,10 @@
 
         .game-input.wrong, .carry-input.wrong { background: #fadbd8; border-color: var(--danger); animation: shake 0.4s; }
         
-        .multiplication-line { border-bottom: 3px solid #333; }
+        /* 畫線的樣式 - 加粗更清楚 */
+        .multiplication-line { 
+            border-bottom: 3px solid #333; 
+        }
         .operator { color: var(--primary); }
 
         .help-box {
@@ -186,7 +185,7 @@
 <body>
 
     <div id="page-home" class="container active">
-        <h1>✖️ 乘法闖關王 3.1</h1>
+        <h1>✖️ 乘法闖關王 3.2</h1>
         
         <div class="user-profile" onclick="changeName()">
             <span>🎓</span> <span id="display-name">設定學員姓名</span> <span>✎</span>
@@ -212,7 +211,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v3.1 (箭頭引導版)</div>
+        <div class="version-tag">版本：v3.2 (精修箭頭與間距)</div>
     </div>
 
     <div id="page-editor" class="container">
@@ -263,11 +262,11 @@
             <div class="grid-container" id="gridBoard">
                 <svg id="arrow-layer" class="arrow-layer">
                     <defs>
-                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                            <polygon points="0 0, 10 3.5, 0 7" fill="#e74c3c" />
+                        <marker id="arrowhead" markerWidth="4" markerHeight="3" refX="3" refY="1.5" orient="auto">
+                            <polygon points="0 0, 4 1.5, 0 3" fill="#e74c3c" />
                         </marker>
                     </defs>
-                    <line id="calc-arrow" x1="0" y1="0" x2="0" y2="0" stroke="#e74c3c" stroke-width="3" marker-end="url(#arrowhead)" style="display:none;" />
+                    <line id="calc-arrow" x1="0" y1="0" x2="0" y2="0" stroke="#e74c3c" stroke-width="2" marker-end="url(#arrowhead)" style="display:none;" />
                 </svg>
             </div>
             
@@ -322,9 +321,9 @@
     let timerInt, startTime, rankData = [];
     let studentName = "小小學員"; 
 
-    const STORAGE_KEY_LISTS = 'mul_v3_1_lists';
-    const STORAGE_KEY_RANK = 'mul_v3_1_rank';
-    const STORAGE_KEY_USER = 'mul_v3_1_user';
+    const STORAGE_KEY_LISTS = 'mul_v3_2_lists';
+    const STORAGE_KEY_RANK = 'mul_v3_2_rank';
+    const STORAGE_KEY_USER = 'mul_v3_2_user';
 
     window.onload = function() {
         if(localStorage.getItem(STORAGE_KEY_LISTS)) {
@@ -339,7 +338,6 @@
         if(localStorage.getItem(STORAGE_KEY_USER)) {
             studentName = localStorage.getItem(STORAGE_KEY_USER);
         }
-        
         updateName();
         renderLists();
     };
@@ -522,7 +520,6 @@
         showResult(Math.round((correct/quizData.length)*100), correct, quizData.length);
     }
 
-    // --- 邏輯：加入來源座標，用於畫箭頭 ---
     function generateDetailedSteps(a, b) {
         let sA = a.toString();
         let sB = b.toString();
@@ -549,7 +546,6 @@
                 let newCarry = Math.floor(product / 10);
                 let gridCol = cols - 1 - shift - (sA.length - 1 - i);
                 
-                // 計算來源格座標
                 let srcRowA = 1; 
                 let srcColA = cols - sA.length + i;
                 let srcRowB = 2;
@@ -570,7 +566,6 @@
                     carryCol: gridCol - 1,
                     isLastInRow: (i === 0),
                     isMultiDigit: true,
-                    // 箭頭座標來源
                     srcRowA: srcRowA,
                     srcColA: srcColA,
                     srcRowB: srcRowB,
@@ -622,11 +617,12 @@
     function renderTeachGrid(q) {
         const box = document.getElementById('gridBoard'); box.innerHTML = '';
         
-        // 重建 SVG 結構
+        // Arrow SVG
         let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         svg.id = "arrow-layer";
         svg.setAttribute("class", "arrow-layer");
-        svg.innerHTML = `<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#e74c3c" /></marker></defs><line id="calc-arrow" x1="0" y1="0" x2="0" y2="0" stroke="#e74c3c" stroke-width="3" marker-end="url(#arrowhead)" style="display:none;" />`;
+        // markerWidth="4", stroke-width="2" (Smaller arrow)
+        svg.innerHTML = `<defs><marker id="arrowhead" markerWidth="4" markerHeight="3" refX="3" refY="1.5" orient="auto"><polygon points="0 0, 4 1.5, 0 3" fill="#e74c3c" /></marker></defs><line id="calc-arrow" x1="0" y1="0" x2="0" y2="0" stroke="#e74c3c" stroke-width="2" marker-end="url(#arrowhead)" style="display:none;" />`;
         box.appendChild(svg);
 
         const msg = document.getElementById('teach-msg');
@@ -637,6 +633,12 @@
 
         const sA = q.a.toString(), sB = q.b.toString();
         const cols = sA.length + sB.length + 1;
+        
+        // ★★★ 壓縮列高邏輯 ★★★
+        // 定義哪些行是「線條行」
+        const mulLineRow = 3; 
+        const addLineRow = (sB.length > 1) ? 4 + sB.length : -1;
+        
         let totalRows = 4 + sB.length;
         if(sB.length > 1) totalRows += 2; 
         
@@ -646,11 +648,18 @@
             for(let c=0; c<cols; c++) {
                 let cell = document.createElement('div');
                 cell.className='grid-cell'; cell.id=`c-${r}-${c}`;
+                // 進位行 (Row 0)
                 if(r===0) cell.style.height = '30px'; 
+                // ★★★ 橫線行 (壓縮高度) ★★★
+                if(r === mulLineRow || r === addLineRow) {
+                    cell.style.height = '5px'; 
+                    cell.style.padding = '0';
+                }
                 box.appendChild(cell);
             }
         }
 
+        // 填入題目
         for(let i=0; i<sA.length; i++) {
             document.getElementById(`c-1-${cols-sA.length+i}`).innerText = sA[i];
         }
@@ -660,6 +669,7 @@
         for(let i=0; i<sB.length; i++) {
             document.getElementById(`c-2-${cols-sB.length+i}`).innerText = sB[i];
         }
+        // 畫乘法線
         for(let c=0; c<cols; c++) {
              document.getElementById(`c-2-${c}`).classList.add('multiplication-line');
         }
@@ -673,7 +683,15 @@
             if(s.type === 'line') {
                 for(let c=0; c<cols; c++) {
                     document.getElementById(`c-${s.row}-${c}`).classList.add('multiplication-line');
-                    if(c===0) document.getElementById(`c-${s.row}-${c}`).innerText = '+';
+                    // ★★★ 加號位置修正：放在線條行的前一行最左側 ★★★
+                    if(c===0 && s.row === addLineRow) {
+                        // 加在 addLineRow - 1, Col 0
+                        let plusCell = document.getElementById(`c-${s.row-1}-0`);
+                        if(plusCell) {
+                            plusCell.innerText = '+';
+                            plusCell.classList.add('operator');
+                        }
+                    }
                 }
                 continue;
             }
@@ -714,14 +732,13 @@
 
         let cur = q.steps[q.stepIdx];
         
-        // ★★★ 繪製箭頭 ★★★
         drawArrow(cur);
 
         if(cur.type === 'clear_carry' || cur.type === 'line') {
             setTimeout(() => {
                 q.stepIdx++;
                 renderTeachGrid(q);
-            }, 500); // 稍作暫停讓箭頭消失或顯示過渡
+            }, 500); 
             return;
         }
 
@@ -733,27 +750,22 @@
         }, 50);
     }
 
-    // ★★★ SVG 箭頭繪製函數 ★★★
     function drawArrow(step) {
         let arrowLine = document.getElementById('calc-arrow');
         if(!arrowLine) return;
 
         if(step.type === 'mul') {
-            // 找出被乘數(A)和乘數(B)的格子
             let cellA = document.getElementById(`c-${step.srcRowA}-${step.srcColA}`);
             let cellB = document.getElementById(`c-${step.srcRowB}-${step.srcColB}`);
 
             if(cellA && cellB) {
-                // 取得格子的中心點 (相對於 grid-container)
-                // 由於 SVG 是絕對定位於 grid-container，所以 offsetLeft/Top 就是座標
                 let x1 = cellB.offsetLeft + cellB.offsetWidth / 2;
                 let y1 = cellB.offsetTop + cellB.offsetHeight / 2;
                 let x2 = cellA.offsetLeft + cellA.offsetWidth / 2;
                 let y2 = cellA.offsetTop + cellA.offsetHeight / 2;
 
-                // 稍微縮短線條，不要碰到文字
                 let angle = Math.atan2(y2 - y1, x2 - x1);
-                let padding = 15; // 縮短距離
+                let padding = 15; 
                 x1 += Math.cos(angle) * padding;
                 y1 += Math.sin(angle) * padding;
                 x2 -= Math.cos(angle) * padding;
@@ -767,7 +779,6 @@
                 return;
             }
         }
-        // 非乘法步驟隱藏箭頭
         arrowLine.style.display = 'none';
     }
 
