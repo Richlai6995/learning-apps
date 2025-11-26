@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>除法闖關王 3.1</title>
+    <title>除法闖關王 3.1 (已修復)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -184,7 +184,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v3.1 (除法闖關王)</div>
+        <div class="version-tag">版本：v3.1 (除法闖關王 - 已修復)</div>
     </div>
 
     <div id="page-editor" class="container">
@@ -273,6 +273,9 @@
     let currentQIdx = 0, currentMode = '', studentName = '小小學員';
     let timerInt, startTime;
     let rankData = [];
+    
+    // ★★★ 修復點 1：全域宣告編輯ID，避免 undefined 問題 ★★★
+    let editingId = null;
 
     window.onload = function() {
         if(localStorage.getItem('div_v3_lists')) allLists = JSON.parse(localStorage.getItem('div_v3_lists'));
@@ -308,7 +311,7 @@
         event.target.classList.add('active');
     }
 
-    // --- 題庫管理 (與前版類似，略) ---
+    // --- 題庫管理 ---
     function renderLists() {
         const c = document.getElementById('lists-container'); c.innerHTML='';
         allLists.forEach((l,i) => {
@@ -317,10 +320,34 @@
             c.appendChild(d);
         });
     }
-    function createNewList() { document.getElementById('list-name').value="新題庫"; document.getElementById('editor-rows').innerHTML=''; showPage('page-editor'); }
+    
+    // ★★★ 修復點 2：新增題庫時確實重置 editingId 為 null ★★★
+    function createNewList() { 
+        editingId = null; 
+        document.getElementById('list-name').value="新題庫"; 
+        document.getElementById('editor-rows').innerHTML=''; 
+        showPage('page-editor'); 
+    }
+    
     function editList(i) { editingId=i; const l=allLists[i]; document.getElementById('list-name').value=l.name; document.getElementById('editor-rows').innerHTML=''; l.qs.forEach(q=>addEditRow(q.a,q.b)); showPage('page-editor'); }
     function addEditRow(a='', b='') { const d=document.createElement('div'); d.className='edit-row'; d.innerHTML=`<input type="number" class="inp-a" value="${a}">÷<input type="number" class="inp-b" value="${b}"><button class="btn-danger" onclick="this.parentElement.remove()">×</button>`; document.getElementById('editor-rows').appendChild(d); }
-    function saveList() { const n=document.getElementById('list-name').value; const rs=document.querySelectorAll('.edit-row'); const qs=[]; rs.forEach(r=>{const a=parseInt(r.querySelector('.inp-a').value); const b=parseInt(r.querySelector('.inp-b').value); if(a&&b)qs.push({a,b})}); if(qs.length<1)return alert("請輸入題目"); if(editingId===null)allLists.push({name:n,qs}); else allLists[editingId]={name:n,qs}; saveData(); showPage('page-home'); editingId=null; }
+    
+    function saveList() { 
+        const n=document.getElementById('list-name').value; 
+        const rs=document.querySelectorAll('.edit-row'); 
+        const qs=[]; 
+        rs.forEach(r=>{const a=parseInt(r.querySelector('.inp-a').value); const b=parseInt(r.querySelector('.inp-b').value); if(a&&b)qs.push({a,b})}); 
+        if(qs.length<1)return alert("請輸入題目"); 
+        
+        // 修正後的判斷邏輯
+        if(editingId===null) allLists.push({name:n,qs}); 
+        else allLists[editingId]={name:n,qs}; 
+        
+        saveData(); 
+        showPage('page-home'); 
+        editingId=null; 
+    }
+    
     function delList(i) { if(confirm("刪除？")){allLists.splice(i,1); saveData(); renderLists();} }
     function autoGenerate() { const c=document.getElementById('gen-count').value; const la=document.getElementById('gen-len-a').value; const lb=document.getElementById('gen-len-b').value; document.getElementById('editor-rows').innerHTML=''; for(let i=0;i<c;i++){let b=Math.floor(Math.random()*Math.pow(10,lb)); if(b<2)b=2; let a=Math.floor(Math.random()*Math.pow(10,la)); addEditRow(a,b);} }
     function exportData() { const b=new Blob([JSON.stringify(allLists)],{type:"application/json"}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download="div_data.json"; a.click(); }
