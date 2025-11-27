@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>乘法闖關王 4.2 (加號修復版)</title>
+    <title>乘法闖關王 4.3 (加法修復版)</title>
     <style>
         :root {
             --primary: #8e44ad;
@@ -212,7 +212,7 @@
 <body>
 
     <div id="page-home" class="container active">
-        <h1>✖️ 乘法闖關王 4.2</h1>
+        <h1>✖️ 乘法闖關王 4.3</h1>
         
         <div class="user-profile" onclick="changeName()">
             <span>🎓</span> <span id="display-name">設定學員姓名</span> <span>✎</span>
@@ -238,7 +238,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v4.2 (加號保留修復版)</div>
+        <div class="version-tag">版本：v4.3 (加法修復版)</div>
     </div>
 
     <div id="page-editor" class="container">
@@ -360,9 +360,9 @@
     let settingText = true;
     let settingArrow = true;
 
-    const STORAGE_KEY_LISTS = 'mul_v4_2_lists';
-    const STORAGE_KEY_RANK = 'mul_v4_2_rank';
-    const STORAGE_KEY_USER = 'mul_v4_2_user';
+    const STORAGE_KEY_LISTS = 'mul_v4_3_lists';
+    const STORAGE_KEY_RANK = 'mul_v4_3_rank';
+    const STORAGE_KEY_USER = 'mul_v4_3_user';
 
     window.onload = function() {
         if(localStorage.getItem(STORAGE_KEY_LISTS)) {
@@ -577,7 +577,7 @@
         showResult(Math.round((correct/quizData.length)*100), correct, quizData.length);
     }
 
-    // --- 邏輯升級：加法進位獨立列 ---
+    // --- 邏輯升級：網格坐標與行號修正 ---
     function generateDetailedSteps(a, b) {
         let sA = a.toString();
         let sB = b.toString();
@@ -588,10 +588,16 @@
         const ROW_MUL_CARRY = 0;
         const ROW_A = 1;
         const ROW_B = 2;
+        const ROW_MUL_LINE = 3;
+        
+        // ★★★ 緊貼設計：第一層乘積直接在 Row 4 ★★★
+        const ROW_PARTIAL_START = 4;
         
         const hasAddition = sB.length > 1;
-        const ROW_ADD_CARRY = hasAddition ? 4 : -1;
-        const ROW_PARTIAL_START = hasAddition ? 5 : 4;
+        // ★★★ 加法進位列：在所有乘積的下方 ★★★
+        const ROW_ADD_CARRY = hasAddition ? (ROW_PARTIAL_START + sB.length) : -1;
+        const ROW_ADD_LINE = hasAddition ? (ROW_ADD_CARRY + 1) : -1;
+        const ROW_FINAL_SUM = hasAddition ? (ROW_ADD_LINE + 1) : (ROW_PARTIAL_START);
 
         let gridSim = {}; 
 
@@ -668,11 +674,7 @@
         if(hasAddition) {
             steps.push({ type: 'clear_mul_carry', hint: '乘法完成，清空進位準備相加。' });
             
-            let rowAddCarry = ROW_PARTIAL_START + sB.length;
-            let rowAddLine = rowAddCarry + 1;
-            let rowFinalSum = rowAddLine + 1;
-
-            steps.push({ type: 'line', row: rowAddLine, hint: '畫線準備相加。' });
+            steps.push({ type: 'line', row: ROW_ADD_LINE, hint: '畫線準備相加。' });
             
             let sTotal = (a * b).toString();
             let currentSumCarry = 0;
@@ -700,9 +702,9 @@
                     type: 'add',
                     writeAns: unit,
                     writeCarry: newCarry, 
-                    ansRow: rowFinalSum,
+                    ansRow: ROW_FINAL_SUM,
                     ansCol: c,
-                    carryRow: ROW_ADD_CARRY, // 加法進位
+                    carryRow: ROW_ADD_CARRY, 
                     carryCol: c - 1,
                     hint: `將這一行的數字相加 ${currentSumCarry > 0 ? '(含之前進位)' : ''}，這格該填多少？`,
                     fullExplanation: `直行相加結果：${colSum}。填寫 ${unit} ${newCarry > 0 ? '，進位 ' + newCarry : ''}。`,
@@ -735,11 +737,12 @@
         const cols = sA.length + sB.length + 1;
         
         const hasAddition = sB.length > 1;
-        let totalRows = hasAddition ? (6 + sB.length) : (4 + sB.length); 
+        // ★★★ 總行數修正：4(Mul) + sB + [1(Carry)+1(Line)+1(Sum)] ★★★
+        let totalRows = hasAddition ? (4 + sB.length + 3) : (4 + sB.length); 
         
         const mulLineRow = 3;
-        const addCarryRow = hasAddition ? 4 : -1;
-        const addLineRow = hasAddition ? (4 + sB.length + 1) : -1; 
+        const addCarryRow = hasAddition ? (4 + sB.length) : -1;
+        const addLineRow = hasAddition ? (addCarryRow + 1) : -1; 
 
         box.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
 
@@ -749,7 +752,7 @@
                 cell.className='grid-cell'; cell.id=`c-${r}-${c}`;
                 
                 if(r===0) cell.style.height = '30px';
-                if(r===addCarryRow) cell.style.height = '15px'; 
+                if(r===addCarryRow) cell.style.height = '20px'; 
                 
                 if(r === mulLineRow || (hasAddition && r === addLineRow)) {
                     cell.style.height = '5px'; 
@@ -787,6 +790,7 @@
                     if(cell) {
                         cell.classList.add('multiplication-line');
                         if(c===0 && s.row === addLineRow) {
+                            // 加號放在線條列上一行的最左邊 (即進位列)
                             let plusCell = document.getElementById(`c-${s.row-1}-0`);
                             if(plusCell) { plusCell.innerText = '+'; plusCell.classList.add('operator'); }
                         }
@@ -817,10 +821,13 @@
             document.getElementById('btn-help-trigger').style.display = 'none';
             q.userAns = q.a * q.b; 
             
-            // ★★★ 修正：最後清空進位時，跳過第0欄(加號所在) ★★★
+            // ★★★ 修正：清空進位時跳過 Column 0 (保留加號) ★★★
             for(let c=0; c<cols; c++) { 
                 if(document.getElementById(`c-0-${c}`)) document.getElementById(`c-0-${c}`).innerHTML = ''; 
-                if(addCarryRow > 0 && c > 0 && document.getElementById(`c-${addCarryRow}-${c}`)) document.getElementById(`c-${addCarryRow}-${c}`).innerHTML = '';
+                // AddCarryRow: 清空 c>0，保留 c=0 的加號
+                if(addCarryRow > 0 && document.getElementById(`c-${addCarryRow}-${c}`)) {
+                    if(c > 0) document.getElementById(`c-${addCarryRow}-${c}`).innerHTML = '';
+                }
             }
             
             document.getElementById('btn-next-q').style.display = 'block';
