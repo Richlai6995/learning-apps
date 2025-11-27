@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>99乘法闖關王 1.3 (快速測驗版)</title>
+    <title>99乘法闖關王 1.7 (寶石獎勵版)</title>
     <style>
         :root {
-            --primary: #8e44ad; /* 乘法改用紫色系區隔 */
+            --primary: #8e44ad;
             --secondary: #9b59b6;
             --light: #f4ecf7;
             --dark: #2c3e50;
@@ -15,11 +15,8 @@
             --warning: #f39c12;
             --help: #2980b9;
             
-            /* 視覺提示顏色 */
-            --hint-a: #27ae60; /* 被乘數(綠) */
-            --hint-b: #2980b9; /* 乘數(藍) */
-
-            /* 放大版面設定 */
+            --hint-a: #27ae60; 
+            --hint-b: #2980b9; 
             --font-base: 1.2rem;
         }
 
@@ -38,7 +35,7 @@
 
         h1 { color: var(--primary); margin: 10px 0 20px 0; text-align: center; font-size: 2rem; }
 
-        /* --- 學員名牌 --- */
+        /* --- 學員名牌 & 獎勵顯示 --- */
         .user-profile {
             background-color: #e8daef;
             border: 2px dashed var(--primary);
@@ -49,7 +46,19 @@
             font-size: 1.2rem;
             font-weight: bold;
             color: var(--dark);
-            display: flex; align-items: center; gap: 10px;
+            display: flex; align-items: center; gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .stats-badge {
+            background: #fff;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         /* --- 容器 --- */
@@ -83,6 +92,8 @@
             border-radius: 10px; display: flex; justify-content: space-between; align-items: center;
             font-size: 1.2rem;
         }
+        .list-info small { color: #e74c3c; font-weight: bold; display: block; margin-top: 5px;}
+        .gem-tag { color: #2980b9; font-weight: bold; background: #d6eaf8; padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; margin-left: 5px;}
         
         /* --- 編輯區 --- */
         .gen-controls { 
@@ -114,91 +125,62 @@
             font-weight: bold; margin-bottom: 20px; background: #eee; padding: 15px; border-radius: 10px; 
             font-size: 1.3rem;
         }
+        #q-timer { font-family: monospace; font-size: 1.5rem; color: #2c3e50; }
+        .timer-urgent { color: #e74c3c !important; animation: blink 1s infinite; font-weight: 900; }
+        @keyframes blink { 50% { opacity: 0.5; } }
         
-        /* --- 橫式算式顯示區 --- */
+        /* 橫式算式 */
         .equation-board {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 30px 0;
-            gap: 15px;
-            font-family: 'Courier New', monospace; 
-            font-weight: bold; 
-            font-size: 3.5rem; 
-            flex-wrap: wrap;
+            display: flex; justify-content: center; align-items: center; margin: 30px 0; gap: 15px;
+            font-family: 'Courier New', monospace; font-weight: bold; font-size: 3.5rem; flex-wrap: wrap;
         }
-        
-        /* 顏色特效 */
         .hl-a { color: var(--hint-a); font-weight: 900; }
         .hl-b { color: var(--hint-b); font-weight: 900; }
         .hl-op { color: #7f8c8d; }
+        .input-group { display: flex; gap: 8px; }
 
-        /* 輸入框容器 */
-        .input-group {
-            display: flex;
-            gap: 8px;
-        }
-
-        /* 輸入框樣式 */
         .game-input { 
             width: 60px; height: 60px; font-size: 2.5rem; text-align: center; 
             border: 3px solid var(--primary); border-radius: 10px; background: #fff;
-            font-weight: bold; outline: none;
-            padding: 0;
+            font-weight: bold; outline: none; padding: 0;
         }
         .game-input.active-input {
-            background-color: #f5b7b1 !important; 
-            border-color: #c0392b;
-            box-shadow: 0 0 10px rgba(192, 57, 43, 0.5);
+            background-color: #f5b7b1 !important; border-color: #c0392b; box-shadow: 0 0 10px rgba(192, 57, 43, 0.5);
         }
 
-        /* --- 求助區塊 --- */
+        /* 求助 */
         .help-box {
-            display: none;
-            background-color: #eaf2f8;
-            border-left: 6px solid #3498db;
-            padding: 15px;
-            margin-top: 15px;
-            border-radius: 8px;
-            text-align: left;
-            font-size: 1.1rem;
-            line-height: 1.6;
-            animation: slideDown 0.3s;
+            display: none; background-color: #eaf2f8; border-left: 6px solid #3498db;
+            padding: 15px; margin-top: 15px; border-radius: 8px; text-align: left;
+            font-size: 1.1rem; line-height: 1.6; animation: slideDown 0.3s;
         }
         @keyframes slideDown { from{opacity:0; transform: translateY(-10px);} to{opacity:1; transform: translateY(0);} }
         .help-table { width: 100%; margin-top: 5px; font-family: monospace; }
         .help-row { display: flex; justify-content: space-between; padding: 2px 0; border-bottom:1px dashed #ddd;}
         .help-focus { background-color: #f9e79f; font-weight:bold; padding:0 5px; border-radius:3px;}
 
-        /* 測驗模式 */
         .test-mode-box { text-align: center; padding: 30px; font-size: 1.8rem; }
         .test-input { font-size: 1.8rem; padding: 10px; width: 120px; text-align: center; margin: 10px; border-radius: 8px; border: 2px solid #ccc;}
 
-        /* 詳細結果表格 */
-        .result-table {
-            width: 100%; border-collapse: collapse; margin-top: 20px;
-        }
-        .result-table th, .result-table td {
-            border: 1px solid #ddd; padding: 10px; text-align: center; font-size: 1.1rem;
-        }
+        /* 詳細結果 */
+        .result-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .result-table th, .result-table td { border: 1px solid #ddd; padding: 10px; text-align: center; font-size: 1.1rem; }
         .result-table th { background-color: #f2f2f2; }
         .res-correct { color: var(--success); font-weight: bold; }
         .res-wrong { color: var(--danger); font-weight: bold; }
 
-        .tabs { display: flex; border-bottom: 3px solid #ddd; margin-bottom: 20px; }
-        .tab { flex: 1; text-align: center; padding: 15px; cursor: pointer; color: #777; font-weight: bold; font-size: 1.2rem;}
-        .tab.active { color: var(--primary); border-bottom: 5px solid var(--primary); }
-
-        /* 版本號標籤 */
         .version-tag {
-            margin-top: 30px;
-            color: #bdc3c7;
-            font-size: 0.9rem;
-            text-align: center;
-            font-family: monospace;
-            border-top: 1px dashed #eee;
-            padding-top: 10px;
+            margin-top: 30px; color: #bdc3c7; font-size: 0.9rem; text-align: center;
+            font-family: monospace; border-top: 1px dashed #eee; padding-top: 10px;
         }
+        
+        /* 獲獎動畫效果 */
+        .reward-popup {
+            animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: #fff8e1; border: 3px solid #f1c40f; padding: 15px;
+            border-radius: 10px; margin-top: 20px; font-weight: bold; color: #d35400;
+        }
+        @keyframes pop { from{transform: scale(0);} to{transform: scale(1);} }
 
     </style>
 </head>
@@ -208,7 +190,9 @@
         <h1>❌ 99乘法闖關王</h1>
         
         <div class="user-profile" onclick="changeName()">
-            <span>🎓</span> <span id="display-name">設定學員姓名</span> <span>✎</span>
+            <div>🎓 <span id="display-name">設定學員姓名</span> ✎</div>
+            <div class="stats-badge">👑 <span id="stat-crowns">0</span></div>
+            <div class="stats-badge">💎 <span id="stat-gems">0</span></div>
         </div>
 
         <div class="tabs">
@@ -220,8 +204,8 @@
             <div id="lists-container"></div>
             <button class="btn-secondary btn-block" onclick="createNewList()">+ 新增/生成題庫</button>
             <div style="margin-top:20px; display:flex; gap:10px;">
-                <button class="btn-gray" style="flex:1" onclick="exportData()">匯出備份</button>
-                <button class="btn-gray" style="flex:1" onclick="document.getElementById('import-file').click()">匯入題庫</button>
+                <button class="btn-gray" style="flex:1" onclick="exportData()">匯出備份 (含寶石)</button>
+                <button class="btn-gray" style="flex:1" onclick="document.getElementById('import-file').click()">匯入</button>
                 <input type="file" id="import-file" style="display:none" accept=".json" onchange="handleImport(this)">
             </div>
         </div>
@@ -231,16 +215,18 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v1.3 (快速測驗版)</div>
+        <div class="version-tag">版本：v1.7 (寶石獎勵版)</div>
     </div>
 
     <div id="page-editor" class="container">
         <h2>✏️ 編輯/生成題庫</h2>
-        <div style="margin-bottom:15px;">
-            名稱: <input type="text" id="list-name" style="padding:8px; width:250px; font-size:1.2rem;">
+        <div style="margin-bottom:15px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
+            <div>名稱: <input type="text" id="list-name" style="padding:8px; width:180px; font-size:1.2rem;"></div>
+            <div>⏱️ 限時(秒): <input type="number" id="list-timer" placeholder="0不限" style="padding:8px; width:70px; font-size:1.2rem;" value="0"></div>
+            <div>💎 獎勵寶石: <input type="number" id="list-gems" placeholder="5" style="padding:8px; width:70px; font-size:1.2rem;" value="5"></div>
         </div>
         <div class="gen-controls">
-            <span><strong>快速生成:</strong> 輸入要練習的數字 (用逗號分隔)<br>例如: 2,5,8 (代表練習2,5,8的乘法，包含x1~x10)</span><br>
+            <span><strong>快速生成:</strong> 輸入數字 (逗號分隔) 如: 2,5,8</span><br>
             <div style="margin-top:10px;">
                 <input type="text" id="gen-targets" value="2,3,5" placeholder="輸入數字...">
                 <button class="btn-warning" onclick="autoGenerate()">生成題目</button>
@@ -260,14 +246,8 @@
         <div class="settings-box">
             <div class="settings-title">⚙️ 教學模式輔助設定：</div>
             <div class="checkbox-group">
-                <label class="checkbox-item">
-                    <input type="checkbox" id="opt-voice" checked> 
-                    🔊 語音提示
-                </label>
-                <label class="checkbox-item">
-                    <input type="checkbox" id="opt-text" checked> 
-                    📝 文字提示
-                </label>
+                <label class="checkbox-item"><input type="checkbox" id="opt-voice" checked> 🔊 語音提示</label>
+                <label class="checkbox-item"><input type="checkbox" id="opt-text" checked> 📝 文字提示</label>
             </div>
         </div>
 
@@ -287,12 +267,10 @@
 
         <div id="teach-area" style="display:none;">
             <div id="teach-msg" style="font-weight:bold; font-size:1.3rem; min-height: 3.6rem; color:var(--primary);"></div>
-            
             <div style="margin: 10px 0;">
                 <button class="btn-help" onclick="toggleHelp()">💡 忘記了，求助！</button>
                 <div id="help-content" class="help-box"></div>
             </div>
-
             <div class="equation-board" id="gridBoard"></div>
         </div>
 
@@ -311,6 +289,8 @@
             <div style="font-size: 4rem; color: var(--primary); font-weight: bold;" id="res-score">100</div>
             <div id="res-summary" style="font-size: 1.5rem; margin-bottom: 15px;"></div>
             
+            <div id="reward-area"></div>
+
             <div style="max-height: 300px; overflow-y: auto;">
                 <table class="result-table">
                     <thead><tr><th>題目</th><th>你的答案</th><th>正確答案</th><th>結果</th></tr></thead>
@@ -324,52 +304,64 @@
     </div>
 
 <script>
-    // --- 設定 ---
     let quizSettings = { voice: true, text: true };
     let studentName = '小小數學家';
+    let totalGems = 0; // 學員總寶石數
 
     // --- 語音 ---
     function speak(text) {
-        if(currentMode === 'teach' && !quizSettings.voice) return;
+        let force = text.includes("時間") || text.includes("寶石") || text.includes("全對");
+        if(currentMode === 'teach' && !quizSettings.voice && !force) return;
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
-            let clean = text.replace(/<[^>]*>/g, '');
-            clean = clean.replace(/×/g, '乘').replace(/=/g, '等於');
+            let clean = text.replace(/<[^>]*>/g, '').replace(/×/g, '乘').replace(/=/g, '等於');
             const u = new SpeechSynthesisUtterance(clean);
             u.lang = 'zh-TW'; u.rate = 1.0; 
             window.speechSynthesis.speak(u);
         }
     }
 
-    // --- 資料變數 ---
+    // --- 資料 ---
     let allLists = [], currentList = null, quizData = [];
     let currentQIdx = 0, currentMode = '';
-    let timerInt, startTime;
-    let rankData = [];
-    let editingId = null; 
+    let timerInt, startTime, limitSeconds = 0, isWarningPlayed = false;
+    let rankData = [], editingId = null; 
 
     window.onload = function() {
         if(localStorage.getItem('mul_v1_lists')) allLists = JSON.parse(localStorage.getItem('mul_v1_lists'));
-        else { allLists = [{name: "基礎練習 (2,5)", qs: genQs([2,5])}]; saveData(); }
+        else { allLists = [{name: "基礎練習 (2,5)", timer: 0, gems: 5, qs: genQs([2,5])}]; saveData(); }
         
         if(localStorage.getItem('mul_v1_rank')) rankData = JSON.parse(localStorage.getItem('mul_v1_rank'));
-        if(localStorage.getItem('mul_student')) studentName = localStorage.getItem('mul_student');
         
-        updateName();
+        if(localStorage.getItem('mul_student')) studentName = localStorage.getItem('mul_student');
+        if(localStorage.getItem('mul_gems')) totalGems = parseInt(localStorage.getItem('mul_gems')) || 0;
+        
+        updateProfile();
         renderLists();
     };
 
     function saveData() { localStorage.setItem('mul_v1_lists', JSON.stringify(allLists)); }
     function saveRankData() { localStorage.setItem('mul_v1_rank', JSON.stringify(rankData)); }
+    function saveStudentData() { 
+        localStorage.setItem('mul_student', studentName); 
+        localStorage.setItem('mul_gems', totalGems);
+        updateProfile();
+    }
     
-    // --- 工具函式 ---
+    // --- 學員資料 & 寶石顯示 ---
     function changeName() {
         let n = prompt("請輸入你的名字：", studentName);
-        if(n && n.trim()) { studentName = n.trim(); localStorage.setItem('mul_student', studentName); updateName(); }
+        if(n && n.trim()) { studentName = n.trim(); saveStudentData(); }
     }
-    function updateName() { document.getElementById('display-name').innerText = studentName; }
+    function updateProfile() { 
+        document.getElementById('display-name').innerText = studentName; 
+        // 換算皇冠：100寶石 = 1皇冠
+        let crowns = Math.floor(totalGems / 100);
+        let remainGems = totalGems % 100;
+        document.getElementById('stat-crowns').innerText = crowns;
+        document.getElementById('stat-gems').innerText = remainGems;
+    }
     
-    // --- 頁面切換 ---
     function showPage(pid) {
         document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
         document.getElementById(pid).classList.add('active');
@@ -388,7 +380,21 @@
         const c = document.getElementById('lists-container'); c.innerHTML='';
         allLists.forEach((l,i) => {
             const d = document.createElement('div'); d.className='list-item';
-            d.innerHTML = `<div><strong>${l.name}</strong> (${l.qs.length}題)</div><div><button class="btn-primary" onclick="prepareQuiz(${i})">開始</button><button class="btn-gray" onclick="editList(${i})">編輯</button><button class="btn-danger" onclick="delList(${i})">刪</button></div>`;
+            let timerInfo = l.timer > 0 ? `<small>⏱️ 限時 ${l.timer} 秒</small>` : '';
+            // 預設寶石數
+            let gemVal = l.gems ? l.gems : 5; 
+            
+            d.innerHTML = `
+                <div class="list-info">
+                    <strong>${l.name}</strong> (${l.qs.length}題)
+                    <span class="gem-tag">💎 +${gemVal}</span>
+                    ${timerInfo}
+                </div>
+                <div>
+                    <button class="btn-primary" onclick="prepareQuiz(${i})">開始</button>
+                    <button class="btn-gray" onclick="editList(${i})">編輯</button>
+                    <button class="btn-danger" onclick="delList(${i})">刪</button>
+                </div>`;
             c.appendChild(d);
         });
     }
@@ -396,6 +402,8 @@
     function createNewList() { 
         editingId = null; 
         document.getElementById('list-name').value="新乘法練習"; 
+        document.getElementById('list-timer').value = 0; 
+        document.getElementById('list-gems').value = 5; 
         document.getElementById('editor-rows').innerHTML=''; 
         showPage('page-editor'); 
     }
@@ -403,6 +411,8 @@
     function editList(i) { 
         editingId=i; const l=allLists[i]; 
         document.getElementById('list-name').value=l.name; 
+        document.getElementById('list-timer').value=l.timer || 0; 
+        document.getElementById('list-gems').value=l.gems || 5;
         document.getElementById('editor-rows').innerHTML=''; 
         l.qs.forEach(q=>addEditRow(q.a,q.b)); 
         showPage('page-editor'); 
@@ -417,8 +427,7 @@
     function autoGenerate() {
         const input = document.getElementById('gen-targets').value;
         const targets = input.split(/[,，]/).map(s => parseInt(s.trim())).filter(n => !isNaN(n));
-        
-        if(targets.length === 0) { alert("請輸入有效的數字，例如 2,3"); return; }
+        if(targets.length === 0) { alert("請輸入有效的數字"); return; }
         
         document.getElementById('editor-rows').innerHTML = '';
         let newQs = genQs(targets);
@@ -428,42 +437,67 @@
 
     function genQs(targets) {
         let qs = [];
-        targets.forEach(t => {
-            for(let i=1; i<=10; i++) {
-                qs.push({a: t, b: i});
-            }
-        });
+        targets.forEach(t => { for(let i=1; i<=10; i++) qs.push({a: t, b: i}); });
         return qs;
     }
 
     function saveList() { 
         const n=document.getElementById('list-name').value; 
+        const tVal=parseInt(document.getElementById('list-timer').value); 
+        const timer = isNaN(tVal) ? 0 : tVal;
+        const gVal=parseInt(document.getElementById('list-gems').value);
+        const gems = isNaN(gVal) ? 5 : gVal;
+
         const rs=document.querySelectorAll('.edit-row'); 
         const qs=[]; 
         rs.forEach(r=>{const a=parseInt(r.querySelector('.inp-a').value); const b=parseInt(r.querySelector('.inp-b').value); if(a&&b)qs.push({a,b})}); 
         if(qs.length<1)return alert("請輸入題目"); 
         
-        if(editingId===null) allLists.push({name:n,qs}); 
-        else allLists[editingId]={name:n,qs}; 
+        const data = {name:n, timer:timer, gems:gems, qs:qs};
+        if(editingId===null) allLists.push(data); else allLists[editingId]=data; 
         
         saveData(); showPage('page-home'); editingId=null; 
     }
 
     function delList(i) { if(confirm("刪除？")){allLists.splice(i,1); saveData(); renderLists();} }
 
+    // --- 匯出資料 (含寶石) ---
     function exportData() { 
         const now = new Date();
         const dateStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}`;
-        const b=new Blob([JSON.stringify(allLists)],{type:"application/json"}); 
-        const a=document.createElement('a'); 
-        a.href=URL.createObjectURL(b); 
-        a.download=`mul_practice_${dateStr}.json`; 
-        a.click(); 
+        // 包裝資料：包含題庫與學員數據
+        const exportObj = {
+            version: "1.7",
+            student: { name: studentName, totalGems: totalGems },
+            lists: allLists
+        };
+        const b=new Blob([JSON.stringify(exportObj)],{type:"application/json"}); 
+        const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=`mul_backup_${dateStr}.json`; a.click(); 
     }
     
+    // --- 匯入資料 ---
     function handleImport(inp) { 
         const f=inp.files[0]; const r=new FileReader(); 
-        r.onload=(e)=>{ try{allLists=allLists.concat(JSON.parse(e.target.result));saveData();renderLists();alert("匯入成功");}catch(x){alert("錯誤");} }; 
+        r.onload=(e)=>{ 
+            try {
+                const data = JSON.parse(e.target.result);
+                // 判斷是新版備份(含student)還是舊版(只有陣列)
+                if (Array.isArray(data)) {
+                    allLists = allLists.concat(data); // 舊版相容
+                } else if (data.lists) {
+                    // 新版
+                    allLists = allLists.concat(data.lists);
+                    if(data.student) {
+                        if(confirm(`匯入資料包含學員：${data.student.name} (寶石:${data.student.totalGems})。\n要覆蓋目前的進度嗎？`)) {
+                            studentName = data.student.name;
+                            totalGems = data.student.totalGems;
+                            saveStudentData();
+                        }
+                    }
+                }
+                saveData(); renderLists(); alert("匯入成功");
+            } catch(x){alert("檔案格式錯誤");} 
+        }; 
         r.readAsText(f); 
     }
 
@@ -477,7 +511,8 @@
             quizSettings.text = document.getElementById('opt-text').checked;
         }
 
-        let questions = currentList.qs;
+        let questions = [...currentList.qs];
+        questions.sort(() => Math.random() - 0.5);
 
         quizData = questions.map(q => ({
             a: q.a, b: q.b, 
@@ -487,17 +522,46 @@
         }));
         
         currentQIdx = 0;
+        limitSeconds = currentList.timer || 0; 
+        isWarningPlayed = false;
         startTime = Date.now();
-        clearInterval(timerInt); timerInt = setInterval(updTime, 1000);
-        
+        document.getElementById('q-timer').classList.remove('timer-urgent');
+
+        clearInterval(timerInt); 
+        timerInt = setInterval(updTime, 1000);
+        updTime();
+
         showPage('page-quiz');
-        speak(`${studentName}，歡迎來到${mode==='teach'?'教學模式':'測驗模式'}，準備挑戰99乘法！`);
+        let intro = `${studentName}，歡迎來到${mode==='teach'?'教學模式':'測驗模式'}！`;
+        if(limitSeconds > 0) intro += `本關卡限時 ${limitSeconds} 秒，加油！`;
+        speak(intro);
         loadQuestion();
     }
 
     function updTime() {
-        const s = Math.floor((Date.now()-startTime)/1000);
-        document.getElementById('q-timer').innerText = new Date(s*1000).toISOString().substr(14,5);
+        let elapsed = Math.floor((Date.now()-startTime)/1000);
+        if (limitSeconds > 0) {
+            let remaining = limitSeconds - elapsed;
+            if (remaining <= 0) {
+                remaining = 0;
+                document.getElementById('q-timer').innerText = "00:00";
+                clearInterval(timerInt);
+                speak("時間到！停止作答！");
+                alert("⏰ 時間到！測驗結束！");
+                finishQuiz(); 
+                return;
+            }
+            let mm = Math.floor(remaining / 60).toString().padStart(2,'0');
+            let ss = (remaining % 60).toString().padStart(2,'0');
+            document.getElementById('q-timer').innerText = `${mm}:${ss}`;
+            if (remaining <= 10) {
+                document.getElementById('q-timer').classList.add('timer-urgent');
+                if (!isWarningPlayed) { speak("時間快到了，加油！"); isWarningPlayed = true; }
+            }
+        } else {
+            let d = new Date(elapsed * 1000);
+            document.getElementById('q-timer').innerText = d.toISOString().substr(14, 5);
+        }
     }
 
     function quitQuiz() { if(confirm("確定退出？")) { clearInterval(timerInt); showPage('page-home'); } }
@@ -513,12 +577,7 @@
             const inp = document.getElementById('test-ans');
             inp.value = '';
             inp.focus();
-            
-            // *** 修改：支援 Enter 鍵送出 ***
-            inp.onkeydown = (e) => {
-                if(e.key === 'Enter') checkTestAnswer();
-            };
-            
+            inp.onkeydown = (e) => { if(e.key === 'Enter') checkTestAnswer(); };
         } else {
             document.getElementById('test-area').style.display = 'none';
             document.getElementById('teach-area').style.display = 'block';
@@ -526,41 +585,24 @@
         }
     }
 
-    // --- 教學模式 Grid 渲染 ---
     function renderMulGrid(q) {
-        const box = document.getElementById('gridBoard'); 
-        box.innerHTML = ''; 
-        
+        const box = document.getElementById('gridBoard'); box.innerHTML = ''; 
         const msg = document.getElementById('teach-msg');
         document.getElementById('help-content').style.display = 'none';
         
-        // 1. 建立橫式算式元素
-        const elA = document.createElement('span');
-        elA.innerText = q.a; elA.className = 'hl-a'; box.appendChild(elA);
+        const elA = document.createElement('span'); elA.innerText = q.a; elA.className = 'hl-a'; box.appendChild(elA);
+        const elSign = document.createElement('span'); elSign.innerText = ' × '; elSign.className = 'hl-op'; box.appendChild(elSign);
+        const elB = document.createElement('span'); elB.innerText = q.b; elB.className = 'hl-b'; box.appendChild(elB);
+        const elEq = document.createElement('span'); elEq.innerText = ' = '; elEq.className = 'hl-op'; box.appendChild(elEq);
 
-        const elSign = document.createElement('span');
-        elSign.innerText = ' × '; elSign.className = 'hl-op'; box.appendChild(elSign);
-
-        const elB = document.createElement('span');
-        elB.innerText = q.b; elB.className = 'hl-b'; box.appendChild(elB);
-
-        const elEq = document.createElement('span');
-        elEq.innerText = ' = '; elEq.className = 'hl-op'; box.appendChild(elEq);
-
-        // 2. 建立多格輸入區
-        const inputGroup = document.createElement('div');
-        inputGroup.className = 'input-group';
-        
+        const inputGroup = document.createElement('div'); inputGroup.className = 'input-group';
         const strAns = q.ans.toString();
         let createdInputs = [];
 
         for(let i=0; i<strAns.length; i++) {
             const inp = document.createElement('input');
-            inp.type = 'tel'; 
-            inp.maxLength = 1; 
-            inp.className = 'game-input active-input step-input-group';
+            inp.type = 'tel'; inp.maxLength = 1; inp.className = 'game-input active-input step-input-group';
             inp.dataset.index = i; 
-            
             inp.oninput = function() {
                 if(this.value.length === 1) {
                     const nextIndex = parseInt(this.dataset.index) + 1;
@@ -574,102 +616,68 @@
                      if(createdInputs[prevIndex]) createdInputs[prevIndex].focus();
                 }
             };
-            inputGroup.appendChild(inp);
-            createdInputs.push(inp);
+            inputGroup.appendChild(inp); createdInputs.push(inp);
         }
-        
         box.appendChild(inputGroup);
 
         let hint = `請計算 ${q.a} 乘以 ${q.b} 是多少？`;
-        if(quizSettings.text) msg.innerText = hint;
-        else msg.innerText = "請填寫答案...";
+        if(quizSettings.text) msg.innerText = hint; else msg.innerText = "請填寫答案...";
         speak(hint);
 
         if(createdInputs.length > 0) setTimeout(() => createdInputs[0].focus(), 100);
 
         const okBtn = document.createElement('button'); okBtn.className='btn-warning'; okBtn.innerText='OK';
         okBtn.onclick = () => checkTeachAnswerMulti(q);
-        
         if(document.getElementById('ok-btn')) document.getElementById('ok-btn').remove();
-        let oldBtn = msg.querySelector('button');
-        if(oldBtn) oldBtn.remove();
-        
-        msg.appendChild(document.createElement('br')); 
-        msg.appendChild(okBtn);
+        let oldBtn = msg.querySelector('button'); if(oldBtn) oldBtn.remove();
+        msg.appendChild(document.createElement('br')); msg.appendChild(okBtn);
     }
 
-    // --- 驗證教學模式答案 ---
     function checkTeachAnswerMulti(q) {
         const inputs = document.querySelectorAll('.step-input-group');
-        let userAnsStr = "";
-        inputs.forEach(inp => userAnsStr += inp.value);
-
+        let userAnsStr = ""; inputs.forEach(inp => userAnsStr += inp.value);
         if(userAnsStr === "") { if(inputs.length>0) inputs[0].focus(); return; }
 
         if(parseInt(userAnsStr) === q.ans) {
-            speak("答對了！");
-            q.isCorrect = true;
-            nextQuestion();
+            speak("答對了！"); q.isCorrect = true; q.userAns = q.ans; nextQuestion();
         } else {
             speak(`算錯囉，${q.a} 乘以 ${q.b} 不是 ${userAnsStr}，再想想看。`);
-            inputs.forEach(inp => inp.value = '');
-            if(inputs.length>0) inputs[0].focus();
+            inputs.forEach(inp => inp.value = ''); if(inputs.length>0) inputs[0].focus();
         }
     }
 
-    // --- 測驗模式驗證 (修改：正確不Alert，錯誤才Alert) ---
     function checkTestAnswer() {
         const q = quizData[currentQIdx];
         const uAns = document.getElementById('test-ans').value;
-        
-        if(uAns === '') { return; } // 空值不送出
-        
+        if(uAns === '') { return; } 
         q.userAns = parseInt(uAns);
-        
         if(q.userAns === q.ans) {
-            q.isCorrect = true;
-            speak("答對了！");
-            // 直接下一題，不顯示 Alert
-            nextQuestion();
+            q.isCorrect = true; speak("答對了！"); nextQuestion();
         } else {
-            q.isCorrect = false;
-            speak(`錯了，正確答案是 ${q.ans}`);
-            // 只有錯誤時顯示 Alert
+            q.isCorrect = false; speak(`錯了，正確答案是 ${q.ans}`);
             alert(`❌ 算錯囉！\n\n題目：${q.a} × ${q.b}\n正確答案是：${q.ans}`);
             nextQuestion();
         }
     }
 
     function nextQuestion() {
-        if(currentQIdx < quizData.length - 1) {
-            currentQIdx++;
-            loadQuestion();
-        } else {
-            finishQuiz();
-        }
+        if(currentQIdx < quizData.length - 1) { currentQIdx++; loadQuestion(); } else { finishQuiz(); }
     }
 
-    // --- 求助功能 ---
     function toggleHelp() {
         const helpBox = document.getElementById('help-content');
         if(helpBox.style.display === 'block') { helpBox.style.display = 'none'; return; }
-
         const q = quizData[currentQIdx];
         let html = `<strong>🔍 ${q.a} 的乘法表：</strong><br><div class="help-table">`;
-        
         for(let i=1; i<=10; i++) {
             let style = (i === q.b) ? 'class="help-row help-focus"' : 'class="help-row"';
             let mark = (i === q.b) ? '👈' : '';
             html += `<div ${style}><span>${q.a} × ${i} = ${q.a*i}</span> ${mark}</div>`;
         }
         html += `</div>`;
-        
-        helpBox.innerHTML = html;
-        helpBox.style.display = 'block';
-        speak(`來看看 ${q.a} 的乘法表`);
+        helpBox.innerHTML = html; helpBox.style.display = 'block'; speak(`來看看 ${q.a} 的乘法表`);
     }
 
-    // --- 結算 ---
     function finishQuiz() {
         clearInterval(timerInt);
         showPage('page-result');
@@ -678,32 +686,49 @@
         const score = Math.round((correctCount / quizData.length) * 100);
         
         document.getElementById('res-score').innerText = score;
-        document.getElementById('res-summary').innerText = `${studentName}，你答對了 ${correctCount} / ${quizData.length} 題！`;
+        let summary = `${studentName}，你答對了 ${correctCount} / ${quizData.length} 題！`;
+        if(limitSeconds > 0 && currentQIdx < quizData.length - 1) summary += " (時間到，部分未完成)";
+        document.getElementById('res-summary').innerText = summary;
         
+        // --- 寶石獎勵結算 ---
+        const rewardArea = document.getElementById('reward-area');
+        rewardArea.innerHTML = '';
+        
+        if (currentMode === 'test' && score === 100) {
+            let gemsEarned = currentList.gems || 5;
+            totalGems += gemsEarned;
+            saveStudentData(); // 儲存寶石
+            
+            rewardArea.innerHTML = `
+                <div class="reward-popup">
+                    🎉 恭喜滿分！獲得 ${gemsEarned} 顆寶石 💎<br>
+                    目前累積: ${totalGems} 顆
+                </div>`;
+            speak(`太棒了！全對！你獲得了 ${gemsEarned} 顆寶石！`);
+        } else {
+            let praise = score>=60?"表現不錯，下次挑戰滿分拿寶石！":"再多練習幾次，加油！";
+            speak(`測驗結束，你得了${score}分。${praise}`);
+        }
+
         const tbody = document.getElementById('res-table-body');
         tbody.innerHTML = '';
         quizData.forEach(q => {
             const tr = document.createElement('tr');
             let status = q.isCorrect ? '<span class="res-correct">O</span>' : '<span class="res-wrong">X</span>';
-            let uAnsShow = (currentMode==='teach') ? "(完成)" : q.userAns;
+            let uAnsShow = (q.userAns === null) ? "<span style='color:gray'>未答</span>" : q.userAns;
+            if(currentMode === 'teach' && q.isCorrect) uAnsShow = "(完成)";
             
-            tr.innerHTML = `
-                <td>${q.a} × ${q.b}</td>
-                <td>${uAnsShow}</td>
-                <td>${q.ans}</td>
-                <td>${status}</td>
-            `;
+            tr.innerHTML = `<td>${q.a} × ${q.b}</td><td>${uAnsShow}</td><td>${q.ans}</td><td>${status}</td>`;
             tbody.appendChild(tr);
         });
-        
-        let praise = score===100?"太強了！乘法大師！":score>=60?"表現不錯！":"再多練習幾次會更棒！";
-        speak(`測驗結束，你得了${score}分。${praise}`);
     }
 
     function saveRank() {
         const t = document.getElementById('q-timer').innerText;
         const s = document.getElementById('res-score').innerText;
-        rankData.push({name: studentName, score: parseInt(s), time: t, list: currentList.name});
+        let listName = currentList.name;
+        if(limitSeconds > 0) listName += ` [限時${limitSeconds}s]`;
+        rankData.push({name: studentName, score: parseInt(s), time: t, list: listName});
         saveRankData(); alert("已登記"); switchTab('rank'); showPage('page-home');
     }
 
