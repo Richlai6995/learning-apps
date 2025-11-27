@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>乘法闖關王 3.6 (邏輯修正版)</title>
+    <title>乘法闖關王 3.7 (加法邏輯全修正)</title>
     <style>
         :root {
             --primary: #8e44ad;
@@ -204,7 +204,7 @@
 <body>
 
     <div id="page-home" class="container active">
-        <h1>✖️ 乘法闖關王 3.6</h1>
+        <h1>✖️ 乘法闖關王 3.7</h1>
         
         <div class="user-profile" onclick="changeName()">
             <span>🎓</span> <span id="display-name">設定學員姓名</span> <span>✎</span>
@@ -230,7 +230,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v3.6 (邏輯修正版)</div>
+        <div class="version-tag">版本：v3.7 (加法邏輯全修正版)</div>
     </div>
 
     <div id="page-editor" class="container">
@@ -259,10 +259,10 @@
         <h2>選擇模式</h2>
         
         <div class="settings-panel">
-            <h3>🛠️ 教學輔助設定 (逐步撤除鷹架)</h3>
-            <label><input type="checkbox" id="opt-voice" checked> 🔊 語音提示 (題目引導)</label>
-            <label><input type="checkbox" id="opt-text" checked> 🔤 文字提示 (操作說明)</label>
-            <label><input type="checkbox" id="opt-arrow" checked> ↗️ 箭頭提示 (計算順序)</label>
+            <h3>🛠️ 教學輔助設定</h3>
+            <label><input type="checkbox" id="opt-voice" checked> 🔊 語音提示</label>
+            <label><input type="checkbox" id="opt-text" checked> 🔤 文字提示</label>
+            <label><input type="checkbox" id="opt-arrow" checked> ↗️ 箭頭提示</label>
         </div>
 
         <div style="text-align: center;">
@@ -352,15 +352,15 @@
     let settingText = true;
     let settingArrow = true;
 
-    const STORAGE_KEY_LISTS = 'mul_v3_6_lists';
-    const STORAGE_KEY_RANK = 'mul_v3_6_rank';
-    const STORAGE_KEY_USER = 'mul_v3_6_user';
+    const STORAGE_KEY_LISTS = 'mul_v3_7_lists';
+    const STORAGE_KEY_RANK = 'mul_v3_7_rank';
+    const STORAGE_KEY_USER = 'mul_v3_7_user';
 
     window.onload = function() {
         if(localStorage.getItem(STORAGE_KEY_LISTS)) {
             allLists = JSON.parse(localStorage.getItem(STORAGE_KEY_LISTS));
         } else {
-            allLists = [{name: "進階練習 (2位數)", qs: [{a:56, b:29}, {a:48, b:5}, {a:75, b:14}]}];
+            allLists = [{name: "進階練習 (2位數)", qs: [{a:56, b:29}, {a:99, b:88}]}];
             saveData();
         }
         if(localStorage.getItem(STORAGE_KEY_RANK)) {
@@ -569,19 +569,20 @@
         showResult(Math.round((correct/quizData.length)*100), correct, quizData.length);
     }
 
-    // --- 邏輯升級：Grid Memory Simulation ---
+    // --- ★★★ 核心修正：Grid Memory Simulation ★★★ ---
     function generateDetailedSteps(a, b) {
         let sA = a.toString();
         let sB = b.toString();
         let steps = [];
         
+        // 計算總寬度：99*99 (4位數)，A(2)+B(2)+1 = 5列，足夠
         let cols = sA.length + sB.length + 1;
         let baseRow = 2; 
         
-        // 建立模擬 Grid 來記錄位置，方便後續加法抓值
+        // ★ 模擬格子的值，用於加法階段準確抓取
         let gridSim = {}; // key: "row-col", value: int
 
-        // 1. 乘法
+        // 1. 乘法階段
         for(let j = sB.length - 1; j >= 0; j--) {
             let digitB = parseInt(sB[j]);
             let currentCarry = 0;
@@ -598,6 +599,9 @@
                 let product = rawProd + currentCarry;
                 let unit = product % 10;
                 let newCarry = Math.floor(product / 10);
+                
+                // 計算格子位置
+                // sA 對齊最右邊是 cols-1-shift. i=sA.length-1 是最右.
                 let gridCol = cols - 1 - shift - (sA.length - 1 - i);
                 
                 let srcRowA = 1; 
@@ -606,7 +610,8 @@
                 let srcColB = cols - sB.length + j;
 
                 let isLastInRow = (i === 0);
-                let writeCarryVal = isLastInRow ? 0 : newCarry; // 最後一位不寫進位橘圈
+                // ★ 修正：最後一位不產生 writeCarry (因為會直接寫在前面)，避免錯誤引導
+                let writeCarryVal = isLastInRow ? 0 : newCarry;
 
                 let step = {
                     type: 'mul',
@@ -641,53 +646,49 @@
 
                 steps.push(step);
                 
-                // 紀錄到 GridSim
-                if(isLastInRow) {
-                    // 最後一位，如果還有進位，要寫在左邊那格
-                    gridSim[`${currentRow}-${gridCol}`] = unit;
-                    if(newCarry > 0) {
-                        gridSim[`${currentRow}-${gridCol-1}`] = newCarry;
-                    }
-                } else {
-                    gridSim[`${currentRow}-${gridCol}`] = unit;
+                // ★ 將數字填入模擬網格
+                gridSim[`${currentRow}-${gridCol}`] = unit;
+                if(isLastInRow && newCarry > 0) {
+                    // 如果是最後一位還有進位，例如 5*9=45, 寫5進4(但這是最後一位所以4寫在左邊)
+                    gridSim[`${currentRow}-${gridCol-1}`] = newCarry;
                 }
 
                 currentCarry = newCarry;
             }
         }
 
-        // 2. 加法 (基於 GridSim 逐列相加)
+        // 2. 加法階段 (基於 gridSim)
         if(sB.length > 1) {
             steps.push({ type: 'clear_carry', hint: '乘法完成，清空進位準備相加。' });
             steps.push({ type: 'line', row: baseRow + 2 + sB.length, hint: '畫線準備相加。' });
             
             let sumRow = baseRow + 2 + sB.length + 1;
-            let totalSum = a * b;
-            let sTotal = totalSum.toString();
+            let sTotal = (a * b).toString();
             let currentSumCarry = 0;
             
-            // 從最右邊開始掃描
+            // 從最右邊 (cols-1) 開始往左算
             for(let c = cols - 1; c >= 0; c--) {
+                // 檢查這一行是否有任何數字 (含進位)
                 let colSum = currentSumCarry;
-                let hasValue = false; // 檢查這一行有沒有東西
+                let hasVal = false;
+                if(currentSumCarry > 0) hasVal = true;
 
                 // 掃描所有部分積的 Row
-                for(let r = baseRow + 2; r < baseRow + 2 + sB.length; r++) {
+                let startRow = baseRow + 2;
+                let endRow = startRow + sB.length;
+                for(let r = startRow; r < endRow; r++) {
                     let val = gridSim[`${r}-${c}`];
                     if(val !== undefined) {
                         colSum += val;
-                        hasValue = true;
+                        hasVal = true;
                     }
                 }
 
-                // 如果這一行完全沒東西且沒進位，且已經超過了總和長度，就停止
-                // (簡單判斷：如果 sTotal 還有位數要填，就繼續)
-                // 比較好的方式是直接對應 sTotal 的位數
-                // 但為了精確，我們用 column index 反推 sTotal 的 index
-                // sTotal 對齊最右邊 cols-1
-                let sTotalIndex = sTotal.length - 1 - (cols - 1 - c);
-                
-                if(sTotalIndex < 0) break; // 已經算完了
+                // 如果這一行完全沒東西 (連進位也沒有)，且已經超過結果位數，就結束
+                // 用 sTotal 長度來判斷最準
+                // sTotal 填在 [cols - sTotal.length, cols-1]
+                let expectedIndex = cols - sTotal.length;
+                if(c < expectedIndex && !hasVal) break;
 
                 let unit = colSum % 10;
                 let newCarry = Math.floor(colSum / 10);
@@ -695,14 +696,14 @@
                 let step = {
                     type: 'add',
                     writeAns: unit,
-                    writeCarry: newCarry, // ★★★ 這裡會傳出加法進位 ★★★
+                    writeCarry: newCarry, // ★ 這裡會傳出加法進位
                     ansRow: sumRow,
                     ansCol: c,
-                    carryRow: 0, // 寫在最上面
+                    carryRow: 0, // 進位寫在最上方
                     carryCol: c - 1,
                     hint: `將這一行的數字相加 ${currentSumCarry > 0 ? '(含之前進位)' : ''}，這格該填多少？`,
                     fullExplanation: `直行相加結果：${colSum}。填寫 ${unit} ${newCarry > 0 ? '，進位 ' + newCarry : ''}。`,
-                    isLast: (sTotalIndex === 0)
+                    isLast: (c === expectedIndex) // 是否為最後一位
                 };
                 steps.push(step);
                 currentSumCarry = newCarry;
@@ -782,23 +783,20 @@
                 continue;
             }
 
+            // 顯示答案
             if(s.type === 'mul' && s.isLastInRow && s.totalProd >= 10) {
                 let strVal = s.totalProd.toString(); 
-                let tenVal = strVal[0];
-                let unitVal = strVal[1];
-                
                 let unitCell = document.getElementById(`c-${s.ansRow}-${s.ansCol}`);
-                if(unitCell) unitCell.innerText = unitVal;
+                if(unitCell) unitCell.innerText = strVal[1];
                 
                 let tenCell = document.getElementById(`c-${s.ansRow}-${s.ansCol-1}`);
-                if(tenCell) tenCell.innerText = tenVal;
-                
+                if(tenCell) tenCell.innerText = strVal[0];
             } else {
                 let ansCell = document.getElementById(`c-${s.ansRow}-${s.ansCol}`);
                 if(ansCell) ansCell.innerText = s.writeAns;
             }
             
-            // ★★★ 加法進位也要顯示 ★★★
+            // 顯示進位 (乘法中途 OR 加法進位)
             if(s.writeCarry > 0) {
                 let carryCell = document.getElementById(`c-${s.carryRow}-${s.carryCol}`);
                 if(carryCell) carryCell.innerHTML = `<span style="font-size:1rem; color:#d35400;">${s.writeCarry}</span>`;
@@ -910,7 +908,7 @@
             }
         }
 
-        // ★★★ 進位輸入：乘法中途 OR 加法有進位時 ★★★
+        // ★ 進位輸入：乘法(非最後) OR 加法(有進位)
         if( (step.type==='mul' && !step.isLastInRow && step.writeCarry > 0) || 
             (step.type==='add' && step.writeCarry > 0) ) {
             let carryCell = document.getElementById(`c-${step.carryRow}-${step.carryCol}`);
@@ -954,20 +952,20 @@
         let iAns = document.getElementById('inp-ans');
         let iCarry = document.getElementById('inp-carry');
 
-        // 填寫檢查
         if(step.type === 'mul' && step.isLastInRow && step.totalProd >= 10) {
             if(!iTen || !iUnit || iTen.value==='' || iUnit.value==='') allFilled = false;
         } else {
             if(!iAns || iAns.value==='') allFilled = false;
         }
-        // 進位格存在才檢查
-        if( (step.type==='mul' && !step.isLastInRow && step.writeCarry > 0) || (step.type==='add' && step.writeCarry > 0) ) {
+        
+        // 檢查是否需要進位格
+        let needsCarry = (step.type==='mul' && !step.isLastInRow && step.writeCarry > 0) || (step.type==='add' && step.writeCarry > 0);
+        if(needsCarry) {
             if(!iCarry || iCarry.value==='') allFilled = false;
         }
 
         if(isAuto && !allFilled) return; 
 
-        // 驗證
         if(step.type === 'mul' && step.isLastInRow && step.totalProd >= 10) {
             let tenVal = Math.floor(step.totalProd / 10);
             let unitVal = step.totalProd % 10;
@@ -982,7 +980,7 @@
             else { iAns.classList.remove('wrong'); if(isAuto) iAns.classList.add('correct'); }
         }
 
-        if(iCarry) {
+        if(needsCarry) {
             if(parseInt(iCarry.value) !== step.writeCarry) { if(!isAuto) iCarry.classList.add('wrong'); allCorrect = false; }
             else { iCarry.classList.remove('wrong'); if(isAuto) iCarry.classList.add('correct'); }
         }
