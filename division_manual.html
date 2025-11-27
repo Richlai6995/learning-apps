@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>除法闖關王 3.4 (自訂輔助版)</title>
+    <title>除法闖關王 3.5 (修正估算與顯示)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -95,7 +95,7 @@
         .edit-row { display: flex; gap: 10px; margin-bottom: 8px; align-items: center; }
         .edit-row input { padding: 10px; flex: 1; text-align: center; font-size: 1.2rem; border-radius: 5px; border: 1px solid #ccc; }
 
-        /* --- 設定選項 (新增) --- */
+        /* --- 設定選項 --- */
         .settings-box {
             background-color: #f0f8ff;
             border: 2px solid #bcdbf3;
@@ -119,16 +119,18 @@
         /* 除法直式 Grid */
         .grid-container {
             display: grid; grid-auto-rows: var(--cell-size); justify-content: center; margin: 20px 0;
-            gap: 2px;
+            gap: 0px; /* 修正：設為0避免線條斷裂明顯 */
         }
         .grid-cell {
             width: var(--cell-size); height: var(--cell-size); 
             display: flex; justify-content: center; align-items: center;
             font-family: 'Courier New', monospace; font-weight: bold; 
             font-size: 1.8rem; position: relative;
+            margin: 1px; /* 用 margin 代替 gap */
         }
         .bracket-cell { border-right: 3px solid #333; border-top-right-radius: 15px; margin-right: 2px; }
         .dividend-cell { border-top: 3px solid #333; margin-top: -3px; }
+        /* 修正：減法線樣式 */
         .subtraction-line { border-bottom: 3px solid #333; }
         
         /* 特效顏色 Class */
@@ -226,7 +228,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v3.4 (自訂輔助版)</div>
+        <div class="version-tag">版本：v3.5 (修正估算與顯示)</div>
     </div>
 
     <div id="page-editor" class="container">
@@ -328,7 +330,6 @@
 
     // --- 語音 ---
     function speak(text) {
-        // 如果是教學模式，且語音被關閉，則不發聲
         if(currentMode === 'teach' && !quizSettings.voice) return;
 
         if ('speechSynthesis' in window) {
@@ -349,7 +350,7 @@
 
     window.onload = function() {
         if(localStorage.getItem('div_v3_lists')) allLists = JSON.parse(localStorage.getItem('div_v3_lists'));
-        else { allLists = [{name: "範例：估算練習", qs: [{a:846, b:32}, {a:750, b:24}, {a:96, b:3}]}]; saveData(); }
+        else { allLists = [{name: "範例：估算練習", qs: [{a:846, b:32}, {a:846, b:25}, {a:96, b:3}]}]; saveData(); }
         if(localStorage.getItem('div_v3_rank')) rankData = JSON.parse(localStorage.getItem('div_v3_rank'));
         if(localStorage.getItem('div_student')) studentName = localStorage.getItem('div_student');
         
@@ -360,14 +361,12 @@
     function saveData() { localStorage.setItem('div_v3_lists', JSON.stringify(allLists)); }
     function saveRankData() { localStorage.setItem('div_v3_rank', JSON.stringify(rankData)); }
     
-    // --- 學員姓名 ---
     function changeName() {
         let n = prompt("請輸入你的名字：", studentName);
         if(n && n.trim()) { studentName = n.trim(); localStorage.setItem('div_student', studentName); updateName(); }
     }
     function updateName() { document.getElementById('display-name').innerText = studentName; }
 
-    // --- 導航 ---
     function showPage(pid) {
         document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
         document.getElementById(pid).classList.add('active');
@@ -381,7 +380,6 @@
         event.target.classList.add('active');
     }
 
-    // --- 題庫管理 ---
     function renderLists() {
         const c = document.getElementById('lists-container'); c.innerHTML='';
         allLists.forEach((l,i) => {
@@ -436,13 +434,10 @@
     }
     function handleImport(inp) { const f=inp.files[0]; const r=new FileReader(); r.onload=(e)=>{ try{allLists=allLists.concat(JSON.parse(e.target.result));saveData();renderLists();alert("匯入成功");}catch(x){alert("錯誤");} }; r.readAsText(f); }
 
-    // --- 測驗邏輯 ---
     function prepareQuiz(i) { currentList = allLists[i]; showPage('page-mode'); }
 
     function startQuiz(mode) {
         currentMode = mode;
-        
-        // 讀取輔助設定
         if(mode === 'teach') {
             quizSettings.voice = document.getElementById('opt-voice').checked;
             quizSettings.text = document.getElementById('opt-text').checked;
@@ -492,7 +487,6 @@
         }
     }
 
-    // --- 測驗模式 ---
     function checkTestAnswer() {
         const q = quizData[currentQIdx];
         const uQ = document.getElementById('test-quo').value;
@@ -524,7 +518,7 @@
         }
     }
 
-    // --- 教學模式 & 步驟生成 ---
+    // --- 修改：生成步驟邏輯 (修正估算方法) ---
     function generateDivSteps(dividend, divisor) {
         let dStr = dividend.toString();
         let steps = [];
@@ -547,14 +541,18 @@
                 let hintText = `看 ${working} ÷ ${divisor}，商多少？`;
                 let estHint = "";
                 
-                // 如果除數 >= 10，提供估算引導
                 if(divisor >= 10 && working >= 10) {
-                    let d_lead = Math.floor(divisor / 10);
-                    let w_lead = Math.floor(working / 10);
-                    let d_est = d_lead * 10;
-                    let w_est = w_lead * 10;
+                    // *** 修正1: 使用 Math.round 進行四捨五入估算 ***
+                    let d_round = Math.round(divisor / 10);
+                    let w_round = Math.round(working / 10);
                     
-                    estHint = `${working}估${w_est}，${divisor}估${d_est}。這時提醒${d_lead}幾倍接近並小於${w_lead}？`;
+                    // 防止除數四捨五入後為0 (雖然除數>=10通常不會，但保險起見)
+                    if(d_round === 0) d_round = 1;
+
+                    let d_est = d_round * 10;
+                    let w_est = w_round * 10;
+                    
+                    estHint = `${working}估${w_est}，${divisor}估${d_est}。這時提醒${d_round}幾倍接近並小於${w_round}？`;
                     hintText = estHint; 
                 }
 
@@ -601,7 +599,6 @@
         const bStr = q.b.toString();
         const offset = 6 - dStr.length;
 
-        // --- 繪製除數 ---
         const divCell = document.getElementById(`c-1-${offset-2}`);
         divCell.innerHTML = '';
         let divHtml = '';
@@ -612,7 +609,6 @@
 
         document.getElementById(`c-1-${offset-1}`).classList.add('bracket-cell');
         
-        // --- 繪製被除數 ---
         for(let i=0; i<dStr.length; i++) {
             const cell = document.getElementById(`c-1-${offset+i}`);
             cell.innerText = dStr[i];
@@ -620,7 +616,6 @@
             cell.dataset.dIndex = i;
         }
 
-        // --- 繪製已完成 ---
         for(let i=0; i<q.stepIdx; i++) {
             const s = q.steps[i];
             fillCell(s.r, s.c, s.ans, s.type);
@@ -630,7 +625,6 @@
             el.classList.remove('hl-high', 'hl-low');
         });
 
-        // --- 結束判斷 ---
         if(q.stepIdx >= q.steps.length) {
             msg.innerText = "太棒了！本題完成。";
             q.isCorrect = true; 
@@ -652,17 +646,14 @@
         document.querySelector('.btn-help').style.display = 'inline-block';
         let cur = q.steps[q.stepIdx];
 
-        // --- 控制文字提示顯示 ---
         if(quizSettings.text) {
             msg.innerText = cur.hint;
         } else {
             msg.innerText = "請計算並填入答案...";
         }
         
-        // --- 語音播放 (函數內會檢查 quizSettings.voice) ---
         speak(cur.hint);
 
-        // --- 顏色提示 ---
         if(cur.type === 'quo') {
             const bLen = q.b.toString().length;
             const wLen = cur.workingStrLen;
@@ -696,6 +687,7 @@
         msg.appendChild(document.createElement('br')); msg.appendChild(okBtn);
     }
 
+    // --- 修改：填寫格子邏輯 (修正底線顯示) ---
     function fillCell(r, c, val, type) {
         const str = val.toString();
         for(let i=0; i<str.length; i++) {
@@ -703,7 +695,8 @@
             let cell = document.getElementById(`c-${r}-${tc}`);
             if(cell) {
                 cell.innerText = str[i];
-                if(type==='prod' && i===str.length-1) cell.classList.add('subtraction-line');
+                // *** 修正2: 只要是 prod 類型，每一位數都加底線 ***
+                if(type==='prod') cell.classList.add('subtraction-line');
             }
         }
     }
@@ -719,7 +712,6 @@
         }
     }
 
-    // --- 智慧求助功能 ---
     function toggleHelp() {
         const helpBox = document.getElementById('help-content');
         if(helpBox.style.display === 'block') {
@@ -733,7 +725,6 @@
         let html = '';
 
         if(step.type === 'quo') {
-            // 商的求助：列出乘法表
             const target = step.currVal;
             const ans = parseInt(step.ans);
             html += `<strong>🔍 正在思考：${divisor} 乘多少最接近 ${target} 且不超過它？</strong><br>`;
@@ -774,7 +765,6 @@
         speak("別擔心，看看下面的提示");
     }
 
-    // --- 結算畫面 ---
     function finishQuiz() {
         clearInterval(timerInt);
         showPage('page-result');
