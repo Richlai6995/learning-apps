@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>乘法闖關王 4.3 (加法修復版)</title>
+    <title>乘法闖關王 4.4 (寶石獎勵版)</title>
     <style>
         :root {
             --primary: #8e44ad;
@@ -28,10 +28,12 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
         h1 { color: var(--primary); margin: 10px 0; text-align: center; font-size: 1.8rem;}
 
+        /* --- 學員名牌 & 獎勵 --- */
         .user-profile {
             background-color: #fff3cd;
             border: 2px dashed #f39c12;
@@ -42,10 +44,22 @@
             font-size: 1.2rem;
             font-weight: bold;
             color: #d35400;
-            display: flex; align-items: center; gap: 10px;
+            display: flex; align-items: center; gap: 15px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            flex-wrap: wrap;
+            justify-content: center;
         }
         .user-profile:active { transform: scale(0.98); }
+        
+        .stats-badge {
+            background: #fff;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex; align-items: center; gap: 5px;
+            color: #2c3e50;
+        }
 
         .container {
             width: 100%; max-width: 900px; background: white; border-radius: 12px;
@@ -70,23 +84,20 @@
         .btn-block { width: 100%; padding: 12px; margin-top: 10px; }
         
         .btn-next-level {
-            background-color: #27ae60;
-            color: white;
-            font-size: 1.5rem;
-            padding: 15px 30px;
-            border-radius: 50px;
-            box-shadow: 0 6px #1e8449;
-            margin-top: 20px;
-            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: none; 
+            background-color: #27ae60; color: white; font-size: 1.5rem; padding: 15px 30px;
+            border-radius: 50px; box-shadow: 0 6px #1e8449; margin-top: 20px;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: none; 
         }
         .btn-next-level:active { transform: translateY(6px); box-shadow: 0 0 #1e8449; }
         @keyframes popIn { from {transform: scale(0);} to {transform: scale(1);} }
 
+        /* --- 列表與標籤 --- */
         .list-item {
             background: #fdf2ff; border: 1px solid #e1bee7; padding: 10px; margin-bottom: 8px;
             border-radius: 6px; display: flex; justify-content: space-between; align-items: center;
         }
+        .gem-tag { color: #2980b9; font-weight: bold; background: #d6eaf8; padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; margin-left: 5px;}
+        .score-tag { color: #d35400; font-weight: bold; background: #fdebd0; padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; margin-left: 5px;}
 
         .gen-controls { display: flex; gap: 5px; margin-bottom: 15px; align-items: center; flex-wrap: wrap; background: #f3e5f5; padding: 10px; border-radius: 8px;}
         .gen-controls input { padding: 5px; width: 50px; text-align: center; border: 1px solid #ccc; border-radius: 4px;}
@@ -96,83 +107,45 @@
         .quiz-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 15px; background: #eee; padding: 10px; border-radius: 6px; }
         
         .settings-panel {
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            text-align: left;
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
+            background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 8px;
+            padding: 15px; margin-bottom: 20px; text-align: left; max-width: 400px; margin-left: auto; margin-right: auto;
         }
         .settings-panel h3 { margin: 0 0 10px 0; color: var(--dark); font-size: 1.1rem; }
         .settings-panel label { display: block; margin-bottom: 8px; cursor: pointer; font-size: 1.1rem; }
         .settings-panel input[type="checkbox"] { transform: scale(1.3); margin-right: 10px; }
 
         .grid-container {
-            display: grid; 
-            grid-auto-rows: 50px; 
-            justify-content: center; 
-            margin: 20px 0;
-            gap: 0;
-            position: relative; 
+            display: grid; grid-auto-rows: 50px; justify-content: center; margin: 20px 0; gap: 0; position: relative; 
         }
         .grid-cell {
-            width: var(--cell-size); 
-            height: 50px; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center;
-            font-family: 'Courier New', monospace; 
-            font-weight: bold; 
-            font-size: 1.8rem; 
-            position: relative;
-            z-index: 2; 
+            width: var(--cell-size); height: 50px; 
+            display: flex; justify-content: center; align-items: center;
+            font-family: 'Courier New', monospace; font-weight: bold; font-size: 1.8rem; 
+            position: relative; z-index: 2; 
         }
         
         .arrow-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none; 
-            z-index: 1;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;
         }
 
         .game-input { 
-            width: 90%; height: 90%; margin: auto;
-            font-size: 1.5rem; text-align: center; 
-            border: 3px solid var(--primary); border-radius: 8px; background: #fff; outline: none;
-            z-index: 10;
+            width: 90%; height: 90%; margin: auto; font-size: 1.5rem; text-align: center; 
+            border: 3px solid var(--primary); border-radius: 8px; background: #fff; outline: none; z-index: 10;
         }
         .game-input.correct { border-color: #27ae60; background-color: #d5f5e3; color: #27ae60; }
         .game-input:focus { border-color: #2ecc71; background: #e8f8f5; box-shadow: 0 0 10px rgba(46, 204, 113, 0.5); }
 
         .carry-input {
-            width: 32px; 
-            height: 32px; 
-            font-size: 1.2rem; 
-            text-align: center;
-            border: 2px solid #e67e22; 
-            border-radius: 50%; 
-            background: #fef5e7; 
-            outline: none;
-            position: absolute; 
-            bottom: 2px; 
-            color: #d35400;
-            z-index: 20;
-            font-weight: bold;
-            padding: 0;
+            width: 32px; height: 32px; font-size: 1.2rem; text-align: center;
+            border: 2px solid #e67e22; border-radius: 50%; background: #fef5e7; outline: none;
+            position: absolute; bottom: 2px; color: #d35400; z-index: 20; font-weight: bold; padding: 0;
         }
         .carry-input.correct { border-color: #27ae60; background-color: #d5f5e3; color: #27ae60; }
         .carry-input:focus { transform: scale(1.2); border-color: #d35400; box-shadow: 0 0 5px #e67e22; }
 
         .carry-display {
             font-size: 1rem; color: #d35400; font-weight: bold;
-            border: 1px dashed #e67e22; border-radius: 50%;
-            width: 28px; height: 28px;
+            border: 1px dashed #e67e22; border-radius: 50%; width: 28px; height: 28px;
             display: flex; justify-content: center; align-items: center;
         }
 
@@ -196,26 +169,52 @@
         .tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
 
         .version-tag {
-            margin-top: 30px;
-            color: #27ae60;
-            font-size: 1rem;
-            text-align: center;
-            font-family: monospace;
-            border-top: 1px dashed #eee;
-            padding-top: 10px;
-            font-weight: bold;
+            margin-top: 30px; color: #27ae60; font-size: 1rem; text-align: center;
+            font-family: monospace; border-top: 1px dashed #eee; padding-top: 10px; font-weight: bold;
         }
 
+        /* --- 獲獎動畫與特效 --- */
+        .reward-popup {
+            background: #fff8e1; border: 3px solid #f1c40f; padding: 20px;
+            border-radius: 15px; margin-top: 20px; font-weight: bold; color: #d35400;
+            font-size: 1.5rem; text-align: center;
+            box-shadow: 0 5px 15px rgba(241, 196, 15, 0.4);
+            animation: bounceIn 0.8s;
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); opacity: 1; }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); }
+        }
+
+        /* 粒子動畫容器 */
+        #particle-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 9999; overflow: hidden; display: none;
+        }
+        .particle {
+            position: absolute; font-size: 2rem;
+            animation: fall linear forwards;
+        }
+        @keyframes fall {
+            0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+        }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
     </style>
 </head>
 <body>
 
+    <div id="particle-container"></div>
+
     <div id="page-home" class="container active">
-        <h1>✖️ 乘法闖關王 4.3</h1>
+        <h1>✖️ 乘法闖關王 4.4</h1>
         
         <div class="user-profile" onclick="changeName()">
-            <span>🎓</span> <span id="display-name">設定學員姓名</span> <span>✎</span>
+            <div>🎓 <span id="display-name">設定學員姓名</span> ✎</div>
+            <div class="stats-badge">👑 <span id="stat-crowns">0</span></div>
+            <div class="stats-badge">💎 <span id="stat-gems">0</span></div>
         </div>
 
         <div class="tabs">
@@ -227,7 +226,7 @@
             <div id="lists-container"></div>
             <button class="btn-secondary btn-block" onclick="createNewList()">+ 新增/生成題庫</button>
             <div style="margin-top:15px; border-top:1px dashed #ccc; padding-top:10px; display:flex; gap:5px;">
-                <button class="btn-gray" style="flex:1" onclick="exportData()">匯出 (含時間)</button>
+                <button class="btn-gray" style="flex:1" onclick="exportData()">匯出備份 (含寶石)</button>
                 <button class="btn-gray" style="flex:1" onclick="document.getElementById('import-file').click()">匯入</button>
                 <input type="file" id="import-file" style="display:none" accept=".json" onchange="handleImport(this)">
             </div>
@@ -238,19 +237,21 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v4.3 (加法修復版)</div>
+        <div class="version-tag">版本：v4.4 (寶石獎勵版)</div>
     </div>
 
     <div id="page-editor" class="container">
         <h2>✏️ 編輯題庫</h2>
-        <div style="margin-bottom:10px;">
-            名稱: <input type="text" id="list-name" style="padding:5px; width:200px;">
+        <div style="margin-bottom:15px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background:#eee; padding:15px; border-radius:10px;">
+            <div style="flex:100%">名稱: <input type="text" id="list-name" style="padding:5px; width:70%;"></div>
+            <div>💎 獎勵寶石: <input type="number" id="list-gems" placeholder="5" style="padding:5px; width:60px;" value="5"></div>
+            <div>🎯 獲獎分數: <input type="number" id="list-pass-score" placeholder="100" style="padding:5px; width:60px;" value="100"></div>
         </div>
         <div class="gen-controls">
             <span>生成:</span>
             題數<input type="number" id="gen-count" value="5">
-            被乘數位數<input type="number" id="gen-len-a" value="2">
-            乘數位數<input type="number" id="gen-len-b" value="2">
+            被乘數<input type="number" id="gen-len-a" value="2">
+            乘數<input type="number" id="gen-len-b" value="2">
             <button class="btn-warning" onclick="autoGenerate()">生成</button>
         </div>
         <div style="max-height: 300px; overflow-y: auto;">
@@ -333,6 +334,8 @@
             <div id="res-detail" style="font-size: 1.2rem; margin: 10px;">答對 5 / 5 題</div>
             <div id="res-time" style="color:#777;">耗時 01:20</div>
             
+            <div id="reward-area"></div>
+
             <div style="margin-top:20px;">
                 你的名字: <input type="text" id="player-name" style="padding:5px; font-size:1.2rem; text-align:center;" readonly>
                 <button class="btn-warning" onclick="saveRank()">登記榜單</button>
@@ -343,6 +346,9 @@
 
 <script>
     function speak(text) {
+        let force = text.includes("寶石") || text.includes("皇冠") || text.includes("全對");
+        if(currentMode === 'teach' && !settingVoice && !force) return;
+
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
             let cleanText = text.replace(/<[^>]*>/g, '').replace(/×/g, '乘以').replace(/\+/g, '加').replace(/=/g, '等於');
@@ -355,20 +361,22 @@
     let allLists = [], currentList = null, quizData = [], currentQIdx = 0, currentMode = '', editingId = null;
     let timerInt, startTime, rankData = [];
     let studentName = "小小學員"; 
+    let totalGems = 0;
 
     let settingVoice = true;
     let settingText = true;
     let settingArrow = true;
 
-    const STORAGE_KEY_LISTS = 'mul_v4_3_lists';
-    const STORAGE_KEY_RANK = 'mul_v4_3_rank';
-    const STORAGE_KEY_USER = 'mul_v4_3_user';
+    const STORAGE_KEY_LISTS = 'mul_v4_4_lists';
+    const STORAGE_KEY_RANK = 'mul_v4_4_rank';
+    const STORAGE_KEY_USER = 'mul_v4_4_user';
+    const STORAGE_KEY_GEMS = 'mul_v4_4_gems';
 
     window.onload = function() {
         if(localStorage.getItem(STORAGE_KEY_LISTS)) {
             allLists = JSON.parse(localStorage.getItem(STORAGE_KEY_LISTS));
         } else {
-            allLists = [{name: "進階練習 (2位數)", qs: [{a:56, b:29}, {a:99, b:88}]}];
+            allLists = [{name: "進階練習 (2位數)", gems: 5, passScore: 100, qs: [{a:56, b:29}, {a:99, b:88}]}];
             saveData();
         }
         if(localStorage.getItem(STORAGE_KEY_RANK)) {
@@ -377,31 +385,43 @@
         if(localStorage.getItem(STORAGE_KEY_USER)) {
             studentName = localStorage.getItem(STORAGE_KEY_USER);
         }
-        updateName();
+        if(localStorage.getItem(STORAGE_KEY_GEMS)) {
+            totalGems = parseInt(localStorage.getItem(STORAGE_KEY_GEMS)) || 0;
+        }
+        updateProfile();
         renderLists();
     };
 
     function saveData() { localStorage.setItem(STORAGE_KEY_LISTS, JSON.stringify(allLists)); }
     function saveRankData() { localStorage.setItem(STORAGE_KEY_RANK, JSON.stringify(rankData)); }
+    function saveStudentData() {
+        localStorage.setItem(STORAGE_KEY_USER, studentName);
+        localStorage.setItem(STORAGE_KEY_GEMS, totalGems);
+        updateProfile();
+    }
 
     function changeName() {
         let n = prompt("請輸入你的名字：", studentName);
         if(n && n.trim()) {
             studentName = n.trim();
-            localStorage.setItem(STORAGE_KEY_USER, studentName);
-            updateName();
+            saveStudentData();
         }
     }
-    function updateName() {
+    function updateProfile() {
         document.getElementById('display-name').innerText = studentName;
         document.getElementById('player-name').value = studentName; 
+        
+        let crowns = Math.floor(totalGems / 100);
+        let remainGems = totalGems % 100;
+        document.getElementById('stat-crowns').innerText = crowns;
+        document.getElementById('stat-gems').innerText = remainGems;
     }
 
     function showPage(pid) {
         document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
         document.getElementById(pid).classList.add('active');
         if(pid === 'page-home') renderLists();
-        if(pid === 'page-result') updateName(); 
+        if(pid === 'page-result') updateProfile(); 
     }
     function switchTab(t) {
         document.getElementById('tab-quiz').style.display = t==='quiz'?'block':'none';
@@ -416,7 +436,20 @@
         if(allLists.length===0) c.innerHTML='<p style="text-align:center">無題庫</p>';
         allLists.forEach((l,i) => {
             const d = document.createElement('div'); d.className='list-item';
-            d.innerHTML = `<div><strong>${l.name}</strong> (${l.qs.length}題)</div><div><button class="btn-primary" onclick="prepareQuiz(${i})">開始</button><button class="btn-gray" onclick="editList(${i})">編輯</button><button class="btn-danger" onclick="delList(${i})">刪</button></div>`;
+            let gemVal = l.gems ? l.gems : 5; 
+            let passVal = l.passScore ? l.passScore : 100;
+            
+            d.innerHTML = `
+                <div>
+                    <strong>${l.name}</strong> (${l.qs.length}題)
+                    <span class="gem-tag">💎 +${gemVal}</span>
+                    <span class="score-tag">🎯 ${passVal}分</span>
+                </div>
+                <div>
+                    <button class="btn-primary" onclick="prepareQuiz(${i})">開始</button>
+                    <button class="btn-gray" onclick="editList(${i})">編輯</button>
+                    <button class="btn-danger" onclick="delList(${i})">刪</button>
+                </div>`;
             c.appendChild(d);
         });
     }
@@ -424,6 +457,8 @@
     function createNewList() {
         editingId = null;
         document.getElementById('list-name').value = "新題庫";
+        document.getElementById('list-gems').value = 5;
+        document.getElementById('list-pass-score').value = 100;
         document.getElementById('editor-rows').innerHTML = '';
         showPage('page-editor');
     }
@@ -431,6 +466,8 @@
     function editList(i) {
         editingId = i; const l = allLists[i];
         document.getElementById('list-name').value = l.name;
+        document.getElementById('list-gems').value = l.gems || 5;
+        document.getElementById('list-pass-score').value = l.passScore || 100;
         const box = document.getElementById('editor-rows'); box.innerHTML = '';
         l.qs.forEach(q => addEditRow(q.a, q.b));
         showPage('page-editor');
@@ -458,6 +495,11 @@
 
     function saveList() {
         const name = document.getElementById('list-name').value;
+        const gVal=parseInt(document.getElementById('list-gems').value);
+        const gems = isNaN(gVal) ? 5 : gVal;
+        const pVal=parseInt(document.getElementById('list-pass-score').value);
+        const passScore = isNaN(pVal) ? 100 : pVal;
+        
         const rows = document.querySelectorAll('.edit-row');
         const qs = [];
         rows.forEach(r => {
@@ -466,33 +508,49 @@
             if(!isNaN(a) && !isNaN(b)) qs.push({a,b});
         });
         if(qs.length===0) return alert("至少一題");
-        if(editingId === null) allLists.push({name, qs}); else allLists[editingId] = {name, qs};
+        
+        const data = {name, gems, passScore, qs};
+        if(editingId === null) allLists.push(data); else allLists[editingId] = data;
         saveData(); showPage('page-home');
     }
     function delList(i) { if(confirm("刪除?")) { allLists.splice(i,1); saveData(); renderLists(); } }
     
+    // --- 匯出資料 (含寶石) ---
     function exportData() {
-        const blob = new Blob([JSON.stringify(allLists)], {type: "application/json"});
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}`;
+        const exportObj = {
+            version: "4.4",
+            student: { name: studentName, totalGems: totalGems },
+            lists: allLists
+        };
+        const blob = new Blob([JSON.stringify(exportObj)], {type: "application/json"});
         const a = document.createElement('a'); 
         a.href = URL.createObjectURL(blob);
-        const now = new Date();
-        const yyyy = now.getFullYear();
-        const mm = String(now.getMonth() + 1).padStart(2, '0');
-        const dd = String(now.getDate()).padStart(2, '0');
-        const hh = String(now.getHours()).padStart(2, '0');
-        const min = String(now.getMinutes()).padStart(2, '0');
-        const timestamp = `${yyyy}${mm}${dd}_${hh}${min}`;
-        a.download = `multiplication_data_${timestamp}.json`; 
+        a.download = `multiplication_backup_${dateStr}.json`; 
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
     }
     
+    // --- 匯入資料 ---
     function handleImport(inp) {
         const f = inp.files[0]; if(!f) return;
         const r = new FileReader();
         r.onload = (e) => {
             try {
                 const d = JSON.parse(e.target.result);
-                if(Array.isArray(d)) { allLists = allLists.concat(d); saveData(); renderLists(); alert("匯入成功"); }
+                if(Array.isArray(d)) {
+                    allLists = allLists.concat(d); 
+                } else if (d.lists) {
+                    allLists = allLists.concat(d.lists);
+                    if(d.student) {
+                        if(confirm(`匯入資料包含學員：${d.student.name} (寶石:${d.student.totalGems})。\n要覆蓋目前的進度嗎？`)) {
+                            studentName = d.student.name;
+                            totalGems = d.student.totalGems;
+                            saveStudentData();
+                        }
+                    }
+                }
+                saveData(); renderLists(); alert("匯入成功");
             } catch(e){alert("格式錯誤");}
         }; r.readAsText(f);
     }
@@ -568,13 +626,38 @@
     }
 
     function submitTest() {
-        quizData[currentQIdx].userAns = document.getElementById('test-ans').value;
+        if(currentMode === 'test') quizData[currentQIdx].userAns = document.getElementById('test-ans').value;
         clearInterval(timerInt);
         let correct = 0;
         quizData.forEach(q => {
             if(parseInt(q.userAns) === (q.a * q.b)) correct++;
         });
         showResult(Math.round((correct/quizData.length)*100), correct, quizData.length);
+    }
+
+    // --- 酷炫獎勵動畫函式 ---
+    function triggerRewardAnimation(type) {
+        const container = document.getElementById('particle-container');
+        container.style.display = 'block';
+        container.innerHTML = ''; // 清空
+
+        let symbol = type === 'crown' ? '👑' : '💎';
+        let count = 30; // 粒子數量
+
+        for (let i = 0; i < count; i++) {
+            let p = document.createElement('div');
+            p.innerText = symbol;
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + 'vw';
+            p.style.animationDuration = (Math.random() * 2 + 1) + 's'; // 1~3秒隨機
+            p.style.fontSize = (Math.random() * 2 + 1) + 'rem';
+            container.appendChild(p);
+        }
+
+        setTimeout(() => {
+            container.style.display = 'none';
+            container.innerHTML = '';
+        }, 3000);
     }
 
     // --- 邏輯升級：網格坐標與行號修正 ---
@@ -590,11 +673,9 @@
         const ROW_B = 2;
         const ROW_MUL_LINE = 3;
         
-        // ★★★ 緊貼設計：第一層乘積直接在 Row 4 ★★★
         const ROW_PARTIAL_START = 4;
         
         const hasAddition = sB.length > 1;
-        // ★★★ 加法進位列：在所有乘積的下方 ★★★
         const ROW_ADD_CARRY = hasAddition ? (ROW_PARTIAL_START + sB.length) : -1;
         const ROW_ADD_LINE = hasAddition ? (ROW_ADD_CARRY + 1) : -1;
         const ROW_FINAL_SUM = hasAddition ? (ROW_ADD_LINE + 1) : (ROW_PARTIAL_START);
@@ -737,7 +818,6 @@
         const cols = sA.length + sB.length + 1;
         
         const hasAddition = sB.length > 1;
-        // ★★★ 總行數修正：4(Mul) + sB + [1(Carry)+1(Line)+1(Sum)] ★★★
         let totalRows = hasAddition ? (4 + sB.length + 3) : (4 + sB.length); 
         
         const mulLineRow = 3;
@@ -790,7 +870,6 @@
                     if(cell) {
                         cell.classList.add('multiplication-line');
                         if(c===0 && s.row === addLineRow) {
-                            // 加號放在線條列上一行的最左邊 (即進位列)
                             let plusCell = document.getElementById(`c-${s.row-1}-0`);
                             if(plusCell) { plusCell.innerText = '+'; plusCell.classList.add('operator'); }
                         }
@@ -821,10 +900,8 @@
             document.getElementById('btn-help-trigger').style.display = 'none';
             q.userAns = q.a * q.b; 
             
-            // ★★★ 修正：清空進位時跳過 Column 0 (保留加號) ★★★
             for(let c=0; c<cols; c++) { 
                 if(document.getElementById(`c-0-${c}`)) document.getElementById(`c-0-${c}`).innerHTML = ''; 
-                // AddCarryRow: 清空 c>0，保留 c=0 的加號
                 if(addCarryRow > 0 && document.getElementById(`c-${addCarryRow}-${c}`)) {
                     if(c > 0) document.getElementById(`c-${addCarryRow}-${c}`).innerHTML = '';
                 }
@@ -1014,7 +1091,50 @@
         document.getElementById('res-score').innerText = score;
         document.getElementById('res-detail').innerText = `答對 ${correct} / ${total} 題`;
         document.getElementById('res-time').innerText = `耗時 ${document.getElementById('q-timer').innerText}`;
-        if(settingVoice) speak(`測驗結束，你得了${score}分。`);
+        
+        // --- 寶石獎勵結算 ---
+        const rewardArea = document.getElementById('reward-area');
+        if(rewardArea) rewardArea.innerHTML = '';
+        else {
+            // 如果HTML沒有預留 reward-area, 動態插入
+            let d = document.createElement('div'); d.id='reward-area';
+            document.getElementById('res-score').after(d);
+        }
+
+        let targetScore = currentList.passScore || 100;
+        let gemsReward = currentList.gems || 5;
+
+        if (currentMode === 'test' && score >= targetScore) {
+            let oldGems = totalGems;
+            let oldCrowns = Math.floor(oldGems / 100);
+            
+            totalGems += gemsReward;
+            saveStudentData(); 
+            
+            let newCrowns = Math.floor(totalGems / 100);
+            let earnedCrowns = newCrowns - oldCrowns;
+
+            if (earnedCrowns > 0) {
+                triggerRewardAnimation('crown');
+                document.getElementById('reward-area').innerHTML = `
+                    <div class="reward-popup" style="border-color:#e67e22; color:#e67e22;">
+                        👑 恭喜升級！獲得 ${earnedCrowns} 頂皇冠！<br>
+                        (同時獲得 ${gemsReward} 顆寶石)
+                    </div>`;
+                speak(`太厲害了！分數達標！恭喜你獲得了 ${earnedCrowns} 頂皇冠！`);
+            } else {
+                triggerRewardAnimation('gem');
+                document.getElementById('reward-area').innerHTML = `
+                    <div class="reward-popup">
+                        🎉 恭喜達標！獲得 ${gemsReward} 顆寶石 💎<br>
+                        目前累積: ${totalGems} 顆
+                    </div>`;
+                speak(`太棒了！分數達標！你獲得了 ${gemsReward} 顆寶石！`);
+            }
+        } else {
+            let praise = score>=60?"表現不錯，下次挑戰拿寶石！":"再多練習幾次，加油！";
+            speak(`測驗結束，你得了${score}分。${praise}`);
+        }
     }
 
     function saveRank() {
