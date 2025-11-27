@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>乘法闖關王 3.4 (匯出時間戳記版)</title>
+    <title>乘法闖關王 3.5 (加法進位全功能版)</title>
     <style>
         :root {
             --primary: #8e44ad;
@@ -204,7 +204,7 @@
 <body>
 
     <div id="page-home" class="container active">
-        <h1>✖️ 乘法闖關王 3.4</h1>
+        <h1>✖️ 乘法闖關王 3.5</h1>
         
         <div class="user-profile" onclick="changeName()">
             <span>🎓</span> <span id="display-name">設定學員姓名</span> <span>✎</span>
@@ -230,7 +230,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v3.4 (匯出功能優化版)</div>
+        <div class="version-tag">版本：v3.5 (加法進位全功能版)</div>
     </div>
 
     <div id="page-editor" class="container">
@@ -289,8 +289,8 @@
             <div class="grid-container" id="gridBoard">
                 <svg id="arrow-layer" class="arrow-layer">
                     <defs>
-                        <marker id="arrowhead" markerWidth="4" markerHeight="3" refX="3" refY="1.5" orient="auto">
-                            <polygon points="0 0, 4 1.5, 0 3" fill="#e74c3c" />
+                        <marker id="arrowhead" markerWidth="3" markerHeight="2" refX="2" refY="1" orient="auto">
+                            <polygon points="0 0, 3 1, 0 2" fill="#e74c3c" />
                         </marker>
                     </defs>
                     <line id="calc-arrow" x1="0" y1="0" x2="0" y2="0" stroke="#e74c3c" stroke-width="2" marker-end="url(#arrowhead)" style="display:none;" />
@@ -353,10 +353,10 @@
     let settingText = true;
     let settingArrow = true;
 
-    // v3.4 Key
-    const STORAGE_KEY_LISTS = 'mul_v3_4_lists';
-    const STORAGE_KEY_RANK = 'mul_v3_4_rank';
-    const STORAGE_KEY_USER = 'mul_v3_4_user';
+    // v3.5 Key
+    const STORAGE_KEY_LISTS = 'mul_v3_5_lists';
+    const STORAGE_KEY_RANK = 'mul_v3_5_rank';
+    const STORAGE_KEY_USER = 'mul_v3_5_user';
 
     window.onload = function() {
         if(localStorage.getItem(STORAGE_KEY_LISTS)) {
@@ -465,13 +465,10 @@
     }
     function delList(i) { if(confirm("刪除?")) { allLists.splice(i,1); saveData(); renderLists(); } }
     
-    // ★★★ 修改：匯出功能加入時間戳記 ★★★
     function exportData() {
         const blob = new Blob([JSON.stringify(allLists)], {type: "application/json"});
         const a = document.createElement('a'); 
         a.href = URL.createObjectURL(blob);
-        
-        // 產生時間字串 YYYYMMDD_HHMM
         const now = new Date();
         const yyyy = now.getFullYear();
         const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -479,11 +476,8 @@
         const hh = String(now.getHours()).padStart(2, '0');
         const min = String(now.getMinutes()).padStart(2, '0');
         const timestamp = `${yyyy}${mm}${dd}_${hh}${min}`;
-        
         a.download = `multiplication_data_${timestamp}.json`; 
-        document.body.appendChild(a); 
-        a.click(); 
-        document.body.removeChild(a);
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
     }
     
     function handleImport(inp) {
@@ -577,6 +571,7 @@
         showResult(Math.round((correct/quizData.length)*100), correct, quizData.length);
     }
 
+    // --- 邏輯升級：加入加法進位 (Column by Column) ---
     function generateDetailedSteps(a, b) {
         let sA = a.toString();
         let sB = b.toString();
@@ -585,6 +580,9 @@
         let cols = sA.length + sB.length + 1;
         let baseRow = 2; 
         
+        let partialProducts = []; // 儲存部分積的數值，方便後續加法計算
+
+        // 1. 乘法部分
         for(let j = sB.length - 1; j >= 0; j--) {
             let digitB = parseInt(sB[j]);
             let currentCarry = 0;
@@ -594,6 +592,9 @@
             if(shift > 0) {
                 steps.push({ type: 'clear_carry', hint: `開始計算乘數的十位數，先清空進位。` });
             }
+
+            let rowVal = 0;
+            let power = 1;
 
             for(let i = sA.length - 1; i >= 0; i--) {
                 let digitA = parseInt(sA[i]);
@@ -641,30 +642,58 @@
 
                 steps.push(step);
                 currentCarry = newCarry;
+                rowVal += product * power;
+                power *= 10;
             }
+            
+            // 將該行數值加入陣列 (考慮位移)
+            partialProducts.push(rowVal * Math.pow(10, shift));
         }
 
+        // 2. 加法部分 (逐列計算，含進位)
         if(sB.length > 1) {
+            steps.push({ type: 'clear_carry', hint: '乘法完成，清空進位準備相加。' });
             steps.push({ type: 'line', row: baseRow + 2 + sB.length, hint: '畫線準備相加。' });
             
             let sumRow = baseRow + 2 + sB.length + 1;
             let totalSum = a * b;
             let sTotal = totalSum.toString();
+            let currentSumCarry = 0;
             
-            for(let c = 0; c < sTotal.length; c++) {
-                let digitSum = parseInt(sTotal[sTotal.length - 1 - c]);
-                let gridCol = cols - 1 - c;
+            // 從最右邊的 Grid Column 開始往左算
+            // 最右邊 Grid Col = cols - 1
+            // 需要計算幾列？ 取決於 sTotal 的長度
+            
+            for(let k = 0; k < sTotal.length; k++) {
+                // powerOf10: 0=個位, 1=十位...
+                let p = k; 
+                let gridCol = cols - 1 - k;
+                
+                // 計算該直行的總和 (從 partialProducts 提取該位數)
+                let colSum = currentSumCarry;
+                for(let val of partialProducts) {
+                    // 取出 val 在 10^p 位置的數字
+                    let digit = Math.floor(val / Math.pow(10, p)) % 10;
+                    colSum += digit;
+                }
+                
+                let unit = colSum % 10;
+                let newCarry = Math.floor(colSum / 10);
                 
                 let step = {
                     type: 'add',
-                    writeAns: digitSum,
+                    writeAns: unit,
+                    writeCarry: newCarry, // 加法進位
                     ansRow: sumRow,
                     ansCol: gridCol,
-                    hint: `將這一行的數字相加 (含進位)，這格該填多少？`,
-                    fullExplanation: `這一行的總和是 ${digitSum}。`,
-                    isLast: (c === sTotal.length - 1)
+                    carryRow: 0, // ★★★ 加法進位也寫在最上面 ★★★
+                    carryCol: gridCol - 1,
+                    hint: `將這一行的數字相加 ${currentSumCarry > 0 ? '(含之前進位)' : ''}，這格該填多少？`,
+                    fullExplanation: `直行相加結果：${colSum}。填寫 ${unit} ${newCarry > 0 ? '，進位 ' + newCarry : ''}。`,
+                    isLast: (k === sTotal.length - 1)
                 };
                 steps.push(step);
+                currentSumCarry = newCarry;
             }
         }
 
@@ -677,7 +706,7 @@
         let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         svg.id = "arrow-layer";
         svg.setAttribute("class", "arrow-layer");
-        svg.innerHTML = `<defs><marker id="arrowhead" markerWidth="4" markerHeight="3" refX="3" refY="1.5" orient="auto"><polygon points="0 0, 4 1.5, 0 3" fill="#e74c3c" /></marker></defs><line id="calc-arrow" x1="0" y1="0" x2="0" y2="0" stroke="#e74c3c" stroke-width="2" marker-end="url(#arrowhead)" style="display:none;" />`;
+        svg.innerHTML = `<defs><marker id="arrowhead" markerWidth="3" markerHeight="2" refX="2" refY="1" orient="auto"><polygon points="0 0, 3 1, 0 2" fill="#e74c3c" /></marker></defs><line id="calc-arrow" x1="0" y1="0" x2="0" y2="0" stroke="#e74c3c" stroke-width="2" marker-end="url(#arrowhead)" style="display:none;" />`;
         box.appendChild(svg);
 
         const msg = document.getElementById('teach-msg');
@@ -723,6 +752,7 @@
              document.getElementById(`c-2-${c}`).classList.add('multiplication-line');
         }
 
+        // Render Completed Steps
         for(let i=0; i<q.stepIdx; i++) {
             let s = q.steps[i];
             if(s.type === 'clear_carry') {
@@ -741,23 +771,22 @@
                 continue;
             }
 
-            if(s.type === 'mul' && s.isLastInRow && s.totalProd >= 10) {
-                let strVal = s.totalProd.toString(); 
-                let tenVal = strVal[0];
-                let unitVal = strVal[1];
-                
-                let unitCell = document.getElementById(`c-${s.ansRow}-${s.ansCol}`);
-                if(unitCell) unitCell.innerText = unitVal;
-                
-                let tenCell = document.getElementById(`c-${s.ansRow}-${s.ansCol-1}`);
-                if(tenCell) tenCell.innerText = tenVal;
-                
-            } else {
-                let ansCell = document.getElementById(`c-${s.ansRow}-${s.ansCol}`);
-                if(ansCell) ansCell.innerText = s.writeAns;
+            // 顯示答案
+            let ansCell = document.getElementById(`c-${s.ansRow}-${s.ansCol}`);
+            if(ansCell) {
+                // 如果是乘法最後一步且 > 10，拆兩格顯示 (歷史記錄)
+                if(s.type === 'mul' && s.isLastInRow && s.totalProd >= 10) {
+                    let strVal = s.totalProd.toString(); 
+                    ansCell.innerText = strVal[1];
+                    let tenCell = document.getElementById(`c-${s.ansRow}-${s.ansCol-1}`);
+                    if(tenCell) tenCell.innerText = strVal[0];
+                } else {
+                    ansCell.innerText = s.writeAns;
+                }
             }
             
-            if(s.writeCarry > 0 && s.type !== 'add') {
+            // 顯示進位 (包含乘法與加法)
+            if(s.writeCarry > 0) {
                 let carryCell = document.getElementById(`c-${s.carryRow}-${s.carryCol}`);
                 if(carryCell) carryCell.innerHTML = `<span style="font-size:1rem; color:#d35400;">${s.writeCarry}</span>`;
             }
@@ -767,6 +796,7 @@
             msg.innerText = "太棒了！本題完成。";
             document.getElementById('btn-help-trigger').style.display = 'none';
             q.userAns = q.a * q.b; 
+            // 清除進位格
             for(let c=0; c<cols; c++) { if(document.getElementById(`c-0-${c}`)) document.getElementById(`c-0-${c}`).innerHTML = ''; }
             document.getElementById('btn-next-q').style.display = 'block';
             let btnNext = document.getElementById('btn-next-q');
@@ -868,7 +898,10 @@
             }
         }
 
-        if(!step.isLastInRow && step.writeCarry > 0) {
+        // ★★★ 加法階段的進位輸入 ★★★
+        // 如果是最後一位，通常不需要顯示進位格（除非結果超過位數），
+        // 但在加法中，我們允許 carry，且不會是 isLastInRow 這種邏輯
+        if(step.writeCarry > 0) {
             let carryCell = document.getElementById(`c-${step.carryRow}-${step.carryCol}`);
             if(carryCell) {
                 carryCell.innerHTML = ''; 
@@ -915,12 +948,13 @@
         } else {
             if(!iAns || iAns.value==='') allFilled = false;
         }
-        if(!step.isLastInRow && step.writeCarry > 0) {
+        if(step.writeCarry > 0) {
             if(!iCarry || iCarry.value==='') allFilled = false;
         }
 
         if(isAuto && !allFilled) return; 
 
+        // 驗證數值
         if(step.type === 'mul' && step.isLastInRow && step.totalProd >= 10) {
             let tenVal = Math.floor(step.totalProd / 10);
             let unitVal = step.totalProd % 10;
