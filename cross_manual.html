@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>乘法闖關王 4.0 (緊湊版面優化)</title>
+    <title>乘法闖關王 4.1 (完美排版修正版)</title>
     <style>
         :root {
             --primary: #8e44ad;
@@ -150,31 +150,30 @@
         .game-input.correct { border-color: #27ae60; background-color: #d5f5e3; color: #27ae60; }
         .game-input:focus { border-color: #2ecc71; background: #e8f8f5; box-shadow: 0 0 10px rgba(46, 204, 113, 0.5); }
 
-        /* ★★★ 縮小進位輸入框以適應緊湊版面 ★★★ */
+        /* ★★★ 修正：進位註記輸入框 (放大至 32px，且字體加大) ★★★ */
         .carry-input {
-            width: 24px; 
-            height: 24px; 
-            font-size: 1rem; 
+            width: 32px; 
+            height: 32px; 
+            font-size: 1.2rem; 
             text-align: center;
             border: 2px solid #e67e22; 
             border-radius: 50%; 
             background: #fef5e7; 
             outline: none;
             position: absolute; 
-            bottom: 2px; /* 貼底 */
+            bottom: 2px; 
             color: #d35400;
-            z-index: 20; /* 確保浮在最上層 */
+            z-index: 20;
             font-weight: bold;
             padding: 0;
         }
         .carry-input.correct { border-color: #27ae60; background-color: #d5f5e3; color: #27ae60; }
         .carry-input:focus { transform: scale(1.2); border-color: #d35400; box-shadow: 0 0 5px #e67e22; }
 
-        /* 顯示用的靜態進位數字 */
         .carry-display {
             font-size: 1rem; color: #d35400; font-weight: bold;
             border: 1px dashed #e67e22; border-radius: 50%;
-            width: 24px; height: 24px;
+            width: 28px; height: 28px;
             display: flex; justify-content: center; align-items: center;
         }
 
@@ -214,7 +213,7 @@
 <body>
 
     <div id="page-home" class="container active">
-        <h1>✖️ 乘法闖關王 4.0</h1>
+        <h1>✖️ 乘法闖關王 4.1</h1>
         
         <div class="user-profile" onclick="changeName()">
             <span>🎓</span> <span id="display-name">設定學員姓名</span> <span>✎</span>
@@ -240,7 +239,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v4.0 (緊湊版面優化)</div>
+        <div class="version-tag">版本：v4.1 (排版完美修正版)</div>
     </div>
 
     <div id="page-editor" class="container">
@@ -362,9 +361,9 @@
     let settingText = true;
     let settingArrow = true;
 
-    const STORAGE_KEY_LISTS = 'mul_v4_0_lists';
-    const STORAGE_KEY_RANK = 'mul_v4_0_rank';
-    const STORAGE_KEY_USER = 'mul_v4_0_user';
+    const STORAGE_KEY_LISTS = 'mul_v4_1_lists';
+    const STORAGE_KEY_RANK = 'mul_v4_1_rank';
+    const STORAGE_KEY_USER = 'mul_v4_1_user';
 
     window.onload = function() {
         if(localStorage.getItem(STORAGE_KEY_LISTS)) {
@@ -579,7 +578,7 @@
         showResult(Math.round((correct/quizData.length)*100), correct, quizData.length);
     }
 
-    // --- 邏輯升級：加法進位獨立列 ---
+    // --- 邏輯升級：版面重構 (Row Relocation) ---
     function generateDetailedSteps(a, b) {
         let sA = a.toString();
         let sB = b.toString();
@@ -592,10 +591,9 @@
         const ROW_B = 2;
         const ROW_MUL_LINE = 3;
         
-        const hasAddition = sB.length > 1;
-        const ROW_ADD_CARRY = hasAddition ? 4 : -1;
-        const ROW_PARTIAL_START = hasAddition ? 5 : 4;
-
+        // ★★★ 修正：直接將部分積接在橫線下方 (Row 4) ★★★
+        const ROW_PARTIAL_START = 4;
+        
         let gridSim = {}; 
 
         // 1. 乘法階段
@@ -668,12 +666,16 @@
         }
 
         // 2. 加法階段
-        if(hasAddition) {
+        if(sB.length > 1) {
             steps.push({ type: 'clear_mul_carry', hint: '乘法完成，清空進位準備相加。' });
             
-            steps.push({ type: 'line', row: ROW_PARTIAL_START + sB.length, hint: '畫線準備相加。' });
+            // ★★★ 加法進位列：放在部分積的下一列 ★★★
+            let rowAddCarry = ROW_PARTIAL_START + sB.length;
+            let rowAddLine = rowAddCarry + 1;
+            let rowFinalSum = rowAddLine + 1;
+
+            steps.push({ type: 'line', row: rowAddLine, hint: '畫線準備相加。' });
             
-            let sumRow = ROW_PARTIAL_START + sB.length + 1;
             let sTotal = (a * b).toString();
             let currentSumCarry = 0;
             
@@ -700,9 +702,9 @@
                     type: 'add',
                     writeAns: unit,
                     writeCarry: newCarry, 
-                    ansRow: sumRow,
+                    ansRow: rowFinalSum,
                     ansCol: c,
-                    carryRow: ROW_ADD_CARRY, // 加法進位寫在 Row 4
+                    carryRow: rowAddCarry, // 加法進位在這裡
                     carryCol: c - 1,
                     hint: `將這一行的數字相加 ${currentSumCarry > 0 ? '(含之前進位)' : ''}，這格該填多少？`,
                     fullExplanation: `直行相加結果：${colSum}。填寫 ${unit} ${newCarry > 0 ? '，進位 ' + newCarry : ''}。`,
@@ -734,13 +736,12 @@
         const sA = q.a.toString(), sB = q.b.toString();
         const cols = sA.length + sB.length + 1;
         
-        const hasAddition = sB.length > 1;
-        // ★★★ 修正總列數計算：6 + sB.length (足夠容納加法結果) ★★★
-        let totalRows = hasAddition ? (6 + sB.length) : (4 + sB.length); 
+        // ★★★ 修正總列數計算：4 + sB + [1(AddCarry) + 1(AddLine) + 1(Sum)] ★★★
+        let totalRows = (sB.length > 1) ? (4 + sB.length + 3) : (4 + sB.length); 
         
         const mulLineRow = 3;
-        const addCarryRow = hasAddition ? 4 : -1;
-        const addLineRow = hasAddition ? (4 + sB.length + 1) : -1; 
+        const addCarryRow = (sB.length > 1) ? (4 + sB.length) : -1;
+        const addLineRow = (sB.length > 1) ? (addCarryRow + 1) : -1; 
 
         box.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
 
@@ -749,11 +750,10 @@
                 let cell = document.createElement('div');
                 cell.className='grid-cell'; cell.id=`c-${r}-${c}`;
                 
-                if(r===0) cell.style.height = '30px';
-                // ★★★ 壓縮 Row 4 (加法進位列) 高度為 15px ★★★
-                if(r===addCarryRow) cell.style.height = '15px'; 
+                if(r===0) cell.style.height = '35px'; // Mul Carry
+                if(r===addCarryRow) cell.style.height = '20px'; // Add Carry (緊湊)
                 
-                if(r === mulLineRow || (hasAddition && r === addLineRow)) {
+                if(r === mulLineRow || r === addLineRow) {
                     cell.style.height = '5px'; 
                     cell.style.padding = '0';
                 }
@@ -810,9 +810,7 @@
             
             if(s.writeCarry > 0) {
                 let carryCell = document.getElementById(`c-${s.carryRow}-${s.carryCol}`);
-                if(carryCell) {
-                    carryCell.innerHTML = `<div class="carry-display">${s.writeCarry}</div>`;
-                }
+                if(carryCell) carryCell.innerHTML = `<div class="carry-display">${s.writeCarry}</div>`;
             }
         }
 
