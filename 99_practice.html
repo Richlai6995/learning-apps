@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>99乘法闖關王 1.7 (寶石獎勵版)</title>
+    <title>99乘法闖關王 1.8 (酷炫獎勵版)</title>
     <style>
         :root {
             --primary: #8e44ad;
@@ -31,34 +31,61 @@
             align-items: center;
             min-height: 100vh;
             touch-action: manipulation;
+            overflow-x: hidden; /* 防止動畫導致卷軸 */
         }
 
         h1 { color: var(--primary); margin: 10px 0 20px 0; text-align: center; font-size: 2rem; }
 
-        /* --- 學員名牌 & 獎勵顯示 --- */
+        /* --- 學員名牌 --- */
         .user-profile {
             background-color: #e8daef;
             border: 2px dashed var(--primary);
-            border-radius: 10px;
-            padding: 10px 20px;
-            margin-bottom: 20px;
+            border-radius: 15px;
+            padding: 10px 25px;
+            margin-bottom: 25px;
             cursor: pointer;
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             font-weight: bold;
             color: var(--dark);
             display: flex; align-items: center; gap: 15px;
             flex-wrap: wrap;
             justify-content: center;
+            box-shadow: 0 4px 10px rgba(142, 68, 173, 0.2);
         }
         .stats-badge {
             background: #fff;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 1rem;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 1.1rem;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            display: flex;
-            align-items: center;
-            gap: 5px;
+            display: flex; align-items: center; gap: 5px;
+        }
+
+        /* --- Tab 選單 (美化版) --- */
+        .tabs { 
+            display: flex; 
+            gap: 15px; 
+            margin-bottom: 25px; 
+            background: #f0f3f4;
+            padding: 5px;
+            border-radius: 30px;
+        }
+        .tab { 
+            flex: 1; 
+            text-align: center; 
+            padding: 12px 30px; 
+            cursor: pointer; 
+            color: #7f8c8d; 
+            font-weight: bold; 
+            font-size: 1.2rem;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+        .tab.active { 
+            color: white; 
+            background-color: var(--primary); 
+            box-shadow: 0 4px 10px rgba(142, 68, 173, 0.4);
+            transform: scale(1.05);
         }
 
         /* --- 容器 --- */
@@ -88,12 +115,13 @@
 
         /* --- 列表 --- */
         .list-item {
-            background: #f8f9fa; border: 2px solid #ddd; padding: 15px; margin-bottom: 10px;
-            border-radius: 10px; display: flex; justify-content: space-between; align-items: center;
+            background: #f8f9fa; border: 2px solid #ddd; padding: 15px; margin-bottom: 15px;
+            border-radius: 12px; display: flex; justify-content: space-between; align-items: center;
             font-size: 1.2rem;
         }
         .list-info small { color: #e74c3c; font-weight: bold; display: block; margin-top: 5px;}
-        .gem-tag { color: #2980b9; font-weight: bold; background: #d6eaf8; padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; margin-left: 5px;}
+        .gem-tag { color: #2980b9; font-weight: bold; background: #d6eaf8; padding: 2px 8px; border-radius: 10px; font-size: 0.95rem; margin-left: 5px;}
+        .score-tag { color: #d35400; font-weight: bold; background: #fdebd0; padding: 2px 8px; border-radius: 10px; font-size: 0.95rem; margin-left: 5px;}
         
         /* --- 編輯區 --- */
         .gen-controls { 
@@ -101,20 +129,14 @@
             background: #f4f6f7; padding: 15px; border-radius: 10px; font-size: 1.1rem;
         }
         .gen-controls input { padding: 8px; width: 150px; text-align: left; font-size: 1.1rem; border-radius: 5px; border: 1px solid #ccc;}
-        
         .edit-row { display: flex; gap: 10px; margin-bottom: 8px; align-items: center; justify-content: center;}
         .edit-row input { padding: 10px; width: 80px; text-align: center; font-size: 1.2rem; border-radius: 5px; border: 1px solid #ccc; }
 
         /* --- 設定選項 --- */
         .settings-box {
-            background-color: #eafaf1;
-            border: 2px solid #a9dfbf;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
-            text-align: left;
+            background-color: #eafaf1; border: 2px solid #a9dfbf; border-radius: 10px;
+            padding: 15px; margin-bottom: 20px; text-align: left;
         }
-        .settings-title { font-weight: bold; margin-bottom: 10px; color: var(--dark); }
         .checkbox-group { display: flex; gap: 20px; justify-content: center; }
         .checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 1.2rem; cursor: pointer; }
         .checkbox-item input { width: 22px; height: 22px; cursor: pointer; }
@@ -129,7 +151,6 @@
         .timer-urgent { color: #e74c3c !important; animation: blink 1s infinite; font-weight: 900; }
         @keyframes blink { 50% { opacity: 0.5; } }
         
-        /* 橫式算式 */
         .equation-board {
             display: flex; justify-content: center; align-items: center; margin: 30px 0; gap: 15px;
             font-family: 'Courier New', monospace; font-weight: bold; font-size: 3.5rem; flex-wrap: wrap;
@@ -148,13 +169,11 @@
             background-color: #f5b7b1 !important; border-color: #c0392b; box-shadow: 0 0 10px rgba(192, 57, 43, 0.5);
         }
 
-        /* 求助 */
         .help-box {
             display: none; background-color: #eaf2f8; border-left: 6px solid #3498db;
             padding: 15px; margin-top: 15px; border-radius: 8px; text-align: left;
             font-size: 1.1rem; line-height: 1.6; animation: slideDown 0.3s;
         }
-        @keyframes slideDown { from{opacity:0; transform: translateY(-10px);} to{opacity:1; transform: translateY(0);} }
         .help-table { width: 100%; margin-top: 5px; font-family: monospace; }
         .help-row { display: flex; justify-content: space-between; padding: 2px 0; border-bottom:1px dashed #ddd;}
         .help-focus { background-color: #f9e79f; font-weight:bold; padding:0 5px; border-radius:3px;}
@@ -162,7 +181,6 @@
         .test-mode-box { text-align: center; padding: 30px; font-size: 1.8rem; }
         .test-input { font-size: 1.8rem; padding: 10px; width: 120px; text-align: center; margin: 10px; border-radius: 8px; border: 2px solid #ccc;}
 
-        /* 詳細結果 */
         .result-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .result-table th, .result-table td { border: 1px solid #ddd; padding: 10px; text-align: center; font-size: 1.1rem; }
         .result-table th { background-color: #f2f2f2; }
@@ -174,17 +192,40 @@
             font-family: monospace; border-top: 1px dashed #eee; padding-top: 10px;
         }
         
-        /* 獲獎動畫效果 */
+        /* --- 獲獎動畫與特效 --- */
         .reward-popup {
-            animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            background: #fff8e1; border: 3px solid #f1c40f; padding: 15px;
-            border-radius: 10px; margin-top: 20px; font-weight: bold; color: #d35400;
+            background: #fff8e1; border: 3px solid #f1c40f; padding: 20px;
+            border-radius: 15px; margin-top: 20px; font-weight: bold; color: #d35400;
+            font-size: 1.5rem; text-align: center;
+            box-shadow: 0 5px 15px rgba(241, 196, 15, 0.4);
+            animation: bounceIn 0.8s;
         }
-        @keyframes pop { from{transform: scale(0);} to{transform: scale(1);} }
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); opacity: 1; }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); }
+        }
+
+        /* 粒子動畫容器 */
+        #particle-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 9999; overflow: hidden; display: none;
+        }
+        .particle {
+            position: absolute; font-size: 2rem;
+            animation: fall linear forwards;
+        }
+        @keyframes fall {
+            0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+        }
 
     </style>
 </head>
 <body>
+
+    <div id="particle-container"></div>
 
     <div id="page-home" class="container active">
         <h1>❌ 99乘法闖關王</h1>
@@ -215,15 +256,16 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v1.7 (寶石獎勵版)</div>
+        <div class="version-tag">版本：v1.8 (酷炫獎勵版)</div>
     </div>
 
     <div id="page-editor" class="container">
         <h2>✏️ 編輯/生成題庫</h2>
-        <div style="margin-bottom:15px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
-            <div>名稱: <input type="text" id="list-name" style="padding:8px; width:180px; font-size:1.2rem;"></div>
-            <div>⏱️ 限時(秒): <input type="number" id="list-timer" placeholder="0不限" style="padding:8px; width:70px; font-size:1.2rem;" value="0"></div>
-            <div>💎 獎勵寶石: <input type="number" id="list-gems" placeholder="5" style="padding:8px; width:70px; font-size:1.2rem;" value="5"></div>
+        <div style="margin-bottom:15px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; background:#eee; padding:15px; border-radius:10px;">
+            <div style="flex:100%">名稱: <input type="text" id="list-name" style="padding:8px; width:70%; font-size:1.2rem;"></div>
+            <div>⏱️ 限時(秒): <input type="number" id="list-timer" placeholder="0" style="padding:8px; width:80px; font-size:1.2rem;" value="0"></div>
+            <div>💎 獎勵寶石: <input type="number" id="list-gems" placeholder="5" style="padding:8px; width:80px; font-size:1.2rem;" value="5"></div>
+            <div>🎯 獲獎分數: <input type="number" id="list-pass-score" placeholder="100" style="padding:8px; width:80px; font-size:1.2rem;" value="100"></div>
         </div>
         <div class="gen-controls">
             <span><strong>快速生成:</strong> 輸入數字 (逗號分隔) 如: 2,5,8</span><br>
@@ -242,15 +284,12 @@
 
     <div id="page-mode" class="container">
         <h2>選擇模式</h2>
-        
         <div class="settings-box">
-            <div class="settings-title">⚙️ 教學模式輔助設定：</div>
             <div class="checkbox-group">
                 <label class="checkbox-item"><input type="checkbox" id="opt-voice" checked> 🔊 語音提示</label>
                 <label class="checkbox-item"><input type="checkbox" id="opt-text" checked> 📝 文字提示</label>
             </div>
         </div>
-
         <div style="text-align: center;">
             <button class="btn-success btn-block" onclick="startQuiz('teach')">📖 進入教學模式</button>
             <button class="btn-danger btn-block" onclick="startQuiz('test')">📝 進入測驗模式</button>
@@ -306,11 +345,10 @@
 <script>
     let quizSettings = { voice: true, text: true };
     let studentName = '小小數學家';
-    let totalGems = 0; // 學員總寶石數
+    let totalGems = 0;
 
-    // --- 語音 ---
     function speak(text) {
-        let force = text.includes("時間") || text.includes("寶石") || text.includes("全對");
+        let force = text.includes("時間") || text.includes("寶石") || text.includes("全對") || text.includes("皇冠");
         if(currentMode === 'teach' && !quizSettings.voice && !force) return;
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
@@ -321,7 +359,6 @@
         }
     }
 
-    // --- 資料 ---
     let allLists = [], currentList = null, quizData = [];
     let currentQIdx = 0, currentMode = '';
     let timerInt, startTime, limitSeconds = 0, isWarningPlayed = false;
@@ -329,10 +366,9 @@
 
     window.onload = function() {
         if(localStorage.getItem('mul_v1_lists')) allLists = JSON.parse(localStorage.getItem('mul_v1_lists'));
-        else { allLists = [{name: "基礎練習 (2,5)", timer: 0, gems: 5, qs: genQs([2,5])}]; saveData(); }
+        else { allLists = [{name: "基礎練習 (2,5)", timer: 0, gems: 5, passScore: 100, qs: genQs([2,5])}]; saveData(); }
         
         if(localStorage.getItem('mul_v1_rank')) rankData = JSON.parse(localStorage.getItem('mul_v1_rank'));
-        
         if(localStorage.getItem('mul_student')) studentName = localStorage.getItem('mul_student');
         if(localStorage.getItem('mul_gems')) totalGems = parseInt(localStorage.getItem('mul_gems')) || 0;
         
@@ -348,14 +384,12 @@
         updateProfile();
     }
     
-    // --- 學員資料 & 寶石顯示 ---
     function changeName() {
         let n = prompt("請輸入你的名字：", studentName);
         if(n && n.trim()) { studentName = n.trim(); saveStudentData(); }
     }
     function updateProfile() { 
         document.getElementById('display-name').innerText = studentName; 
-        // 換算皇冠：100寶石 = 1皇冠
         let crowns = Math.floor(totalGems / 100);
         let remainGems = totalGems % 100;
         document.getElementById('stat-crowns').innerText = crowns;
@@ -375,19 +409,21 @@
         event.target.classList.add('active');
     }
 
-    // --- 題庫列表 ---
     function renderLists() {
         const c = document.getElementById('lists-container'); c.innerHTML='';
         allLists.forEach((l,i) => {
             const d = document.createElement('div'); d.className='list-item';
             let timerInfo = l.timer > 0 ? `<small>⏱️ 限時 ${l.timer} 秒</small>` : '';
-            // 預設寶石數
             let gemVal = l.gems ? l.gems : 5; 
+            let passVal = l.passScore ? l.passScore : 100;
             
             d.innerHTML = `
                 <div class="list-info">
                     <strong>${l.name}</strong> (${l.qs.length}題)
-                    <span class="gem-tag">💎 +${gemVal}</span>
+                    <div style="margin-top:5px;">
+                        <span class="gem-tag">💎 +${gemVal}</span>
+                        <span class="score-tag">🎯 ${passVal}分</span>
+                    </div>
                     ${timerInfo}
                 </div>
                 <div>
@@ -404,6 +440,7 @@
         document.getElementById('list-name').value="新乘法練習"; 
         document.getElementById('list-timer').value = 0; 
         document.getElementById('list-gems').value = 5; 
+        document.getElementById('list-pass-score').value = 100;
         document.getElementById('editor-rows').innerHTML=''; 
         showPage('page-editor'); 
     }
@@ -413,6 +450,7 @@
         document.getElementById('list-name').value=l.name; 
         document.getElementById('list-timer').value=l.timer || 0; 
         document.getElementById('list-gems').value=l.gems || 5;
+        document.getElementById('list-pass-score').value=l.passScore || 100;
         document.getElementById('editor-rows').innerHTML=''; 
         l.qs.forEach(q=>addEditRow(q.a,q.b)); 
         showPage('page-editor'); 
@@ -447,13 +485,15 @@
         const timer = isNaN(tVal) ? 0 : tVal;
         const gVal=parseInt(document.getElementById('list-gems').value);
         const gems = isNaN(gVal) ? 5 : gVal;
+        const pVal=parseInt(document.getElementById('list-pass-score').value);
+        const passScore = isNaN(pVal) ? 100 : pVal;
 
         const rs=document.querySelectorAll('.edit-row'); 
         const qs=[]; 
         rs.forEach(r=>{const a=parseInt(r.querySelector('.inp-a').value); const b=parseInt(r.querySelector('.inp-b').value); if(a&&b)qs.push({a,b})}); 
         if(qs.length<1)return alert("請輸入題目"); 
         
-        const data = {name:n, timer:timer, gems:gems, qs:qs};
+        const data = {name:n, timer:timer, gems:gems, passScore:passScore, qs:qs};
         if(editingId===null) allLists.push(data); else allLists[editingId]=data; 
         
         saveData(); showPage('page-home'); editingId=null; 
@@ -461,13 +501,11 @@
 
     function delList(i) { if(confirm("刪除？")){allLists.splice(i,1); saveData(); renderLists();} }
 
-    // --- 匯出資料 (含寶石) ---
     function exportData() { 
         const now = new Date();
         const dateStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}`;
-        // 包裝資料：包含題庫與學員數據
         const exportObj = {
-            version: "1.7",
+            version: "1.8",
             student: { name: studentName, totalGems: totalGems },
             lists: allLists
         };
@@ -475,17 +513,14 @@
         const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=`mul_backup_${dateStr}.json`; a.click(); 
     }
     
-    // --- 匯入資料 ---
     function handleImport(inp) { 
         const f=inp.files[0]; const r=new FileReader(); 
         r.onload=(e)=>{ 
             try {
                 const data = JSON.parse(e.target.result);
-                // 判斷是新版備份(含student)還是舊版(只有陣列)
                 if (Array.isArray(data)) {
-                    allLists = allLists.concat(data); // 舊版相容
+                    allLists = allLists.concat(data); 
                 } else if (data.lists) {
-                    // 新版
                     allLists = allLists.concat(data.lists);
                     if(data.student) {
                         if(confirm(`匯入資料包含學員：${data.student.name} (寶石:${data.student.totalGems})。\n要覆蓋目前的進度嗎？`)) {
@@ -501,7 +536,6 @@
         r.readAsText(f); 
     }
 
-    // --- 測驗流程 ---
     function prepareQuiz(i) { currentList = allLists[i]; showPage('page-mode'); }
 
     function startQuiz(mode) {
@@ -690,23 +724,46 @@
         if(limitSeconds > 0 && currentQIdx < quizData.length - 1) summary += " (時間到，部分未完成)";
         document.getElementById('res-summary').innerText = summary;
         
-        // --- 寶石獎勵結算 ---
+        // --- 寶石/皇冠 獎勵結算與動畫 ---
         const rewardArea = document.getElementById('reward-area');
         rewardArea.innerHTML = '';
         
-        if (currentMode === 'test' && score === 100) {
-            let gemsEarned = currentList.gems || 5;
-            totalGems += gemsEarned;
-            saveStudentData(); // 儲存寶石
+        // 取得該題庫設定的及格分數與寶石獎勵 (若無則預設100分/5顆)
+        let targetScore = currentList.passScore || 100;
+        let gemsReward = currentList.gems || 5;
+
+        if (currentMode === 'test' && score >= targetScore) {
+            let oldGems = totalGems;
+            let oldCrowns = Math.floor(oldGems / 100);
             
-            rewardArea.innerHTML = `
-                <div class="reward-popup">
-                    🎉 恭喜滿分！獲得 ${gemsEarned} 顆寶石 💎<br>
-                    目前累積: ${totalGems} 顆
-                </div>`;
-            speak(`太棒了！全對！你獲得了 ${gemsEarned} 顆寶石！`);
+            totalGems += gemsReward;
+            saveStudentData(); // 儲存
+            
+            let newCrowns = Math.floor(totalGems / 100);
+            let earnedCrowns = newCrowns - oldCrowns;
+
+            // 判斷要播放什麼特效
+            if (earnedCrowns > 0) {
+                // 獲得皇冠動畫
+                triggerRewardAnimation('crown');
+                rewardArea.innerHTML = `
+                    <div class="reward-popup" style="border-color:#e67e22; color:#e67e22;">
+                        👑 恭喜升級！獲得 ${earnedCrowns} 頂皇冠！<br>
+                        (同時獲得 ${gemsReward} 顆寶石)
+                    </div>`;
+                speak(`太厲害了！分數達標！恭喜你獲得了 ${earnedCrowns} 頂皇冠！`);
+            } else {
+                // 獲得寶石動畫
+                triggerRewardAnimation('gem');
+                rewardArea.innerHTML = `
+                    <div class="reward-popup">
+                        🎉 恭喜達標！獲得 ${gemsReward} 顆寶石 💎<br>
+                        目前累積: ${totalGems} 顆
+                    </div>`;
+                speak(`太棒了！分數達標！你獲得了 ${gemsReward} 顆寶石！`);
+            }
         } else {
-            let praise = score>=60?"表現不錯，下次挑戰滿分拿寶石！":"再多練習幾次，加油！";
+            let praise = score>=60?"表現不錯，下次挑戰拿寶石！":"再多練習幾次，加油！";
             speak(`測驗結束，你得了${score}分。${praise}`);
         }
 
@@ -717,10 +774,35 @@
             let status = q.isCorrect ? '<span class="res-correct">O</span>' : '<span class="res-wrong">X</span>';
             let uAnsShow = (q.userAns === null) ? "<span style='color:gray'>未答</span>" : q.userAns;
             if(currentMode === 'teach' && q.isCorrect) uAnsShow = "(完成)";
-            
             tr.innerHTML = `<td>${q.a} × ${q.b}</td><td>${uAnsShow}</td><td>${q.ans}</td><td>${status}</td>`;
             tbody.appendChild(tr);
         });
+    }
+
+    // --- 酷炫獎勵動畫函式 ---
+    function triggerRewardAnimation(type) {
+        const container = document.getElementById('particle-container');
+        container.style.display = 'block';
+        container.innerHTML = ''; // 清空
+
+        let symbol = type === 'crown' ? '👑' : '💎';
+        let count = 30; // 粒子數量
+
+        for (let i = 0; i < count; i++) {
+            let p = document.createElement('div');
+            p.innerText = symbol;
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + 'vw';
+            p.style.animationDuration = (Math.random() * 2 + 1) + 's'; // 1~3秒隨機
+            p.style.fontSize = (Math.random() * 2 + 1) + 'rem';
+            container.appendChild(p);
+        }
+
+        // 3秒後自動關閉動畫
+        setTimeout(() => {
+            container.style.display = 'none';
+            container.innerHTML = '';
+        }, 3000);
     }
 
     function saveRank() {
