@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Phonics 拼字闖關王 8.3 (觸控點選修復版)</title>
+    <title>Phonics 拼字闖關王 9.0 (寶石獎勵版)</title>
     <style>
         :root {
             --primary: #FF6B6B;
@@ -31,8 +31,7 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            /* 關鍵：防止 iPad 預設手勢干擾 */
-            touch-action: none; 
+            touch-action: none; /* 防止 iPad 預設手勢干擾 */
             overflow-x: hidden;
             overflow-y: auto; 
         }
@@ -41,33 +40,18 @@
 
         /* --- 通用容器 --- */
         .container {
-            width: 100%;
-            max-width: 600px;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            padding: 20px;
-            box-sizing: border-box;
-            margin-bottom: 20px;
-            display: none;
+            width: 100%; max-width: 600px; background: white; border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); padding: 20px; box-sizing: border-box;
+            margin-bottom: 20px; display: none;
         }
-
         .container.active { display: block; animation: fadeIn 0.3s; }
-
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         /* --- 按鈕樣式 --- */
         button {
-            border: none;
-            border-radius: 8px;
-            padding: 8px 12px;
-            font-size: 0.95rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.1s;
-            color: white;
-            margin: 2px;
-            touch-action: manipulation;
+            border: none; border-radius: 8px; padding: 8px 12px; font-size: 0.95rem;
+            font-weight: bold; cursor: pointer; transition: transform 0.1s;
+            color: white; margin: 2px; touch-action: manipulation;
         }
         button:active { transform: scale(0.95); }
         
@@ -81,7 +65,7 @@
         .btn-outline { background: transparent; border: 1px solid #999; color: #666; padding: 5px 10px; font-size: 0.85rem;}
         .btn-block { width: 100%; margin: 5px 0; padding: 12px; font-size: 1.1rem; }
 
-        /* --- 學員名牌 --- */
+        /* --- 學員名牌 & 獎勵 --- */
         .user-profile {
             background-color: var(--user-bg);
             border: 2px dashed #f39c12;
@@ -92,28 +76,29 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            flex-wrap: wrap;
+            gap: 10px;
         }
-        .user-avatar { font-size: 1.5rem; margin-right: 10px; }
-        .user-name { font-size: 1.2rem; font-weight: bold; color: #d35400; }
-        .user-edit-hint { font-size: 0.8rem; color: #999; margin-left: 8px; }
+        .user-name { font-size: 1.2rem; font-weight: bold; color: #d35400; margin-right: 5px;}
+        .stats-badge {
+            background: #fff; padding: 3px 8px; border-radius: 12px; font-size: 0.95rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 3px;
+        }
 
         /* --- 列表項目 --- */
         .list-item {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            padding: 12px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            background: #f8f9fa; border: 1px solid #e9ecef; padding: 12px; margin-bottom: 10px;
+            border-radius: 8px; display: flex; align-items: center; gap: 10px;
         }
         .list-checkbox { width: 24px; height: 24px; cursor: pointer; flex-shrink: 0; }
         .list-content-wrapper { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-        .list-header { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .list-header { display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap;}
         .list-actions { display: flex; gap: 5px; justify-content: flex-end; width: 100%; flex-wrap: wrap; }
+        
+        .gem-tag { color: #2980b9; font-weight: bold; background: #d6eaf8; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; margin-left: 5px;}
+        .score-tag { color: #d35400; font-weight: bold; background: #fdebd0; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; margin-left: 5px;}
 
-        /* --- 英雄榜樣式 --- */
+        /* --- 英雄榜 --- */
         .rank-list { margin-top: 10px; }
         .rank-item { display: flex; align-items: center; padding: 10px; margin-bottom: 8px; background: #fff; border-radius: 8px; border: 1px solid #eee; position: relative; }
         .rank-num { font-size: 1.5rem; font-weight: 900; width: 40px; text-align: center; margin-right: 10px; color: #7f8c8d; }
@@ -141,11 +126,12 @@
         .data-controls { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 2px dashed #eee; }
         .data-btn-row { display: flex; gap: 10px; }
 
-        /* --- 測驗區與其他 --- */
+        /* --- 編輯區 --- */
         .edit-row { display: flex; gap: 5px; margin-bottom: 10px; align-items: center; background: #fff; padding: 5px; border: 1px solid #eee; border-radius: 8px; }
         .edit-row input[type="text"] { padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; }
         .thumb-preview { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; background: #eee; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .file-input { display: none; }
+        
         .quiz-header { display: flex; justify-content: space-between; font-weight: bold; color: #7f8c8d; margin-bottom: 15px; background: #f1f2f6; padding: 10px; border-radius: 8px; }
         .timer-badge { background: var(--dark); color: #fff; padding: 2px 8px; border-radius: 4px; font-family: monospace; }
         .question-area { text-align: center; margin-bottom: 15px; }
@@ -153,37 +139,17 @@
         .q-image-box img { max-height: 100%; max-width: 100%; border-radius: 8px; }
         .q-image-box span { font-size: 5rem; }
         
-        .answer-input { width: 80%; font-size: 2rem; text-align: center; letter-spacing: 5px; padding: 10px; border: 3px solid var(--secondary); border-radius: 10px; font-family: monospace; margin-bottom: 15px; text-transform: lowercase; }
         .answer-area { display: flex; justify-content: center; gap: 8px; margin-bottom: 30px; min-height: 60px; padding: 10px; background: #fff; border-radius: 10px; }
         .slot { width: 45px; height: 55px; border-bottom: 4px solid var(--secondary); background-color: #f8f9fa; border-radius: 6px 6px 0 0; display: flex; justify-content: center; align-items: center; position: relative; }
         .pool-area { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 20px; min-height: 70px; padding: 15px; background: #ecf0f1; border-radius: 10px; border: 2px dashed #bdc3c7; }
         
         .tile { 
-            width: 42px; 
-            height: 42px; 
-            background-color: var(--dark); 
-            color: white; 
-            font-size: 1.6rem; 
-            font-weight: bold; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            box-shadow: 0 4px #1a252f; 
-            user-select: none; 
-            touch-action: none; /* 關鍵: JS 接管觸控 */
-            position: relative; 
-            z-index: 10; 
+            width: 42px; height: 42px; background-color: var(--dark); color: white; 
+            font-size: 1.6rem; font-weight: bold; display: flex; justify-content: center; align-items: center; 
+            border-radius: 8px; cursor: pointer; box-shadow: 0 4px #1a252f; 
+            user-select: none; touch-action: none; position: relative; z-index: 10; 
         }
-        .tile.dragging { 
-            position: fixed; 
-            opacity: 0.8; 
-            pointer-events: none; 
-            transform: scale(1.2); 
-            z-index: 1000; 
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3); 
-        }
+        .tile.dragging { position: fixed; opacity: 0.8; pointer-events: none; transform: scale(1.2); z-index: 1000; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
         .tile.placeholder { opacity: 0.2; box-shadow: none; }
         
         /* 結果卡片 */
@@ -198,17 +164,48 @@
 
         .version-tag { margin-top: 30px; color: #ccc; font-size: 0.8rem; text-align: center; }
 
+        /* --- 獲獎動畫與特效 --- */
+        .reward-popup {
+            background: #fff8e1; border: 3px solid #f1c40f; padding: 15px;
+            border-radius: 15px; margin-top: 20px; font-weight: bold; color: #d35400;
+            font-size: 1.3rem; text-align: center;
+            box-shadow: 0 5px 15px rgba(241, 196, 15, 0.4);
+            animation: bounceIn 0.8s;
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); opacity: 1; }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); }
+        }
+
+        /* 粒子動畫容器 */
+        #particle-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 9999; overflow: hidden; display: none;
+        }
+        .particle {
+            position: absolute; font-size: 2rem;
+            animation: fall linear forwards;
+        }
+        @keyframes fall {
+            0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+        }
+
     </style>
 </head>
 <body>
+
+    <div id="particle-container"></div>
 
     <div id="page-home" class="container active">
         <h1>🏆 Phonics 拼字闖關王</h1>
         
         <div class="user-profile" onclick="changeStudentName()">
-            <span class="user-avatar">🎓</span>
-            <span id="display-student-name" class="user-name">設定學員姓名</span>
-            <span class="user-edit-hint">✎</span>
+            <div>🎓 <span id="display-student-name" class="user-name">設定學員姓名</span> ✎</div>
+            <div class="stats-badge">👑 <span id="stat-crowns">0</span></div>
+            <div class="stats-badge">💎 <span id="stat-gems">0</span></div>
         </div>
 
         <div class="tabs">
@@ -226,8 +223,8 @@
                     <button class="btn-outline" onclick="toggleSelectAll()">全選 / 取消</button>
                 </div>
                 <div class="data-btn-row">
-                    <button class="btn-link" style="flex:1" onclick="exportSelectedData()">📤 匯出已選題庫</button>
-                    <button class="btn-link" style="flex:1" onclick="triggerImport()">📥 匯入題庫</button>
+                    <button class="btn-link" style="flex:1" onclick="exportSelectedData()">📤 匯出備份 (含寶石)</button>
+                    <button class="btn-link" style="flex:1" onclick="triggerImport()">📥 匯入備份</button>
                 </div>
                 <input type="file" id="import-file" class="file-input" accept=".json" onchange="handleImportData(this)">
             </div>
@@ -238,14 +235,20 @@
             <button class="btn-gray btn-block" onclick="clearAllHistory()">清空所有紀錄</button>
         </div>
 
-        <div class="version-tag">版本：v8.3 (iPad 觸控點選修復)</div>
+        <div class="version-tag">版本：v9.0 (寶石獎勵版)</div>
     </div>
 
     <div id="page-editor" class="container">
         <h2>✏️ 編輯題庫</h2>
-        <div style="margin-bottom:10px;">
-            <label>題庫名稱：</label>
-            <input type="text" id="list-name-input" style="padding:5px; width:60%;">
+        <div style="margin-bottom:15px; background:#f9f9f9; padding:10px; border-radius:8px;">
+            <div style="margin-bottom:10px;">
+                <label>題庫名稱：</label>
+                <input type="text" id="list-name-input" style="padding:5px; width:70%;">
+            </div>
+            <div style="display:flex; gap:10px;">
+                <div>💎 獎勵寶石: <input type="number" id="list-gems" placeholder="5" style="padding:5px; width:60px;" value="5"></div>
+                <div>🎯 獲獎分數: <input type="number" id="list-pass-score" placeholder="100" style="padding:5px; width:60px;" value="100"></div>
+            </div>
         </div>
         <div style="background:#e8f6f3; padding:8px; font-size:0.9rem; border-radius:5px; margin-bottom:10px; color:#2c3e50;">
             💡 點擊圖示框可上傳圖片，或是直接輸入 Emoji 🍎
@@ -286,7 +289,10 @@
             <div class="final-score" id="final-score">100</div>
             <div class="final-accuracy" id="final-accuracy">正確: 5/5</div>
             <div class="final-time" id="final-time">耗時: 01:23</div>
-            <div class="result-msg" id="final-msg" style="font-size:1.2rem; margin-bottom:20px;">太厲害了！</div>
+            
+            <div id="reward-area"></div>
+            
+            <div class="result-msg" id="final-msg" style="font-size:1.2rem; margin-bottom:20px; margin-top:10px;">太厲害了！</div>
             <button class="btn-primary btn-block" onclick="showPage('page-home')">回到首頁</button>
         </div>
     </div>
@@ -303,12 +309,16 @@
     const DEFAULT_LIST = {
         id: 'default',
         name: '預設：動物篇 (Demo)',
+        gems: 5,
+        passScore: 100,
         words: [{word: 'cat', img: '🐱'}, {word: 'dog', img: '🐶'}, {word: 'pig', img: '🐷'}]
     };
 
     let allLists = [];
     let historyLog = [];
     let studentName = "小小學員";
+    let totalGems = 0;
+
     let currentQuizList = []; 
     let currentListId = null;
     let currentListName = "";
@@ -323,38 +333,51 @@
         loadData();
         renderLists();
         renderHistory();
-        updateNameDisplay();
+        updateProfileDisplay();
     };
 
     function loadData() {
-        const storedLists = localStorage.getItem('phonics_lists_v7');
+        const storedLists = localStorage.getItem('phonics_lists_v9');
         if (storedLists) { allLists = JSON.parse(storedLists); } 
         else { allLists = [DEFAULT_LIST]; saveListData(); }
         
-        const storedHistory = localStorage.getItem('phonics_history_v7');
+        const storedHistory = localStorage.getItem('phonics_history_v9');
         if (storedHistory) { historyLog = JSON.parse(storedHistory); }
         
         const storedName = localStorage.getItem('phonics_student_name');
         if (storedName) studentName = storedName;
+
+        const storedGems = localStorage.getItem('phonics_total_gems');
+        if (storedGems) totalGems = parseInt(storedGems) || 0;
     }
 
-    function saveListData() { localStorage.setItem('phonics_lists_v7', JSON.stringify(allLists)); }
-    function saveHistoryData() { localStorage.setItem('phonics_history_v7', JSON.stringify(historyLog)); }
+    function saveListData() { localStorage.setItem('phonics_lists_v9', JSON.stringify(allLists)); }
+    function saveHistoryData() { localStorage.setItem('phonics_history_v9', JSON.stringify(historyLog)); }
+    function saveStudentData() { 
+        localStorage.setItem('phonics_student_name', studentName); 
+        localStorage.setItem('phonics_total_gems', totalGems);
+        updateProfileDisplay();
+    }
     
     function changeStudentName() {
         const newName = prompt("請輸入學員名字：", studentName);
         if (newName && newName.trim() !== "") {
             studentName = newName.trim();
-            localStorage.setItem('phonics_student_name', studentName);
-            updateNameDisplay();
+            saveStudentData();
         }
     }
-    function updateNameDisplay() { document.getElementById('display-student-name').innerText = studentName; }
+    function updateProfileDisplay() { 
+        document.getElementById('display-student-name').innerText = studentName; 
+        let crowns = Math.floor(totalGems / 100);
+        let remainGems = totalGems % 100;
+        document.getElementById('stat-crowns').innerText = crowns;
+        document.getElementById('stat-gems').innerText = remainGems;
+    }
 
     function showPage(pageId) {
         document.querySelectorAll('.container').forEach(el => el.classList.remove('active'));
         document.getElementById(pageId).classList.add('active');
-        if (pageId === 'page-home') { renderLists(); renderHistory(); }
+        if (pageId === 'page-home') { renderLists(); renderHistory(); updateProfileDisplay(); }
     }
 
     function switchTab(tabName) {
@@ -369,13 +392,20 @@
         const container = document.getElementById('lists-container');
         container.innerHTML = '';
         allLists.forEach((list, index) => {
+            let gemVal = list.gems ? list.gems : 5;
+            let passVal = list.passScore ? list.passScore : 100;
+
             const div = document.createElement('div');
             div.className = 'list-item';
             div.innerHTML = `
                 <input type="checkbox" class="list-checkbox" data-index="${index}">
                 <div class="list-content-wrapper">
                     <div class="list-header">
-                        <div><strong>${list.name}</strong> <small>(${list.words.length}題)</small></div>
+                        <div>
+                            <strong>${list.name}</strong> <small>(${list.words.length}題)</small>
+                            <span class="gem-tag">💎 +${gemVal}</span>
+                            <span class="score-tag">🎯 ${passVal}分</span>
+                        </div>
                     </div>
                     <div class="list-actions">
                         <button class="btn-gold" onclick="showLeaderboard('${list.id}', '${list.name}')">🏆 榜單</button>
@@ -395,25 +425,55 @@
         checkboxes.forEach(cb => cb.checked = !allChecked);
     }
 
+    // 修改：匯出包含學員資料 (Backup)
     function exportSelectedData() {
         const checkboxes = document.querySelectorAll('.list-checkbox:checked');
-        if (checkboxes.length === 0) { alert("請至少勾選一個題庫！"); return; }
-        const selectedLists = [];
-        checkboxes.forEach(cb => { selectedLists.push(allLists[parseInt(cb.dataset.index)]); });
-        const blob = new Blob([JSON.stringify(selectedLists)], {type: "application/json"});
+        // 如果沒選，就匯出全部
+        let listsToExport = [];
+        if (checkboxes.length === 0) {
+            listsToExport = allLists;
+        } else {
+            checkboxes.forEach(cb => { listsToExport.push(allLists[parseInt(cb.dataset.index)]); });
+        }
+
+        const exportObj = {
+            version: "9.0",
+            student: { name: studentName, totalGems: totalGems },
+            lists: listsToExport
+        };
+
+        const blob = new Blob([JSON.stringify(exportObj)], {type: "application/json"});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-        a.download = `phonics_selected_${new Date().toISOString().slice(0,10)}.json`;
+        a.download = `phonics_backup_${new Date().toISOString().slice(0,10)}.json`;
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
     }
 
     function triggerImport() { document.getElementById('import-file').click(); }
+    
+    // 修改：匯入支援新格式
     function handleImportData(input) {
         const file = input.files[0]; if(!file) return;
         const r = new FileReader();
         r.onload = (e) => {
             try {
                 const data = JSON.parse(e.target.result);
-                if(Array.isArray(data)) { allLists=allLists.concat(data); saveListData(); renderLists(); alert(`匯入 ${data.length} 個題庫`); }
+                if(Array.isArray(data)) {
+                    // 舊版格式 (純陣列)
+                    allLists = allLists.concat(data);
+                    alert(`匯入 ${data.length} 個題庫 (舊格式)`);
+                } else if (data.lists) {
+                    // 新版格式
+                    allLists = allLists.concat(data.lists);
+                    if(data.student) {
+                        if(confirm(`匯入資料包含學員：${data.student.name} (寶石:${data.student.totalGems})。\n要覆蓋目前的進度嗎？`)) {
+                            studentName = data.student.name;
+                            totalGems = data.student.totalGems;
+                            saveStudentData();
+                        }
+                    }
+                    alert(`匯入成功！`);
+                }
+                saveListData(); renderLists();
             } catch(err) { alert("格式錯誤"); }
             input.value='';
         };
@@ -426,9 +486,12 @@
         currentListId = list.id; 
         currentListName = list.name;
         
-        let shuffled = [...list.words].sort(() => 0.5 - Math.random());
-        const maxQ = Math.min(10, shuffled.length);
-        currentQuizList = shuffled.slice(0, maxQ);
+        // 紀錄該次測驗的設定
+        currentQuizList = [...list.words].sort(() => 0.5 - Math.random());
+        // 為了不要太長，取前10題，或全部
+        const maxQ = Math.min(10, currentQuizList.length);
+        currentQuizList = currentQuizList.slice(0, maxQ);
+        
         pointsPerQuestion = Math.round(100 / currentQuizList.length);
         
         currentQIndex = 0; score = 0; correctCount = 0;
@@ -469,7 +532,7 @@
         if(userAns === correctAns) {
             score += pointsPerQuestion;
             correctCount++;
-            if(currentQIndex===currentQuizList.length-1 && score>=98) score=100;
+            if(currentQIndex===currentQuizList.length-1 && score>=98) score=100; // 補正誤差
             speak(`太棒了${studentName}，答對了！`, true, 'zh-TW');
             setTimeout(()=>alert("✅ 答對了！"),100);
         } else {
@@ -492,182 +555,185 @@
         document.getElementById('final-accuracy').innerText = `正確: ${correctCount} / ${currentQuizList.length}`;
         document.getElementById('final-time').innerText = `總耗時: ${timeStr}`;
         
-        let msg = score===100?"太神了！你是拼字大師！🏆":score>=60?"很不錯，再多練習一下會更棒！":"完成測驗就是進步！加油！";
-        document.getElementById('final-msg').innerText = msg;
-        speak(`測驗結束，${studentName}得了${score}分。${msg} 大家都會為你拍手！`, true, 'zh-TW');
+        // --- 獎勵結算 ---
+        const rewardArea = document.getElementById('reward-area');
+        rewardArea.innerHTML = '';
+        
+        // 找出目前的題庫設定
+        const listCfg = allLists.find(l => l.id === currentListId) || DEFAULT_LIST;
+        let targetScore = listCfg.passScore || 100;
+        let gemsReward = listCfg.gems || 5;
+
+        if (score >= targetScore) {
+            let oldGems = totalGems;
+            let oldCrowns = Math.floor(oldGems / 100);
+            
+            totalGems += gemsReward;
+            saveStudentData();
+            
+            let newCrowns = Math.floor(totalGems / 100);
+            let earnedCrowns = newCrowns - oldCrowns;
+
+            if (earnedCrowns > 0) {
+                triggerRewardAnimation('crown');
+                rewardArea.innerHTML = `
+                    <div class="reward-popup" style="border-color:#e67e22; color:#e67e22;">
+                        👑 恭喜升級！獲得 ${earnedCrowns} 頂皇冠！<br>
+                        (同時獲得 ${gemsReward} 顆寶石)
+                    </div>`;
+                speak(`太厲害了！分數達標！恭喜你獲得了 ${earnedCrowns} 頂皇冠！`, true, 'zh-TW');
+            } else {
+                triggerRewardAnimation('gem');
+                rewardArea.innerHTML = `
+                    <div class="reward-popup">
+                        🎉 恭喜達標！獲得 ${gemsReward} 顆寶石 💎<br>
+                        目前累積: ${totalGems} 顆
+                    </div>`;
+                speak(`太棒了！分數達標！你獲得了 ${gemsReward} 顆寶石！`, true, 'zh-TW');
+            }
+            document.getElementById('final-msg').innerText = "太神了！你是拼字大師！🏆";
+        } else {
+            let msg = score>=60?"很不錯，再多練習一下挑戰寶石！":"完成測驗就是進步！加油！";
+            document.getElementById('final-msg').innerText = msg;
+            speak(`測驗結束，${studentName}得了${score}分。${msg}`, true, 'zh-TW');
+        }
 
         const record = { user:studentName, date:new Date().toLocaleString(), score:score, time:timeStr, listId:currentListId, listName:currentListName };
         historyLog.unshift(record);
         saveHistoryData();
     }
 
-    // --- Tile Interaction (iPad Fix v8.3: 點選延遲邏輯) ---
-    
+    // --- 動畫特效 ---
+    function triggerRewardAnimation(type) {
+        const container = document.getElementById('particle-container');
+        container.style.display = 'block';
+        container.innerHTML = ''; 
+
+        let symbol = type === 'crown' ? '👑' : '💎';
+        let count = 30; 
+
+        for (let i = 0; i < count; i++) {
+            let p = document.createElement('div');
+            p.innerText = symbol;
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + 'vw';
+            p.style.animationDuration = (Math.random() * 2 + 1) + 's'; 
+            p.style.fontSize = (Math.random() * 2 + 1) + 'rem';
+            container.appendChild(p);
+        }
+
+        setTimeout(() => {
+            container.style.display = 'none';
+            container.innerHTML = '';
+        }, 3000);
+    }
+
+    // --- Tile Logic (iPad Fix) ---
     function createTile(c) {
-        const t = document.createElement('div'); 
-        t.className = 'tile'; 
-        t.innerText = c;
-        
-        // 滑鼠事件
+        const t = document.createElement('div'); t.className = 'tile'; t.innerText = c;
         t.addEventListener('mousedown', handleDragStartMouse);
-        
-        // 觸控事件 (Key logic here)
         t.addEventListener('touchstart', handleTouchStart, {passive: false});
         t.addEventListener('touchmove', handleTouchMove, {passive: false});
         t.addEventListener('touchend', handleTouchEnd);
-        
         return t;
     }
+    
+    function handleDragStartMouse(e) { e.preventDefault(); initDrag(e.target, e.clientX, e.clientY, 'mouse'); }
 
-    // --- 滑鼠邏輯 (PC) ---
-    function handleDragStartMouse(e) {
-        e.preventDefault();
-        initDrag(e.target, e.clientX, e.clientY, 'mouse');
-    }
-
-    // --- 觸控邏輯 (iPad/Mobile) ---
-    let activeTouchId = null;
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let isDragging = false;
-    let currentGhost = null;
-    let currentTile = null;
-    let touchOffsetX = 0;
-    let touchOffsetY = 0;
+    let activeTouchId=null, touchStartX=0, touchStartY=0, isDragging=false, currentGhost=null, currentTile=null, touchOffsetX=0, touchOffsetY=0;
 
     function handleTouchStart(e) {
         if (e.touches.length > 1) return;
-        e.preventDefault(); // 防止捲動
-        
-        const touch = e.touches[0];
-        activeTouchId = touch.identifier;
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
-        
-        currentTile = e.target;
-        isDragging = false; // 預設為非拖曳 (準備點擊)
-        
-        // 計算 offset
+        e.preventDefault();
+        const touch = e.touches[0]; activeTouchId = touch.identifier;
+        touchStartX = touch.clientX; touchStartY = touch.clientY;
+        currentTile = e.target; isDragging = false;
         const rect = currentTile.getBoundingClientRect();
-        touchOffsetX = touch.clientX - rect.left;
-        touchOffsetY = touch.clientY - rect.top;
+        touchOffsetX = touch.clientX - rect.left; touchOffsetY = touch.clientY - rect.top;
     }
-
     function handleTouchMove(e) {
-        const touch = Array.from(e.touches).find(t => t.identifier === activeTouchId);
-        if (!touch) return;
-        
-        const cx = touch.clientX;
-        const cy = touch.clientY;
-
-        // 判斷是否超過移動閾值 (10px)
+        const touch = Array.from(e.touches).find(t => t.identifier === activeTouchId); if (!touch) return;
+        const cx = touch.clientX; const cy = touch.clientY;
         if (!isDragging && (Math.abs(cx - touchStartX) > 10 || Math.abs(cy - touchStartY) > 10)) {
-            isDragging = true;
-            createGhost(currentTile, cx, cy);
+            isDragging = true; createGhost(currentTile, cx, cy);
         }
-
-        if (isDragging && currentGhost) {
-            currentGhost.style.left = (cx - touchOffsetX) + 'px';
-            currentGhost.style.top = (cy - touchOffsetY) + 'px';
-        }
+        if (isDragging && currentGhost) { currentGhost.style.left = (cx - touchOffsetX) + 'px'; currentGhost.style.top = (cy - touchOffsetY) + 'px'; }
     }
-
     function handleTouchEnd(e) {
-        const touch = Array.from(e.changedTouches).find(t => t.identifier === activeTouchId);
-        if (!touch) return;
-
-        if (!isDragging) {
-            // 沒移動 -> 觸發點擊
-            handleTileClick(currentTile);
-        } else {
-            // 拖曳結束 -> 放置
-            finishDrag(touch.clientX, touch.clientY);
-        }
-        
-        // 清理
+        const touch = Array.from(e.changedTouches).find(t => t.identifier === activeTouchId); if (!touch) return;
+        if (!isDragging) { handleTileClick(currentTile); } else { finishDrag(touch.clientX, touch.clientY); }
         if (currentGhost) { currentGhost.remove(); currentGhost = null; }
         if (currentTile) { currentTile.classList.remove('placeholder'); currentTile = null; }
         activeTouchId = null;
     }
 
-    // --- 拖曳共用邏輯 ---
-    
     function createGhost(tile, x, y) {
-        currentGhost = tile.cloneNode(true);
-        currentGhost.classList.add('dragging');
-        currentGhost.style.width = tile.offsetWidth + 'px';
-        currentGhost.style.height = tile.offsetHeight + 'px';
-        currentGhost.style.left = (x - touchOffsetX) + 'px';
-        currentGhost.style.top = (y - touchOffsetY) + 'px';
-        document.body.appendChild(currentGhost);
-        tile.classList.add('placeholder');
+        currentGhost = tile.cloneNode(true); currentGhost.classList.add('dragging');
+        currentGhost.style.width = tile.offsetWidth + 'px'; currentGhost.style.height = tile.offsetHeight + 'px';
+        currentGhost.style.left = (x - touchOffsetX) + 'px'; currentGhost.style.top = (y - touchOffsetY) + 'px';
+        document.body.appendChild(currentGhost); tile.classList.add('placeholder');
     }
-
     function finishDrag(x, y) {
-        if(currentGhost) currentGhost.style.display = 'none'; // Hide to find element below
+        if(currentGhost) currentGhost.style.display = 'none';
         const elBelow = document.elementFromPoint(x, y);
         const slot = elBelow ? elBelow.closest('.slot') : null;
         const pool = elBelow ? elBelow.closest('.pool-area') : null;
-
         if (slot) {
-            if (slot.children.length > 0) {
-                document.getElementById('pool-area').appendChild(slot.children[0]);
-            }
-            slot.appendChild(currentTile);
-            speak(currentTile.innerText, false, 'en-US');
-        } else if (pool) {
-            pool.appendChild(currentTile);
-        }
+            if (slot.children.length > 0) document.getElementById('pool-area').appendChild(slot.children[0]);
+            slot.appendChild(currentTile); speak(currentTile.innerText, false, 'en-US');
+        } else if (pool) { pool.appendChild(currentTile); }
     }
-
-    // --- 滑鼠拖曳實作 (PC Compatibility) ---
     function initDrag(tile, startX, startY, type) {
-        currentTile = tile;
-        const rect = tile.getBoundingClientRect();
-        touchOffsetX = startX - rect.left;
-        touchOffsetY = startY - rect.top;
-        
+        currentTile = tile; const rect = tile.getBoundingClientRect();
+        touchOffsetX = startX - rect.left; touchOffsetY = startY - rect.top;
         createGhost(tile, startX, startY);
-        
-        function onMouseMove(e) {
-            currentGhost.style.left = (e.clientX - touchOffsetX) + 'px';
-            currentGhost.style.top = (e.clientY - touchOffsetY) + 'px';
-        }
-        
+        function onMouseMove(e) { currentGhost.style.left = (e.clientX - touchOffsetX) + 'px'; currentGhost.style.top = (e.clientY - touchOffsetY) + 'px'; }
         function onMouseUp(e) {
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
+            document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp);
             finishDrag(e.clientX, e.clientY);
             if(currentGhost) { currentGhost.remove(); currentGhost = null; }
             if(currentTile) { currentTile.classList.remove('placeholder'); currentTile = null; }
         }
-        
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
+        document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp);
     }
-
-    // --- 點擊邏輯 ---
     function handleTileClick(tile) {
-        const aa = document.getElementById('answer-area');
-        const pa = document.getElementById('pool-area');
-        
+        const aa = document.getElementById('answer-area'); const pa = document.getElementById('pool-area');
         if (tile.parentElement === pa) {
             const empty = Array.from(aa.children).find(s => s.children.length === 0);
-            if (empty) { 
-                empty.appendChild(tile); 
-                speak(tile.innerText, false, 'en-US'); 
-            }
-        } else {
-            pa.appendChild(tile);
-        }
+            if (empty) { empty.appendChild(tile); speak(tile.innerText, false, 'en-US'); }
+        } else { pa.appendChild(tile); }
     }
 
-    // ... (其餘輔助函數) ...
-    function createNewList() { editingListId=null; document.getElementById('list-name-input').value="新題庫"; document.getElementById('editor-rows').innerHTML=''; for(let i=0;i<3;i++)addEditRow(); showPage('page-editor'); }
-    function editList(i) { editingListId=i; const l=allLists[i]; document.getElementById('list-name-input').value=l.name; document.getElementById('editor-rows').innerHTML=''; l.words.forEach(w=>addEditRow(w.word,w.img)); showPage('page-editor'); }
+    // --- Editor Logic ---
+    function createNewList() { 
+        editingListId=null; 
+        document.getElementById('list-name-input').value="新題庫"; 
+        document.getElementById('list-gems').value = 5;
+        document.getElementById('list-pass-score').value = 100;
+        document.getElementById('editor-rows').innerHTML=''; 
+        for(let i=0;i<3;i++)addEditRow(); 
+        showPage('page-editor'); 
+    }
+    function editList(index) { 
+        editingListId=index; const l=allLists[index]; 
+        document.getElementById('list-name-input').value=l.name; 
+        document.getElementById('list-gems').value=l.gems || 5;
+        document.getElementById('list-pass-score').value=l.passScore || 100;
+        document.getElementById('editor-rows').innerHTML=''; 
+        l.words.forEach(w=>addEditRow(w.word,w.img)); 
+        showPage('page-editor'); 
+    }
     function addEditRow(w='',i='') { const d=document.createElement('div'); d.className='edit-row'; let disp=i||'📷'; if(i&&i.length>10) disp=`<img src="${i}" style="width:100%;height:100%;object-fit:cover;">`; d.innerHTML=`<div class="thumb-preview" onclick="this.nextElementSibling.click()">${disp}</div><input type="file" class="file-input" accept="image/*" onchange="handleFileSelect(this)"><input type="hidden" class="img-data" value="${i}"><input type="text" class="word-input" placeholder="英文單字" value="${w}"><button onclick="this.parentElement.remove()" class="btn-danger" style="padding:5px 10px;">×</button>`; document.getElementById('editor-rows').appendChild(d); }
     function handleFileSelect(input) { if(input.files[0]){ const r=new FileReader(); r.onload=(e)=>{ const i=new Image(); i.src=e.target.result; i.onload=()=>{ const c=document.createElement('canvas'); const ctx=c.getContext('2d'); const s=300/i.width; c.width=300; c.height=i.height*s; ctx.drawImage(i,0,0,c.width,c.height); const d=c.toDataURL('image/jpeg',0.7); input.previousElementSibling.innerHTML=`<img src="${d}" style="width:100%;height:100%;object-fit:cover;">`; input.nextElementSibling.value=d; }; }; r.readAsDataURL(input.files[0]); } }
-    function saveList() { const n=document.getElementById('list-name-input').value; const rs=document.querySelectorAll('.edit-row'); const nws=[]; rs.forEach(r=>{ const i=r.querySelector('.img-data').value; const w=r.querySelector('.word-input').value.trim().toLowerCase(); if(w) nws.push({word:w, img:i||'❓'}); }); if(nws.length<1) return alert("請輸入單字"); const nd={id:editingListId!==null?allLists[editingListId].id:Date.now().toString(),name:n,words:nws}; if(editingListId!==null) allLists[editingListId]=nd; else allLists.push(nd); saveListData(); showPage('page-home'); }
+    function saveList() { 
+        const n=document.getElementById('list-name-input').value; 
+        const g=parseInt(document.getElementById('list-gems').value) || 5;
+        const p=parseInt(document.getElementById('list-pass-score').value) || 100;
+        
+        const rs=document.querySelectorAll('.edit-row'); const nws=[]; rs.forEach(r=>{ const i=r.querySelector('.img-data').value; const w=r.querySelector('.word-input').value.trim().toLowerCase(); if(w) nws.push({word:w, img:i||'❓'}); }); if(nws.length<1) return alert("請輸入單字"); 
+        const nd={id:editingListId!==null?allLists[editingListId].id:Date.now().toString(),name:n,gems:g,passScore:p,words:nws}; 
+        if(editingListId!==null) allLists[editingListId]=nd; else allLists.push(nd); saveListData(); showPage('page-home'); 
+    }
     function deleteList(i) { if(confirm("刪除？")){allLists.splice(i,1);saveListData();renderLists();} }
     function updateTimer() { const d=Math.floor((Date.now()-startTime)/1000); const m=Math.floor(d/60).toString().padStart(2,'0'); const s=(d%60).toString().padStart(2,'0'); document.getElementById('q-timer').innerText=`${m}:${s}`; }
     function resetCurrentTiles() { document.querySelectorAll('.answer-area .tile').forEach(t=>document.getElementById('pool-area').appendChild(t)); }
