@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>99乘法闖關王 1.2 (橫式教學版)</title>
+    <title>99乘法闖關王 1.3 (快速測驗版)</title>
     <style>
         :root {
             --primary: #8e44ad; /* 乘法改用紫色系區隔 */
@@ -115,7 +115,7 @@
             font-size: 1.3rem;
         }
         
-        /* --- 橫式算式顯示區 (新) --- */
+        /* --- 橫式算式顯示區 --- */
         .equation-board {
             display: flex;
             justify-content: center;
@@ -124,7 +124,7 @@
             gap: 15px;
             font-family: 'Courier New', monospace; 
             font-weight: bold; 
-            font-size: 3.5rem; /* 字體加大 */
+            font-size: 3.5rem; 
             flex-wrap: wrap;
         }
         
@@ -141,7 +141,7 @@
 
         /* 輸入框樣式 */
         .game-input { 
-            width: 60px; height: 60px; font-size: 2.5rem; text-align: center; /* 輸入框加大 */
+            width: 60px; height: 60px; font-size: 2.5rem; text-align: center; 
             border: 3px solid var(--primary); border-radius: 10px; background: #fff;
             font-weight: bold; outline: none;
             padding: 0;
@@ -231,7 +231,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v1.2 (橫式教學版)</div>
+        <div class="version-tag">版本：v1.3 (快速測驗版)</div>
     </div>
 
     <div id="page-editor" class="container">
@@ -422,16 +422,13 @@
         
         document.getElementById('editor-rows').innerHTML = '';
         let newQs = genQs(targets);
-        // 洗牌
         newQs.sort(() => Math.random() - 0.5);
-        
         newQs.forEach(q => addEditRow(q.a, q.b));
     }
 
     function genQs(targets) {
         let qs = [];
         targets.forEach(t => {
-            // 生成 1 到 10 倍
             for(let i=1; i<=10; i++) {
                 qs.push({a: t, b: i});
             }
@@ -513,8 +510,15 @@
             document.getElementById('teach-area').style.display = 'none';
             document.getElementById('test-area').style.display = 'block';
             document.getElementById('test-q-text').innerText = `${q.a} × ${q.b} = ?`;
-            document.getElementById('test-ans').value = '';
-            document.getElementById('test-ans').focus();
+            const inp = document.getElementById('test-ans');
+            inp.value = '';
+            inp.focus();
+            
+            // *** 修改：支援 Enter 鍵送出 ***
+            inp.onkeydown = (e) => {
+                if(e.key === 'Enter') checkTestAnswer();
+            };
+            
         } else {
             document.getElementById('test-area').style.display = 'none';
             document.getElementById('teach-area').style.display = 'block';
@@ -522,39 +526,26 @@
         }
     }
 
-    // --- 核心修改：渲染橫式教學介面 ---
+    // --- 教學模式 Grid 渲染 ---
     function renderMulGrid(q) {
         const box = document.getElementById('gridBoard'); 
-        box.innerHTML = ''; // 清空
+        box.innerHTML = ''; 
         
         const msg = document.getElementById('teach-msg');
         document.getElementById('help-content').style.display = 'none';
         
         // 1. 建立橫式算式元素
-        
-        // 被乘數 (A) - 綠色
         const elA = document.createElement('span');
-        elA.innerText = q.a;
-        elA.className = 'hl-a';
-        box.appendChild(elA);
+        elA.innerText = q.a; elA.className = 'hl-a'; box.appendChild(elA);
 
-        // 乘號 (×) - 灰色
         const elSign = document.createElement('span');
-        elSign.innerText = ' × '; // 加點空白
-        elSign.className = 'hl-op';
-        box.appendChild(elSign);
+        elSign.innerText = ' × '; elSign.className = 'hl-op'; box.appendChild(elSign);
 
-        // 乘數 (B) - 藍色
         const elB = document.createElement('span');
-        elB.innerText = q.b;
-        elB.className = 'hl-b';
-        box.appendChild(elB);
+        elB.innerText = q.b; elB.className = 'hl-b'; box.appendChild(elB);
 
-        // 等號 (=) - 灰色
         const elEq = document.createElement('span');
-        elEq.innerText = ' = ';
-        elEq.className = 'hl-op';
-        box.appendChild(elEq);
+        elEq.innerText = ' = '; elEq.className = 'hl-op'; box.appendChild(elEq);
 
         // 2. 建立多格輸入區
         const inputGroup = document.createElement('div');
@@ -570,14 +561,12 @@
             inp.className = 'game-input active-input step-input-group';
             inp.dataset.index = i; 
             
-            // 自動跳格邏輯
             inp.oninput = function() {
                 if(this.value.length === 1) {
                     const nextIndex = parseInt(this.dataset.index) + 1;
                     if(createdInputs[nextIndex]) createdInputs[nextIndex].focus();
                 }
             };
-            // 鍵盤邏輯
             inp.onkeydown = (e) => { 
                 if(e.key === 'Enter') checkTeachAnswerMulti(q); 
                 if(e.key === 'Backspace' && this.value === '') {
@@ -591,22 +580,17 @@
         
         box.appendChild(inputGroup);
 
-        // 3. 提示
         let hint = `請計算 ${q.a} 乘以 ${q.b} 是多少？`;
         if(quizSettings.text) msg.innerText = hint;
         else msg.innerText = "請填寫答案...";
         speak(hint);
 
-        // 聚焦第一個
         if(createdInputs.length > 0) setTimeout(() => createdInputs[0].focus(), 100);
 
         const okBtn = document.createElement('button'); okBtn.className='btn-warning'; okBtn.innerText='OK';
         okBtn.onclick = () => checkTeachAnswerMulti(q);
         
-        // 為了排版，將 OK 按鈕放在提示區下方
         if(document.getElementById('ok-btn')) document.getElementById('ok-btn').remove();
-        
-        // 確保 OK 按鈕不會重複添加
         let oldBtn = msg.querySelector('button');
         if(oldBtn) oldBtn.remove();
         
@@ -633,25 +617,27 @@
         }
     }
 
-    // --- 測驗模式驗證 ---
+    // --- 測驗模式驗證 (修改：正確不Alert，錯誤才Alert) ---
     function checkTestAnswer() {
         const q = quizData[currentQIdx];
         const uAns = document.getElementById('test-ans').value;
         
-        if(uAns === '') { alert("請輸入答案"); return; }
+        if(uAns === '') { return; } // 空值不送出
         
         q.userAns = parseInt(uAns);
         
         if(q.userAns === q.ans) {
             q.isCorrect = true;
             speak("答對了！");
-            alert("✅ 正確！");
+            // 直接下一題，不顯示 Alert
+            nextQuestion();
         } else {
             q.isCorrect = false;
             speak(`錯了，正確答案是 ${q.ans}`);
-            alert(`❌ 錯誤！正確答案是 ${q.ans}`);
+            // 只有錯誤時顯示 Alert
+            alert(`❌ 算錯囉！\n\n題目：${q.a} × ${q.b}\n正確答案是：${q.ans}`);
+            nextQuestion();
         }
-        nextQuestion();
     }
 
     function nextQuestion() {
@@ -663,16 +649,14 @@
         }
     }
 
-    // --- 求助功能 (列出該數字的乘法表) ---
+    // --- 求助功能 ---
     function toggleHelp() {
         const helpBox = document.getElementById('help-content');
         if(helpBox.style.display === 'block') { helpBox.style.display = 'none'; return; }
 
         const q = quizData[currentQIdx];
-        // 針對 A 的乘法表
         let html = `<strong>🔍 ${q.a} 的乘法表：</strong><br><div class="help-table">`;
         
-        // 求助表也列出 1 到 10
         for(let i=1; i<=10; i++) {
             let style = (i === q.b) ? 'class="help-row help-focus"' : 'class="help-row"';
             let mark = (i === q.b) ? '👈' : '';
