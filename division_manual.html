@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>除法闖關王 3.9 (試商調整回饋版)</title>
+    <title>除法闖關王 4.0 (動態位數顏色版)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -234,7 +234,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v3.9 (試商調整回饋版)</div>
+        <div class="version-tag">版本：v4.0 (動態位數顏色版)</div>
     </div>
 
     <div id="page-editor" class="container">
@@ -358,7 +358,7 @@
 
     window.onload = function() {
         if(localStorage.getItem('div_v3_lists')) allLists = JSON.parse(localStorage.getItem('div_v3_lists'));
-        else { allLists = [{name: "範例：估算練習", qs: [{a:84, b:25}, {a:846, b:32}, {a:96, b:3}]}]; saveData(); }
+        else { allLists = [{name: "範例：估算練習", qs: [{a:963, b:36}, {a:846, b:32}, {a:96, b:3}]}]; saveData(); }
         if(localStorage.getItem('div_v3_rank')) rankData = JSON.parse(localStorage.getItem('div_v3_rank'));
         if(localStorage.getItem('div_student')) studentName = localStorage.getItem('div_student');
         
@@ -664,22 +664,33 @@
         
         speak(cur.hint);
 
+        // --- 修正: 動態位數著色 (前n-1位綠色，最後1位藍色) ---
         if(cur.type === 'quo') {
-            const bLen = q.b.toString().length;
+            const bStr = q.b.toString();
             const wLen = cur.workingStrLen;
             const currentRow = cur.highlightRow; 
 
-            if(bLen >= 2 && wLen >= 2) {
-                const divHigh = document.getElementById('div-digit-0');
-                if(divHigh) divHigh.classList.add('hl-high');
-                const divLow = document.getElementById('div-digit-1');
-                if(divLow) divLow.classList.add('hl-low');
+            if(bStr.length >= 2 && wLen >= 2) {
+                // 1. 著色除數 (Divisor)
+                for(let i=0; i<bStr.length; i++) {
+                    const dEl = document.getElementById(`div-digit-${i}`);
+                    if(dEl) {
+                        // 最後一位是藍色(hl-low)，其餘是綠色(hl-high)
+                        if(i === bStr.length - 1) dEl.classList.add('hl-low');
+                        else dEl.classList.add('hl-high');
+                    }
+                }
 
+                // 2. 著色被除數片段 (Working Dividend)
                 const startCol = cur.dividendEndIdx - wLen + 1;
-                const cellHigh = document.getElementById(`c-${currentRow}-${startCol}`);
-                if(cellHigh) cellHigh.classList.add('hl-high'); 
-                const cellLow = document.getElementById(`c-${currentRow}-${startCol+1}`);
-                if(cellLow) cellLow.classList.add('hl-low'); 
+                for(let i=0; i<wLen; i++) {
+                    const cell = document.getElementById(`c-${currentRow}-${startCol + i}`);
+                    if(cell) {
+                        // 最後一位是藍色，其餘是綠色
+                        if(i === wLen - 1) cell.classList.add('hl-low');
+                        else cell.classList.add('hl-high');
+                    }
+                }
             }
         }
 
