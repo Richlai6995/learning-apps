@@ -6,67 +6,96 @@
     <title>快樂學習傳送門</title>
     <style>
         body {
-            font-family: 'Microsoft JhengHei', sans-serif;
+            font-family: 'Microsoft JhengHei', 'Segoe UI', sans-serif;
             background-color: #f0f2f5;
             display: flex;
             flex-direction: column;
             align-items: center;
             padding: 20px;
             margin: 0;
+            min-height: 100vh;
         }
         h1 { color: #2c3e50; margin-bottom: 30px; text-align: center;}
+        
         .menu-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 25px;
             width: 100%;
-            max-width: 600px;
+            max-width: 700px;
         }
+
         .menu-item {
             background: white;
-            padding: 20px;
+            padding: 25px 20px;
             border-radius: 15px;
             text-align: center;
             text-decoration: none;
             color: #333;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
             border: 2px solid transparent;
             display: flex;
             flex-direction: column;
             align-items: center;
+            position: relative;
+            overflow: hidden;
         }
-        .menu-item:active { transform: scale(0.95); background-color: #e8f6f3; }
-        .icon { font-size: 3rem; display: block; margin-bottom: 10px; }
-        .title { font-size: 1.2rem; font-weight: bold; }
+
+        .menu-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        }
+
+        .menu-item:active { 
+            transform: scale(0.98); 
+            background-color: #f9f9f9; 
+        }
+
+        .icon { font-size: 3.5rem; display: block; margin-bottom: 15px; }
+        .title { font-size: 1.3rem; font-weight: bold; }
         
-        /* 不同科目的顏色邊框 */
-        .math { border-bottom: 5px solid #FF6B6B; }       /* 數學：紅色 */
-        .eng { border-bottom: 5px solid #4ECDC4; }        /* 英文單字：藍綠色 */
-        .eng-adv { border-bottom: 5px solid #4834d4; }    /* 英文句子：深藍紫色 (新) */
+        /* --- 各科目專屬色系 (對應子網頁的主題色) --- */
+        
+        /* 乘法：紫色系 */
+        .math-mul { border-bottom: 6px solid #8e44ad; }
+        .math-mul .icon { color: #8e44ad; }
+
+        /* 除法：藍色系 */
+        .math-div { border-bottom: 6px solid #2980b9; }
+        .math-div .icon { color: #2980b9; }
+
+        /* 英文拼字：藍綠色 */
+        .eng-word { border-bottom: 6px solid #4ECDC4; }
+        .eng-word .icon { color: #1abc9c; }
+
+        /* 英文句子：深藍紫色 */
+        .eng-sent { border-bottom: 6px solid #4834d4; }
+        .eng-sent .icon { color: #4834d4; }
+
     </style>
 </head>
 <body>
 
-    <h1>🎓 選擇要練習的科目</h1>
+    <h1>🚀 快樂學習傳送門</h1>
 
     <div class="menu-grid">
-        <a href="cross_manual.html" class="menu-item math">
+        <a href="99_practice.html" class="menu-item math-mul">
             <span class="icon">✖️</span>
-            <span class="title">乘法闖關</span>
+            <span class="title">99乘法闖關王</span>
         </a>
 
-        <a href="division_manual.html" class="menu-item math">
+        <a href="division_practice.html" class="menu-item math-div">
             <span class="icon">➗</span>
-            <span class="title">除法小家教</span>
+            <span class="title">除法闖關王</span>
         </a>
 
-        <a href="phonics_test.html" class="menu-item eng">
+        <a href="phonics_test.html" class="menu-item eng-word">
             <span class="icon">🗣️</span>
             <span class="title">Phonics 拼字</span>
         </a>
 
-        <a href="sentences_practice.html" class="menu-item eng-adv">
+        <a href="sentences_practice.html" class="menu-item eng-sent">
             <span class="icon">📝</span>
             <span class="title">句子練習</span>
         </a>
