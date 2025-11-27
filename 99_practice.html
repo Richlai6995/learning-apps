@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>99乘法闖關王 1.1 (支援1~10倍)</title>
+    <title>99乘法闖關王 1.2 (橫式教學版)</title>
     <style>
         :root {
             --primary: #8e44ad; /* 乘法改用紫色系區隔 */
@@ -20,7 +20,6 @@
             --hint-b: #2980b9; /* 乘數(藍) */
 
             /* 放大版面設定 */
-            --cell-size: 55px; 
             --font-base: 1.2rem;
         }
 
@@ -116,43 +115,41 @@
             font-size: 1.3rem;
         }
         
-        /* Grid 設定 (乘法) */
-        .grid-container {
-            display: grid; 
-            grid-auto-rows: var(--cell-size); 
-            justify-content: center; 
-            margin: 20px 0;
-            gap: 0; 
-        }
-        .grid-cell {
-            width: var(--cell-size); height: var(--cell-size); 
-            display: flex; justify-content: center; align-items: center;
-            font-family: 'Courier New', monospace; font-weight: bold; 
-            font-size: 2rem; position: relative;
-            margin: 0; 
-            border: 1px solid transparent; 
+        /* --- 橫式算式顯示區 (新) --- */
+        .equation-board {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 30px 0;
+            gap: 15px;
+            font-family: 'Courier New', monospace; 
+            font-weight: bold; 
+            font-size: 3.5rem; /* 字體加大 */
+            flex-wrap: wrap;
         }
         
-        /* 乘法線條樣式 */
-        .mul-line { border-bottom: 4px solid #333 !important; }
-        .operator-cell { font-size: 1.5rem; color: #7f8c8d; }
-
         /* 顏色特效 */
         .hl-a { color: var(--hint-a); font-weight: 900; }
         .hl-b { color: var(--hint-b); font-weight: 900; }
+        .hl-op { color: #7f8c8d; }
+
+        /* 輸入框容器 */
+        .input-group {
+            display: flex;
+            gap: 8px;
+        }
 
         /* 輸入框樣式 */
         .game-input { 
-            width: 45px; height: 45px; font-size: 1.8rem; text-align: center; 
-            border: 2px solid var(--primary); border-radius: 6px; background: #fff;
+            width: 60px; height: 60px; font-size: 2.5rem; text-align: center; /* 輸入框加大 */
+            border: 3px solid var(--primary); border-radius: 10px; background: #fff;
             font-weight: bold; outline: none;
-            z-index: 10;
             padding: 0;
         }
         .game-input.active-input {
             background-color: #f5b7b1 !important; 
             border-color: #c0392b;
-            box-shadow: 0 0 5px rgba(192, 57, 43, 0.5);
+            box-shadow: 0 0 10px rgba(192, 57, 43, 0.5);
         }
 
         /* --- 求助區塊 --- */
@@ -234,7 +231,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v1.1 (支援1~10倍)</div>
+        <div class="version-tag">版本：v1.2 (橫式教學版)</div>
     </div>
 
     <div id="page-editor" class="container">
@@ -296,7 +293,7 @@
                 <div id="help-content" class="help-box"></div>
             </div>
 
-            <div class="grid-container" id="gridBoard"></div>
+            <div class="equation-board" id="gridBoard"></div>
         </div>
 
         <div id="test-area" style="display:none;">
@@ -337,7 +334,6 @@
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
             let clean = text.replace(/<[^>]*>/g, '');
-            // 優化念法
             clean = clean.replace(/×/g, '乘').replace(/=/g, '等於');
             const u = new SpeechSynthesisUtterance(clean);
             u.lang = 'zh-TW'; u.rate = 1.0; 
@@ -435,7 +431,7 @@
     function genQs(targets) {
         let qs = [];
         targets.forEach(t => {
-            // *** 修改：生成 1 到 10 倍 ***
+            // 生成 1 到 10 倍
             for(let i=1; i<=10; i++) {
                 qs.push({a: t, b: i});
             }
@@ -526,109 +522,96 @@
         }
     }
 
-    // --- 教學模式 Grid 渲染 ---
+    // --- 核心修改：渲染橫式教學介面 ---
     function renderMulGrid(q) {
-        const box = document.getElementById('gridBoard'); box.innerHTML='';
+        const box = document.getElementById('gridBoard'); 
+        box.innerHTML = ''; // 清空
+        
         const msg = document.getElementById('teach-msg');
         document.getElementById('help-content').style.display = 'none';
         
-        // 乘法直式佈局
-        const cols = 6; 
-        box.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
+        // 1. 建立橫式算式元素
         
-        // 建立 4 列 (被乘數, 乘數, 線, 答案)
-        for(let r=0; r<4; r++) {
-            for(let c=0; c<cols; c++) {
-                const cell = document.createElement('div');
-                cell.className='grid-cell'; cell.id=`c-${r}-${c}`;
-                box.appendChild(cell);
-            }
-        }
+        // 被乘數 (A) - 綠色
+        const elA = document.createElement('span');
+        elA.innerText = q.a;
+        elA.className = 'hl-a';
+        box.appendChild(elA);
 
-        const strA = q.a.toString();
-        const strB = q.b.toString();
+        // 乘號 (×) - 灰色
+        const elSign = document.createElement('span');
+        elSign.innerText = ' × '; // 加點空白
+        elSign.className = 'hl-op';
+        box.appendChild(elSign);
+
+        // 乘數 (B) - 藍色
+        const elB = document.createElement('span');
+        elB.innerText = q.b;
+        elB.className = 'hl-b';
+        box.appendChild(elB);
+
+        // 等號 (=) - 灰色
+        const elEq = document.createElement('span');
+        elEq.innerText = ' = ';
+        elEq.className = 'hl-op';
+        box.appendChild(elEq);
+
+        // 2. 建立多格輸入區
+        const inputGroup = document.createElement('div');
+        inputGroup.className = 'input-group';
+        
         const strAns = q.ans.toString();
+        let createdInputs = [];
 
-        // 定位 (靠右對齊，假設最右邊是 col-4)
-        const anchorCol = 4;
-
-        // 1. 繪製被乘數 (A) - Row 0
-        for(let i=0; i<strA.length; i++) {
-            let char = strA[strA.length - 1 - i]; 
-            let pos = anchorCol - i;
-            let cell = document.getElementById(`c-0-${pos}`);
-            cell.innerText = char;
-            cell.classList.add('hl-a'); // 綠色
+        for(let i=0; i<strAns.length; i++) {
+            const inp = document.createElement('input');
+            inp.type = 'tel'; 
+            inp.maxLength = 1; 
+            inp.className = 'game-input active-input step-input-group';
+            inp.dataset.index = i; 
+            
+            // 自動跳格邏輯
+            inp.oninput = function() {
+                if(this.value.length === 1) {
+                    const nextIndex = parseInt(this.dataset.index) + 1;
+                    if(createdInputs[nextIndex]) createdInputs[nextIndex].focus();
+                }
+            };
+            // 鍵盤邏輯
+            inp.onkeydown = (e) => { 
+                if(e.key === 'Enter') checkTeachAnswerMulti(q); 
+                if(e.key === 'Backspace' && this.value === '') {
+                     const prevIndex = parseInt(this.dataset.index) - 1;
+                     if(createdInputs[prevIndex]) createdInputs[prevIndex].focus();
+                }
+            };
+            inputGroup.appendChild(inp);
+            createdInputs.push(inp);
         }
+        
+        box.appendChild(inputGroup);
 
-        // 2. 繪製乘號 - Row 1
-        let signPos = anchorCol - Math.max(strA.length, strB.length) - 1; 
-        let signCell = document.getElementById(`c-1-${signPos}`);
-        if(signCell) { signCell.innerText = '×'; signCell.classList.add('operator-cell'); }
-
-        // 3. 繪製乘數 (B) - Row 1
-        for(let i=0; i<strB.length; i++) {
-            let char = strB[strB.length - 1 - i];
-            let pos = anchorCol - i;
-            let cell = document.getElementById(`c-1-${pos}`);
-            cell.innerText = char;
-            cell.classList.add('hl-b'); // 藍色
-            // 加底線
-            cell.classList.add('mul-line');
-        }
-        // 補滿底線 (乘號到最右邊)
-        for(let c=signPos; c<anchorCol-strB.length; c++) {
-             let cell = document.getElementById(`c-1-${c}`);
-             if(cell) cell.classList.add('mul-line');
-        }
-
-
-        // 4. 準備提示
+        // 3. 提示
         let hint = `請計算 ${q.a} 乘以 ${q.b} 是多少？`;
         if(quizSettings.text) msg.innerText = hint;
         else msg.innerText = "請填寫答案...";
         speak(hint);
 
-        // 5. 生成答案輸入框 (多格) - Row 2 (實際上是第3行)
-        let createdInputs = [];
-        for(let i=0; i<strAns.length; i++) {
-            // 從個位數開始放
-            let pos = anchorCol - (strAns.length - 1) + i; 
-            let targetCell = document.getElementById(`c-2-${pos}`);
-            
-            if(targetCell) {
-                const inp = document.createElement('input');
-                inp.type = 'tel'; 
-                inp.maxLength = 1; 
-                inp.className = 'game-input active-input step-input-group';
-                inp.dataset.index = i; 
-                
-                // 自動跳格邏輯
-                inp.oninput = function() {
-                    if(this.value.length === 1) {
-                        const nextIndex = parseInt(this.dataset.index) + 1;
-                        if(createdInputs[nextIndex]) createdInputs[nextIndex].focus();
-                    }
-                };
-                // 鍵盤邏輯
-                inp.onkeydown = (e) => { 
-                    if(e.key === 'Enter') checkTeachAnswerMulti(q); 
-                    if(e.key === 'Backspace' && this.value === '') {
-                         const prevIndex = parseInt(this.dataset.index) - 1;
-                         if(createdInputs[prevIndex]) createdInputs[prevIndex].focus();
-                    }
-                };
-                targetCell.appendChild(inp);
-                createdInputs.push(inp);
-            }
-        }
-        
         // 聚焦第一個
         if(createdInputs.length > 0) setTimeout(() => createdInputs[0].focus(), 100);
 
         const okBtn = document.createElement('button'); okBtn.className='btn-warning'; okBtn.innerText='OK';
         okBtn.onclick = () => checkTeachAnswerMulti(q);
-        msg.appendChild(document.createElement('br')); msg.appendChild(okBtn);
+        
+        // 為了排版，將 OK 按鈕放在提示區下方
+        if(document.getElementById('ok-btn')) document.getElementById('ok-btn').remove();
+        
+        // 確保 OK 按鈕不會重複添加
+        let oldBtn = msg.querySelector('button');
+        if(oldBtn) oldBtn.remove();
+        
+        msg.appendChild(document.createElement('br')); 
+        msg.appendChild(okBtn);
     }
 
     // --- 驗證教學模式答案 ---
@@ -689,7 +672,7 @@
         // 針對 A 的乘法表
         let html = `<strong>🔍 ${q.a} 的乘法表：</strong><br><div class="help-table">`;
         
-        // *** 修改：求助表也列出 1 到 10 ***
+        // 求助表也列出 1 到 10
         for(let i=1; i<=10; i++) {
             let style = (i === q.b) ? 'class="help-row help-focus"' : 'class="help-row"';
             let mark = (i === q.b) ? '👈' : '';
