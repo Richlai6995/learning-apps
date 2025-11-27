@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>除法闖關王 3.7 (精準變色版)</title>
+    <title>除法闖關王 3.8 (位數分離輸入版)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -140,16 +140,18 @@
         .hl-high { color: var(--hint-high); font-weight: 900; transform: scale(1.2); transition: 0.3s; }
         .hl-low { color: var(--hint-low); font-weight: 900; transform: scale(1.2); transition: 0.3s; }
 
+        /* 修改後的輸入框樣式：讓它看起來像是填在該格子裡 */
         .game-input { 
-            width: 45px; height: 45px; font-size: 1.5rem; text-align: center; 
-            border: 3px solid var(--primary); border-radius: 8px; background: #fff;
+            width: 40px; height: 40px; font-size: 1.5rem; text-align: center; 
+            border: 2px solid var(--primary); border-radius: 6px; background: #fff;
             font-weight: bold; outline: none;
             z-index: 10;
+            padding: 0;
         }
         .game-input.active-input {
             background-color: #ffab40 !important; 
             border-color: #d35400;
-            box-shadow: 0 0 10px rgba(255, 171, 64, 0.5);
+            box-shadow: 0 0 5px rgba(255, 171, 64, 0.8);
         }
 
         /* --- 求助區塊 --- */
@@ -232,7 +234,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v3.7 (精準變色版)</div>
+        <div class="version-tag">版本：v3.8 (位數分離輸入版)</div>
     </div>
 
     <div id="page-editor" class="container">
@@ -522,15 +524,13 @@
         }
     }
 
-    // --- 修改：生成步驟邏輯 (修正1: 加入 highlightRow 追蹤) ---
+    // --- 生成步驟邏輯 ---
     function generateDivSteps(dividend, divisor) {
         let dStr = dividend.toString();
         let steps = [];
         let curRem = 0;
         let row = 1;
         let offset = 6 - dStr.length;
-        
-        // 追蹤當前被除數(working number)所在的行數
         let workingRow = 1;
 
         for(let i=0; i<dStr.length; i++) {
@@ -567,7 +567,7 @@
                     currVal: working,
                     workingStrLen: workingStr.length,
                     dividendEndIdx: col,
-                    highlightRow: workingRow // 儲存當前行數供顯示用
+                    highlightRow: workingRow
                 });
             } else {
                 curRem = working; continue;
@@ -581,14 +581,12 @@
                 steps.push({ type:'drop', r:row, c:col+1, ans:next, hint: `把 ${next} 降下來` });
             }
             curRem = rem;
-            
-            // 下一輪的 working number 是由 rem 和 drop 組成的
-            // 它們都位在當前的 'row'
             workingRow = row;
         }
         return steps;
     }
 
+    // --- 修改：渲染教學 Grid (支援多格輸入) ---
     function renderTeachGrid(q) {
         const box = document.getElementById('gridBoard'); box.innerHTML='';
         const msg = document.getElementById('teach-msg');
@@ -664,11 +662,10 @@
         
         speak(cur.hint);
 
-        // --- 修正2: 使用 dynamic row 來標示顏色 ---
         if(cur.type === 'quo') {
             const bLen = q.b.toString().length;
             const wLen = cur.workingStrLen;
-            const currentRow = cur.highlightRow; // 取得正確的行數
+            const currentRow = cur.highlightRow; 
 
             if(bLen >= 2 && wLen >= 2) {
                 const divHigh = document.getElementById('div-digit-0');
@@ -677,7 +674,6 @@
                 if(divLow) divLow.classList.add('hl-low');
 
                 const startCol = cur.dividendEndIdx - wLen + 1;
-                // 使用 c-${currentRow} 而不是 c-1
                 const cellHigh = document.getElementById(`c-${currentRow}-${startCol}`);
                 if(cellHigh) cellHigh.classList.add('hl-high'); 
                 const cellLow = document.getElementById(`c-${currentRow}-${startCol+1}`);
@@ -685,19 +681,61 @@
             }
         }
 
-        const targetCell = document.getElementById(`c-${cur.r}-${cur.c}`);
-        targetCell.innerHTML = '';
-        const inp = document.createElement('input');
-        inp.type='tel'; 
-        inp.className='game-input active-input';
+        // --- 核心修改：生成多個輸入框 ---
+        // 取得答案字串，計算需要幾個輸入框
+        const ansStr = cur.ans.toString();
         
-        setTimeout(() => inp.focus(), 100);
+        // 建立一個陣列來存放生成的 inputs，方便後續綁定事件
+        let createdInputs = [];
 
-        inp.onkeydown = (e) => { if(e.key === 'Enter') checkTeachAnswer(inp, cur, q); };
-        targetCell.appendChild(inp);
+        for(let i=0; i<ansStr.length; i++) {
+            // 計算這個位數對應的 Column
+            // cur.c 是該步驟數值結束的 Column (最右邊)
+            // 所以要往左推
+            let targetCol = cur.c - (ansStr.length - 1) + i;
+            let targetCell = document.getElementById(`c-${cur.r}-${targetCol}`);
+            
+            if(targetCell) {
+                targetCell.innerHTML = '';
+                const inp = document.createElement('input');
+                inp.type = 'tel'; 
+                inp.maxLength = 1; // 限制只能輸入一位
+                inp.className = 'game-input active-input step-input-group';
+                inp.dataset.index = i; // 標記順序
+                
+                // 綁定輸入事件：自動跳下一格
+                inp.oninput = function() {
+                    if(this.value.length === 1) {
+                        // 嘗試找下一個輸入框
+                        const nextIndex = parseInt(this.dataset.index) + 1;
+                        if(createdInputs[nextIndex]) {
+                            createdInputs[nextIndex].focus();
+                        }
+                    }
+                };
+
+                // 綁定 Enter 鍵
+                inp.onkeydown = (e) => { 
+                    if(e.key === 'Enter') checkTeachAnswerMulti(cur, q); 
+                    // 支援 Backspace 倒退
+                    if(e.key === 'Backspace' && this.value === '') {
+                         const prevIndex = parseInt(this.dataset.index) - 1;
+                         if(createdInputs[prevIndex]) createdInputs[prevIndex].focus();
+                    }
+                };
+
+                targetCell.appendChild(inp);
+                createdInputs.push(inp);
+            }
+        }
+        
+        // 聚焦第一個輸入框
+        if(createdInputs.length > 0) {
+            setTimeout(() => createdInputs[0].focus(), 100);
+        }
         
         const okBtn = document.createElement('button'); okBtn.className='btn-warning'; okBtn.innerText='OK';
-        okBtn.onclick = () => checkTeachAnswer(inp, cur, q);
+        okBtn.onclick = () => checkTeachAnswerMulti(cur, q);
         msg.appendChild(document.createElement('br')); msg.appendChild(okBtn);
     }
 
@@ -713,14 +751,30 @@
         }
     }
 
-    function checkTeachAnswer(inp, step, q) {
-        if(parseInt(inp.value) === parseInt(step.ans)) {
+    // --- 修改：驗證多格輸入 ---
+    function checkTeachAnswerMulti(step, q) {
+        // 抓取所有當前步驟的輸入框
+        const inputs = document.querySelectorAll('.step-input-group');
+        let userAnsStr = "";
+        
+        inputs.forEach(inp => {
+            userAnsStr += inp.value;
+        });
+
+        if(userAnsStr === "") {
+             inputs[0].focus();
+             return;
+        }
+
+        if(parseInt(userAnsStr) === parseInt(step.ans)) {
             speak("答對了！");
             q.stepIdx++;
             renderTeachGrid(q);
         } else {
             speak("算錯囉，再試試看");
-            inp.value=''; inp.focus();
+            // 清空所有輸入框並聚焦第一個
+            inputs.forEach(inp => inp.value = '');
+            if(inputs.length > 0) inputs[0].focus();
         }
     }
 
