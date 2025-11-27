@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>乘法闖關王 3.8 (加法進位獨立列版)</title>
+    <title>乘法闖關王 3.9 (版面緊湊修正版)</title>
     <style>
         :root {
             --primary: #8e44ad;
@@ -204,7 +204,7 @@
 <body>
 
     <div id="page-home" class="container active">
-        <h1>✖️ 乘法闖關王 3.8</h1>
+        <h1>✖️ 乘法闖關王 3.9</h1>
         
         <div class="user-profile" onclick="changeName()">
             <span>🎓</span> <span id="display-name">設定學員姓名</span> <span>✎</span>
@@ -230,7 +230,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v3.8 (加法進位獨立列版)</div>
+        <div class="version-tag">版本：v3.9 (版面緊湊修正版)</div>
     </div>
 
     <div id="page-editor" class="container">
@@ -352,9 +352,9 @@
     let settingText = true;
     let settingArrow = true;
 
-    const STORAGE_KEY_LISTS = 'mul_v3_8_lists';
-    const STORAGE_KEY_RANK = 'mul_v3_8_rank';
-    const STORAGE_KEY_USER = 'mul_v3_8_user';
+    const STORAGE_KEY_LISTS = 'mul_v3_9_lists';
+    const STORAGE_KEY_RANK = 'mul_v3_9_rank';
+    const STORAGE_KEY_USER = 'mul_v3_9_user';
 
     window.onload = function() {
         if(localStorage.getItem(STORAGE_KEY_LISTS)) {
@@ -583,7 +583,7 @@
         const ROW_B = 2;
         const ROW_MUL_LINE = 3;
         
-        // ★★★ 如果是多位數乘法，加入加法進位列 (Row 4) ★★★
+        // 如果是多位數乘法，加入加法進位列 (Row 4)
         const hasAddition = sB.length > 1;
         const ROW_ADD_CARRY = hasAddition ? 4 : -1;
         const ROW_PARTIAL_START = hasAddition ? 5 : 4;
@@ -694,10 +694,10 @@
                 let step = {
                     type: 'add',
                     writeAns: unit,
-                    writeCarry: newCarry,
+                    writeCarry: newCarry, // 加法進位
                     ansRow: sumRow,
                     ansCol: c,
-                    carryRow: ROW_ADD_CARRY, // ★★★ 加法進位寫在 Row 4 (部分積上方) ★★★
+                    carryRow: ROW_ADD_CARRY, // 加法進位寫在 Row 4 (部分積上方)
                     carryCol: c - 1,
                     hint: `將這一行的數字相加 ${currentSumCarry > 0 ? '(含之前進位)' : ''}，這格該填多少？`,
                     fullExplanation: `直行相加結果：${colSum}。填寫 ${unit} ${newCarry > 0 ? '，進位 ' + newCarry : ''}。`,
@@ -731,12 +731,15 @@
         
         // 計算總行數
         const hasAddition = sB.length > 1;
-        let totalRows = hasAddition ? (6 + sB.length) : (4 + sB.length); // 增加加法進位列
+        // ★★★ 修正總列數計算：4 (Carry, A, B, Line) + [1 (AddCarry)] + sB.length (Partials) + [1 (AddLine) + 1 (Sum)]
+        // 如果 hasAddition: 4 + 1 + sB + 1 + 1 = 7 + sB
+        // 如果 noAddition: 4 + sB (其實就是 5)
+        let totalRows = hasAddition ? (7 + sB.length) : (4 + sB.length); 
         
         // 定義重要列的 Index
         const mulLineRow = 3;
         const addCarryRow = hasAddition ? 4 : -1;
-        const addLineRow = hasAddition ? (4 + sB.length + 1) : -1; // 修正索引
+        const addLineRow = hasAddition ? (4 + sB.length + 1) : -1; 
 
         box.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
 
@@ -746,7 +749,8 @@
                 cell.className='grid-cell'; cell.id=`c-${r}-${c}`;
                 
                 // Row 0 (Mul Carry) & Row 4 (Add Carry) 高度較小
-                if(r===0 || r===addCarryRow) cell.style.height = '30px'; 
+                if(r===0) cell.style.height = '30px';
+                if(r===addCarryRow) cell.style.height = '24px'; // 緊湊
                 
                 // 橫線列
                 if(r === mulLineRow || (hasAddition && r === addLineRow)) {
