@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>乘法闖關王 3.3 (鷹架學習版)</title>
+    <title>乘法闖關王 3.4 (匯出時間戳記版)</title>
     <style>
         :root {
             --primary: #8e44ad;
@@ -95,7 +95,6 @@
 
         .quiz-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 15px; background: #eee; padding: 10px; border-radius: 6px; }
         
-        /* 設定區塊 */
         .settings-panel {
             background-color: #f9f9f9;
             border: 1px solid #ddd;
@@ -111,7 +110,6 @@
         .settings-panel label { display: block; margin-bottom: 8px; cursor: pointer; font-size: 1.1rem; }
         .settings-panel input[type="checkbox"] { transform: scale(1.3); margin-right: 10px; }
 
-        /* Grid 系統 */
         .grid-container {
             display: grid; 
             grid-auto-rows: 50px; 
@@ -133,7 +131,6 @@
             z-index: 2; 
         }
         
-        /* SVG 層 */
         .arrow-layer {
             position: absolute;
             top: 0;
@@ -153,18 +150,17 @@
         .game-input.correct { border-color: #27ae60; background-color: #d5f5e3; color: #27ae60; }
         .game-input:focus { border-color: #2ecc71; background: #e8f8f5; box-shadow: 0 0 10px rgba(46, 204, 113, 0.5); }
 
-        /* ★★★ 修改：進位註記輸入框 (放大版) ★★★ */
         .carry-input {
-            width: 36px; /* 加大 */
-            height: 36px; /* 加大 */
-            font-size: 1.3rem; /* 字體加大 */
+            width: 36px; 
+            height: 36px; 
+            font-size: 1.3rem; 
             text-align: center;
             border: 2px solid #e67e22; 
             border-radius: 50%; 
             background: #fef5e7; 
             outline: none;
             position: absolute; 
-            bottom: 0px; /* 調整位置以免擋住下方 */
+            bottom: 0px; 
             color: #d35400;
             z-index: 10;
             font-weight: bold;
@@ -208,7 +204,7 @@
 <body>
 
     <div id="page-home" class="container active">
-        <h1>✖️ 乘法闖關王 3.3</h1>
+        <h1>✖️ 乘法闖關王 3.4</h1>
         
         <div class="user-profile" onclick="changeName()">
             <span>🎓</span> <span id="display-name">設定學員姓名</span> <span>✎</span>
@@ -223,7 +219,7 @@
             <div id="lists-container"></div>
             <button class="btn-secondary btn-block" onclick="createNewList()">+ 新增/生成題庫</button>
             <div style="margin-top:15px; border-top:1px dashed #ccc; padding-top:10px; display:flex; gap:5px;">
-                <button class="btn-gray" style="flex:1" onclick="exportData()">匯出</button>
+                <button class="btn-gray" style="flex:1" onclick="exportData()">匯出 (含時間)</button>
                 <button class="btn-gray" style="flex:1" onclick="document.getElementById('import-file').click()">匯入</button>
                 <input type="file" id="import-file" style="display:none" accept=".json" onchange="handleImport(this)">
             </div>
@@ -234,7 +230,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v3.3 (鷹架學習版)</div>
+        <div class="version-tag">版本：v3.4 (匯出功能優化版)</div>
     </div>
 
     <div id="page-editor" class="container">
@@ -352,14 +348,15 @@
     let timerInt, startTime, rankData = [];
     let studentName = "小小學員"; 
 
-    // ★★★ 新增：設定變數 ★★★
+    // 設定變數
     let settingVoice = true;
     let settingText = true;
     let settingArrow = true;
 
-    const STORAGE_KEY_LISTS = 'mul_v3_3_lists';
-    const STORAGE_KEY_RANK = 'mul_v3_3_rank';
-    const STORAGE_KEY_USER = 'mul_v3_3_user';
+    // v3.4 Key
+    const STORAGE_KEY_LISTS = 'mul_v3_4_lists';
+    const STORAGE_KEY_RANK = 'mul_v3_4_rank';
+    const STORAGE_KEY_USER = 'mul_v3_4_user';
 
     window.onload = function() {
         if(localStorage.getItem(STORAGE_KEY_LISTS)) {
@@ -467,11 +464,28 @@
         saveData(); showPage('page-home');
     }
     function delList(i) { if(confirm("刪除?")) { allLists.splice(i,1); saveData(); renderLists(); } }
+    
+    // ★★★ 修改：匯出功能加入時間戳記 ★★★
     function exportData() {
         const blob = new Blob([JSON.stringify(allLists)], {type: "application/json"});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-        a.download = "multiplication_data.json"; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        const a = document.createElement('a'); 
+        a.href = URL.createObjectURL(blob);
+        
+        // 產生時間字串 YYYYMMDD_HHMM
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const timestamp = `${yyyy}${mm}${dd}_${hh}${min}`;
+        
+        a.download = `multiplication_data_${timestamp}.json`; 
+        document.body.appendChild(a); 
+        a.click(); 
+        document.body.removeChild(a);
     }
+    
     function handleImport(inp) {
         const f = inp.files[0]; if(!f) return;
         const r = new FileReader();
@@ -488,7 +502,6 @@
     function startQuiz(mode) {
         currentMode = mode;
         
-        // ★★★ 讀取設定 ★★★
         if(mode === 'teach') {
             settingVoice = document.getElementById('opt-voice').checked;
             settingText = document.getElementById('opt-text').checked;
@@ -661,7 +674,6 @@
     function renderTeachGrid(q) {
         const box = document.getElementById('gridBoard'); box.innerHTML = '';
         
-        // SVG
         let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         svg.id = "arrow-layer";
         svg.setAttribute("class", "arrow-layer");
@@ -687,7 +699,6 @@
                 cell.className='grid-cell'; cell.id=`c-${r}-${c}`;
                 if(r===0) cell.style.height = '30px'; 
                 
-                // 壓縮線條列高
                 const mulLineRow = 3; 
                 const addLineRow = (sB.length > 1) ? 4 + sB.length : -1;
                 if(r === mulLineRow || r === addLineRow) {
@@ -721,7 +732,6 @@
             if(s.type === 'line') {
                 for(let c=0; c<cols; c++) {
                     document.getElementById(`c-${s.row}-${c}`).classList.add('multiplication-line');
-                    // Add plus sign
                     const addLineRow = (sB.length > 1) ? 4 + sB.length : -1;
                     if(c===0 && s.row === addLineRow) {
                         let plusCell = document.getElementById(`c-${s.row-1}-0`);
@@ -777,11 +787,10 @@
             return;
         }
 
-        // ★★★ 應用顯示設定 ★★★
         if(settingText) {
             msg.innerText = cur.hint;
         } else {
-            msg.innerText = ""; // 隱藏文字提示
+            msg.innerText = ""; 
         }
 
         if(settingVoice) {
@@ -797,7 +806,6 @@
         let arrowLine = document.getElementById('calc-arrow');
         if(!arrowLine) return;
 
-        // ★★★ 應用箭頭設定 ★★★
         if(!settingArrow) {
             arrowLine.style.display = 'none';
             return;
@@ -874,9 +882,7 @@
         btn.style.marginLeft = "10px";
         btn.onclick = () => checkStepAnswer(step, q, false); 
         
-        // 如果文字提示關閉，按鈕還是要顯示
         if(msgArea.innerText === "") {
-             // 創建一個臨時容器放按鈕，避免高度塌陷
              msgArea.style.minHeight = "40px";
         }
         msgArea.appendChild(btn);
@@ -935,8 +941,6 @@
         }
 
         if(allCorrect) {
-            // 答對音效保留 (即使語音提示關閉，反饋音效通常保留，若要完全靜音可再加判斷)
-            // 這裡設計為：語音提示關閉時，只給叮咚聲或簡單反饋
             if(!isAuto) {
                  if(settingVoice) speak("答對了！"); else speak("叮咚"); 
             } else {
@@ -965,7 +969,6 @@
         
         const q = quizData[currentQIdx];
         const step = q.steps[q.stepIdx];
-        // 求助始終顯示完整內容
         box.innerHTML = step.fullExplanation || `<strong>提示：</strong> ${step.hint}`;
         box.style.display = 'block';
     }
