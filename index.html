@@ -41,9 +41,10 @@
         .title { font-size: 1.2rem; font-weight: bold; }
         
         /* --- 科目樣式 --- */
-        .math { border-bottom: 5px solid #FF6B6B; }       /* 原本的數學：紅色 */
+        .math-addsub { border-bottom: 5px solid #e67e22; } /* 加減法：橘色 */
+        .math { border-bottom: 5px solid #FF6B6B; }        /* 原本的乘法：紅色 */
         .math-99 { border-bottom: 5px solid #8e44ad; }    /* 新增的99乘法：紫色 */
-        .math-div { border-bottom: 5px solid #2980b9; }   /* 除法：藍色 (建議區分) */
+        .math-div { border-bottom: 5px solid #2980b9; }   /* 除法：藍色 */
         
         .eng { border-bottom: 5px solid #4ECDC4; }        /* 英文單字：藍綠色 */
         .eng-adv { border-bottom: 5px solid #4834d4; }    /* 英文句子：深藍紫色 */
@@ -54,14 +55,20 @@
     <h1>🎓 快樂學習傳送門</h1>
 
     <div class="menu-grid">
-        <a href="cross_manual.html" class="menu-item math">
-            <span class="icon">✖️</span>
-            <span class="title">乘法闖關</span>
+        
+        <a href="add_subtract_practice.html" class="menu-item math-addsub">
+            <span class="icon" style="color: #e67e22;">➕➖</span>
+            <span class="title">加減法闖關王</span>
         </a>
 
         <a href="99_practice.html" class="menu-item math-99">
             <span class="icon" style="color: #8e44ad;">❌</span>
             <span class="title">99乘法闖關王</span>
+        </a>
+        
+        <a href="cross_manual.html" class="menu-item math">
+            <span class="icon">✖️</span>
+            <span class="title">乘法闖關</span>
         </a>
 
         <a href="division_manual.html" class="menu-item math-div">
