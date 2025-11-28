@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>99乘法闖關王 1.8 (酷炫獎勵版)</title>
+    <title>99乘法闖關王 1.9 (獎勵兌換版)</title>
     <style>
         :root {
             --primary: #8e44ad;
@@ -31,7 +31,7 @@
             align-items: center;
             min-height: 100vh;
             touch-action: manipulation;
-            overflow-x: hidden; /* 防止動畫導致卷軸 */
+            overflow-x: hidden;
         }
 
         h1 { color: var(--primary); margin: 10px 0 20px 0; text-align: center; font-size: 2rem; }
@@ -61,31 +61,19 @@
             display: flex; align-items: center; gap: 5px;
         }
 
-        /* --- Tab 選單 (美化版) --- */
+        /* --- Tab 選單 --- */
         .tabs { 
-            display: flex; 
-            gap: 15px; 
-            margin-bottom: 25px; 
-            background: #f0f3f4;
-            padding: 5px;
-            border-radius: 30px;
+            display: flex; gap: 15px; margin-bottom: 25px; 
+            background: #f0f3f4; padding: 5px; border-radius: 30px;
         }
         .tab { 
-            flex: 1; 
-            text-align: center; 
-            padding: 12px 30px; 
-            cursor: pointer; 
-            color: #7f8c8d; 
-            font-weight: bold; 
-            font-size: 1.2rem;
-            border-radius: 25px;
-            transition: all 0.3s ease;
+            flex: 1; text-align: center; padding: 12px 30px; 
+            cursor: pointer; color: #7f8c8d; font-weight: bold; font-size: 1.2rem;
+            border-radius: 25px; transition: all 0.3s ease;
         }
         .tab.active { 
-            color: white; 
-            background-color: var(--primary); 
-            box-shadow: 0 4px 10px rgba(142, 68, 173, 0.4);
-            transform: scale(1.05);
+            color: white; background-color: var(--primary); 
+            box-shadow: 0 4px 10px rgba(142, 68, 173, 0.4); transform: scale(1.05);
         }
 
         /* --- 容器 --- */
@@ -111,6 +99,7 @@
         .btn-warning { background-color: var(--warning); }
         .btn-help { background-color: var(--help); }
         .btn-gray { background-color: #95a5a6; }
+        .btn-accent { background-color: #f39c12; }
         .btn-block { width: 100%; padding: 15px; margin-top: 15px; font-size: 1.3rem; }
 
         /* --- 列表 --- */
@@ -121,6 +110,7 @@
         }
         .list-info small { color: #e74c3c; font-weight: bold; display: block; margin-top: 5px;}
         .gem-tag { color: #2980b9; font-weight: bold; background: #d6eaf8; padding: 2px 8px; border-radius: 10px; font-size: 0.95rem; margin-left: 5px;}
+        .teach-gem-tag { color: #27ae60; font-weight: bold; background: #d5f5e3; padding: 2px 8px; border-radius: 10px; font-size: 0.95rem; margin-left: 5px;}
         .score-tag { color: #d35400; font-weight: bold; background: #fdebd0; padding: 2px 8px; border-radius: 10px; font-size: 0.95rem; margin-left: 5px;}
         
         /* --- 編輯區 --- */
@@ -192,6 +182,23 @@
             font-family: monospace; border-top: 1px dashed #eee; padding-top: 10px;
         }
         
+        /* --- 獎勵兌換區 --- */
+        .shop-balance {
+            background: linear-gradient(135deg, #8e44ad 0%, #3498db 100%);
+            color: white; padding: 20px; border-radius: 15px; text-align: center;
+            margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .shop-balance h3 { color: white; margin: 0 0 10px 0; font-weight: normal; font-size: 1rem; opacity: 0.9; }
+        .balance-row { display: flex; justify-content: center; gap: 20px; font-size: 1.5rem; font-weight: bold; }
+        
+        .exchange-form { background: #f8f9fa; padding: 15px; border-radius: 12px; border: 1px solid #eee; }
+        .exchange-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        .exchange-input { flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1.1rem; text-align: center; }
+        .exchange-select { padding: 5px; border: 2px solid #ddd; border-radius: 8px; font-size: 1.1rem; background: white; }
+        
+        .log-list { max-height: 200px; overflow-y: auto; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px; font-size: 0.9rem; color: #666; }
+        .log-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; }
+
         /* --- 獲獎動畫與特效 --- */
         .reward-popup {
             background: #fff8e1; border: 3px solid #f1c40f; padding: 20px;
@@ -242,6 +249,7 @@
         </div>
 
         <div id="tab-quiz">
+            <button class="btn-accent btn-block" style="margin-bottom:15px; box-shadow:0 4px #d35400;" onclick="showPage('page-shop')">🎁 獎勵兌換商店</button>
             <div id="lists-container"></div>
             <button class="btn-secondary btn-block" onclick="createNewList()">+ 新增/生成題庫</button>
             <div style="margin-top:20px; display:flex; gap:10px;">
@@ -256,7 +264,44 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v1.8 (酷炫獎勵版)</div>
+        <div class="version-tag">版本：v1.9 (獎勵兌換版)</div>
+    </div>
+
+    <div id="page-shop" class="container">
+        <h2>🎁 獎勵兌換商店</h2>
+        
+        <div class="shop-balance">
+            <h3>目前持有</h3>
+            <div class="balance-row">
+                <span>👑 <span id="shop-crowns">0</span></span>
+                <span>💎 <span id="shop-gems">0</span></span>
+            </div>
+        </div>
+
+        <div class="exchange-form">
+            <div style="text-align:center; margin-bottom:10px; color:#555; font-weight:bold;">我要兌換...</div>
+            <div class="exchange-row">
+                <input type="text" id="gift-name" class="exchange-input" placeholder="輸入獎品名稱 (如: 看電視10分鐘)">
+            </div>
+            
+            <div style="text-align:center; margin-bottom:10px; color:#555; font-weight:bold;">需要花費</div>
+            <div class="exchange-row">
+                <input type="number" id="gift-cost" class="exchange-input" placeholder="數量" min="1">
+                <select id="gift-currency" class="exchange-select">
+                    <option value="gems">💎 寶石</option>
+                    <option value="crowns">👑 皇冠</option>
+                </select>
+            </div>
+
+            <button class="btn-primary btn-block" onclick="processExchange()">確認兌換</button>
+        </div>
+
+        <div style="margin-top:20px;">
+            <h4>📜 兌換紀錄</h4>
+            <div id="exchange-log" class="log-list"></div>
+        </div>
+
+        <button class="btn-gray btn-block" style="margin-top:20px;" onclick="showPage('page-home')">返回首頁</button>
     </div>
 
     <div id="page-editor" class="container">
@@ -264,7 +309,8 @@
         <div style="margin-bottom:15px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; background:#eee; padding:15px; border-radius:10px;">
             <div style="flex:100%">名稱: <input type="text" id="list-name" style="padding:8px; width:70%; font-size:1.2rem;"></div>
             <div>⏱️ 限時(秒): <input type="number" id="list-timer" placeholder="0" style="padding:8px; width:80px; font-size:1.2rem;" value="0"></div>
-            <div>💎 獎勵寶石: <input type="number" id="list-gems" placeholder="5" style="padding:8px; width:80px; font-size:1.2rem;" value="5"></div>
+            <div>💎 測驗寶石: <input type="number" id="list-gems" placeholder="5" style="padding:8px; width:80px; font-size:1.2rem;" value="5"></div>
+            <div>💎 教學寶石: <input type="number" id="list-teach-gems" placeholder="2" style="padding:8px; width:80px; font-size:1.2rem;" value="2"></div>
             <div>🎯 獲獎分數: <input type="number" id="list-pass-score" placeholder="100" style="padding:8px; width:80px; font-size:1.2rem;" value="100"></div>
         </div>
         <div class="gen-controls">
@@ -348,7 +394,7 @@
     let totalGems = 0;
 
     function speak(text) {
-        let force = text.includes("時間") || text.includes("寶石") || text.includes("全對") || text.includes("皇冠");
+        let force = text.includes("時間") || text.includes("寶石") || text.includes("全對") || text.includes("皇冠") || text.includes("兌換成功");
         if(currentMode === 'teach' && !quizSettings.voice && !force) return;
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
@@ -363,17 +409,22 @@
     let currentQIdx = 0, currentMode = '';
     let timerInt, startTime, limitSeconds = 0, isWarningPlayed = false;
     let rankData = [], editingId = null; 
+    let exchangeLog = [];
+
+    const STORAGE_KEY_EXCHANGE = 'mul_v1_exchange';
 
     window.onload = function() {
         if(localStorage.getItem('mul_v1_lists')) allLists = JSON.parse(localStorage.getItem('mul_v1_lists'));
-        else { allLists = [{name: "基礎練習 (2,5)", timer: 0, gems: 5, passScore: 100, qs: genQs([2,5])}]; saveData(); }
+        else { allLists = [{name: "基礎練習 (2,5)", timer: 0, gems: 5, teachGems: 2, passScore: 100, qs: genQs([2,5])}]; saveData(); }
         
         if(localStorage.getItem('mul_v1_rank')) rankData = JSON.parse(localStorage.getItem('mul_v1_rank'));
         if(localStorage.getItem('mul_student')) studentName = localStorage.getItem('mul_student');
         if(localStorage.getItem('mul_gems')) totalGems = parseInt(localStorage.getItem('mul_gems')) || 0;
+        if(localStorage.getItem(STORAGE_KEY_EXCHANGE)) exchangeLog = JSON.parse(localStorage.getItem(STORAGE_KEY_EXCHANGE));
         
         updateProfile();
         renderLists();
+        renderExchangeLog();
     };
 
     function saveData() { localStorage.setItem('mul_v1_lists', JSON.stringify(allLists)); }
@@ -381,6 +432,7 @@
     function saveStudentData() { 
         localStorage.setItem('mul_student', studentName); 
         localStorage.setItem('mul_gems', totalGems);
+        localStorage.setItem(STORAGE_KEY_EXCHANGE, JSON.stringify(exchangeLog));
         updateProfile();
     }
     
@@ -394,12 +446,18 @@
         let remainGems = totalGems % 100;
         document.getElementById('stat-crowns').innerText = crowns;
         document.getElementById('stat-gems').innerText = remainGems;
+        
+        if(document.getElementById('shop-crowns')) {
+            document.getElementById('shop-crowns').innerText = crowns;
+            document.getElementById('shop-gems').innerText = remainGems;
+        }
     }
     
     function showPage(pid) {
         document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
         document.getElementById(pid).classList.add('active');
         if(pid === 'page-home') renderLists();
+        if(pid === 'page-shop') { updateProfile(); renderExchangeLog(); }
     }
     function switchTab(t) {
         document.getElementById('tab-quiz').style.display = t==='quiz'?'block':'none';
@@ -409,19 +467,73 @@
         event.target.classList.add('active');
     }
 
+    // --- 獎勵兌換邏輯 ---
+    function processExchange() {
+        const giftName = document.getElementById('gift-name').value.trim();
+        const costVal = parseInt(document.getElementById('gift-cost').value);
+        const currency = document.getElementById('gift-currency').value;
+
+        if (!giftName) { alert("請輸入獎品名稱"); return; }
+        if (isNaN(costVal) || costVal <= 0) { alert("請輸入有效的數量"); return; }
+
+        let costInGems = costVal;
+        if (currency === 'crowns') {
+            costInGems = costVal * 100;
+        }
+
+        if (totalGems >= costInGems) {
+            if(confirm(`確定要花費 ${costVal} ${currency === 'crowns' ? '皇冠' : '寶石'} 兌換「${giftName}」嗎？`)) {
+                totalGems -= costInGems;
+                
+                const logItem = {
+                    date: new Date().toLocaleString(),
+                    item: giftName,
+                    cost: `${costVal} ${currency === 'crowns' ? '👑' : '💎'}`
+                };
+                exchangeLog.unshift(logItem);
+                
+                saveStudentData();
+                renderExchangeLog();
+                
+                document.getElementById('gift-name').value = '';
+                document.getElementById('gift-cost').value = '';
+                
+                triggerRewardAnimation(currency === 'crowns' ? 'crown' : 'gem');
+                speak(`兌換成功！享受你的獎勵吧！`);
+            }
+        } else {
+            alert("餘額不足喔！再多練習賺取寶石吧！");
+        }
+    }
+
+    function renderExchangeLog() {
+        const div = document.getElementById('exchange-log');
+        if(!div) return;
+        div.innerHTML = '';
+        exchangeLog.forEach(log => {
+            const row = document.createElement('div');
+            row.className = 'log-item';
+            row.innerHTML = `<span>📅 ${log.date} - 兌換 <strong>${log.item}</strong></span> <span>-${log.cost}</span>`;
+            div.appendChild(row);
+        });
+    }
+
+    // --- 題庫列表 ---
     function renderLists() {
         const c = document.getElementById('lists-container'); c.innerHTML='';
         allLists.forEach((l,i) => {
             const d = document.createElement('div'); d.className='list-item';
             let timerInfo = l.timer > 0 ? `<small>⏱️ 限時 ${l.timer} 秒</small>` : '';
             let gemVal = l.gems ? l.gems : 5; 
+            let teachGemVal = l.teachGems ? l.teachGems : 2;
             let passVal = l.passScore ? l.passScore : 100;
             
             d.innerHTML = `
                 <div class="list-info">
                     <strong>${l.name}</strong> (${l.qs.length}題)
                     <div style="margin-top:5px;">
-                        <span class="gem-tag">💎 +${gemVal}</span>
+                        <span class="gem-tag">💎測驗+${gemVal}</span>
+                        <span class="teach-gem-tag">💎教學+${teachGemVal}</span>
                         <span class="score-tag">🎯 ${passVal}分</span>
                     </div>
                     ${timerInfo}
@@ -440,6 +552,7 @@
         document.getElementById('list-name').value="新乘法練習"; 
         document.getElementById('list-timer').value = 0; 
         document.getElementById('list-gems').value = 5; 
+        document.getElementById('list-teach-gems').value = 2;
         document.getElementById('list-pass-score').value = 100;
         document.getElementById('editor-rows').innerHTML=''; 
         showPage('page-editor'); 
@@ -450,6 +563,7 @@
         document.getElementById('list-name').value=l.name; 
         document.getElementById('list-timer').value=l.timer || 0; 
         document.getElementById('list-gems').value=l.gems || 5;
+        document.getElementById('list-teach-gems').value=l.teachGems || 2;
         document.getElementById('list-pass-score').value=l.passScore || 100;
         document.getElementById('editor-rows').innerHTML=''; 
         l.qs.forEach(q=>addEditRow(q.a,q.b)); 
@@ -485,6 +599,8 @@
         const timer = isNaN(tVal) ? 0 : tVal;
         const gVal=parseInt(document.getElementById('list-gems').value);
         const gems = isNaN(gVal) ? 5 : gVal;
+        const tgVal=parseInt(document.getElementById('list-teach-gems').value);
+        const teachGems = isNaN(tgVal) ? 2 : tgVal;
         const pVal=parseInt(document.getElementById('list-pass-score').value);
         const passScore = isNaN(pVal) ? 100 : pVal;
 
@@ -493,7 +609,7 @@
         rs.forEach(r=>{const a=parseInt(r.querySelector('.inp-a').value); const b=parseInt(r.querySelector('.inp-b').value); if(a&&b)qs.push({a,b})}); 
         if(qs.length<1)return alert("請輸入題目"); 
         
-        const data = {name:n, timer:timer, gems:gems, passScore:passScore, qs:qs};
+        const data = {name:n, timer:timer, gems:gems, teachGems:teachGems, passScore:passScore, qs:qs};
         if(editingId===null) allLists.push(data); else allLists[editingId]=data; 
         
         saveData(); showPage('page-home'); editingId=null; 
@@ -505,9 +621,10 @@
         const now = new Date();
         const dateStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}`;
         const exportObj = {
-            version: "1.8",
+            version: "1.9",
             student: { name: studentName, totalGems: totalGems },
-            lists: allLists
+            lists: allLists,
+            exchangeLog: exchangeLog
         };
         const b=new Blob([JSON.stringify(exportObj)],{type:"application/json"}); 
         const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=`mul_backup_${dateStr}.json`; a.click(); 
@@ -526,6 +643,7 @@
                         if(confirm(`匯入資料包含學員：${data.student.name} (寶石:${data.student.totalGems})。\n要覆蓋目前的進度嗎？`)) {
                             studentName = data.student.name;
                             totalGems = data.student.totalGems;
+                            if(data.exchangeLog) exchangeLog = data.exchangeLog;
                             saveStudentData();
                         }
                     }
@@ -724,43 +842,49 @@
         if(limitSeconds > 0 && currentQIdx < quizData.length - 1) summary += " (時間到，部分未完成)";
         document.getElementById('res-summary').innerText = summary;
         
-        // --- 寶石/皇冠 獎勵結算與動畫 ---
+        // --- 寶石獎勵結算 ---
         const rewardArea = document.getElementById('reward-area');
         rewardArea.innerHTML = '';
         
-        // 取得該題庫設定的及格分數與寶石獎勵 (若無則預設100分/5顆)
+        // 獲取獎勵設定
         let targetScore = currentList.passScore || 100;
-        let gemsReward = currentList.gems || 5;
-
+        let gemsReward = currentList.gems || 5; // 測驗模式
+        let teachGemsReward = currentList.teachGems || 2; // 教學模式
+        
+        // 判斷是否符合獲獎資格
+        let earnedGems = 0;
         if (currentMode === 'test' && score >= targetScore) {
+            earnedGems = gemsReward;
+        } else if (currentMode === 'teach' && score === 100) { // 教學模式需全對
+            earnedGems = teachGemsReward;
+        }
+
+        if (earnedGems > 0) {
             let oldGems = totalGems;
             let oldCrowns = Math.floor(oldGems / 100);
             
-            totalGems += gemsReward;
-            saveStudentData(); // 儲存
+            totalGems += earnedGems;
+            saveStudentData(); 
             
             let newCrowns = Math.floor(totalGems / 100);
             let earnedCrowns = newCrowns - oldCrowns;
 
-            // 判斷要播放什麼特效
             if (earnedCrowns > 0) {
-                // 獲得皇冠動畫
                 triggerRewardAnimation('crown');
                 rewardArea.innerHTML = `
                     <div class="reward-popup" style="border-color:#e67e22; color:#e67e22;">
                         👑 恭喜升級！獲得 ${earnedCrowns} 頂皇冠！<br>
-                        (同時獲得 ${gemsReward} 顆寶石)
+                        (同時獲得 ${earnedGems} 顆寶石)
                     </div>`;
                 speak(`太厲害了！分數達標！恭喜你獲得了 ${earnedCrowns} 頂皇冠！`);
             } else {
-                // 獲得寶石動畫
                 triggerRewardAnimation('gem');
                 rewardArea.innerHTML = `
                     <div class="reward-popup">
-                        🎉 恭喜達標！獲得 ${gemsReward} 顆寶石 💎<br>
+                        🎉 恭喜達標！獲得 ${earnedGems} 顆寶石 💎<br>
                         目前累積: ${totalGems} 顆
                     </div>`;
-                speak(`太棒了！分數達標！你獲得了 ${gemsReward} 顆寶石！`);
+                speak(`太棒了！分數達標！你獲得了 ${earnedGems} 顆寶石！`);
             }
         } else {
             let praise = score>=60?"表現不錯，下次挑戰拿寶石！":"再多練習幾次，加油！";
@@ -779,26 +903,24 @@
         });
     }
 
-    // --- 酷炫獎勵動畫函式 ---
     function triggerRewardAnimation(type) {
         const container = document.getElementById('particle-container');
         container.style.display = 'block';
-        container.innerHTML = ''; // 清空
+        container.innerHTML = ''; 
 
         let symbol = type === 'crown' ? '👑' : '💎';
-        let count = 30; // 粒子數量
+        let count = 30; 
 
         for (let i = 0; i < count; i++) {
             let p = document.createElement('div');
             p.innerText = symbol;
             p.className = 'particle';
             p.style.left = Math.random() * 100 + 'vw';
-            p.style.animationDuration = (Math.random() * 2 + 1) + 's'; // 1~3秒隨機
+            p.style.animationDuration = (Math.random() * 2 + 1) + 's'; 
             p.style.fontSize = (Math.random() * 2 + 1) + 'rem';
             container.appendChild(p);
         }
 
-        // 3秒後自動關閉動畫
         setTimeout(() => {
             container.style.display = 'none';
             container.innerHTML = '';
