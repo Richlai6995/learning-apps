@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>四則運算闖關王 (優化歷程版)</title>
+    <title>四則運算闖關王 (寶石累加修正版)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -119,10 +119,9 @@
         .eq-row { display: flex; align-items: center; justify-content: space-between; background: #fff; padding: 8px; border:1px solid #eee; margin-bottom: 5px; border-radius: 4px;}
         .eq-text { font-family: monospace; font-size: 1.1rem; flex: 1; overflow-x: auto;}
 
-        /* --- 測驗區域 (核心) --- */
+        /* --- 測驗區域 --- */
         .quiz-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 15px; background: #eee; padding: 10px; border-radius: 6px; }
         
-        /* 歷史算式容器 */
         #history-container {
             display: flex; flex-direction: column; align-items: center; gap: 5px;
             margin: 20px 0;
@@ -132,7 +131,7 @@
         .calc-row {
             font-family: 'Courier New', monospace;
             font-size: 1.5rem;
-            color: #bdc3c7; /* 舊步驟灰色 */
+            color: #bdc3c7; 
             transition: all 0.3s;
         }
 
@@ -174,7 +173,7 @@
             border-radius: 5px; display: none; font-size: 1.1rem; text-align: left; max-width: 80%;
         }
 
-        /* --- 其他 UI 元件 --- */
+        /* --- 商店與獎勵 --- */
         .settings-panel {
             background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 8px;
             padding: 15px; margin-bottom: 20px; text-align: left; max-width: 400px; margin-left: auto; margin-right: auto;
@@ -193,7 +192,7 @@
         .reward-popup {
             background: #fff8e1; border: 3px solid #f1c40f; padding: 20px;
             border-radius: 15px; margin-top: 20px; font-weight: bold; color: #d35400;
-            font-size: 1.5rem; text-align: center;
+            font-size: 1.3rem; text-align: center;
             box-shadow: 0 5px 15px rgba(241, 196, 15, 0.4);
             animation: bounceIn 0.8s;
         }
@@ -253,7 +252,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
         
-        <div style="text-align:center; color:#95a5a6; margin-top:20px; font-size:0.9rem;">four_arithmetic.html v2.1 (優化版)</div>
+        <div style="text-align:center; color:#95a5a6; margin-top:20px; font-size:0.9rem;">four_arithmetic.html v2.2 (寶石修正版)</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -392,14 +391,14 @@
                 你的名字: <input type="text" id="player-name" style="padding:5px; font-size:1.2rem; text-align:center;" readonly>
                 <button class="btn-warning" onclick="saveRank()">登記榜單</button>
             </div>
-            <button class="btn-gray btn-block" onclick="showPage('page-home')">回首頁</button>
+            <button class="btn-gray btn-block" onclick="showPage('page-home')">回首頁 (看寶石)</button>
         </div>
     </div>
 
 <script>
     /* --- 全域變數與初始化 --- */
     let studentName = "小小學員";
-    let totalGems = 0;
+    let totalGems = 0; // 這是學員的總寶石，會存在 SK_GEMS
     let allLists = [];
     let rankData = [];
     let exchangeLog = [];
@@ -423,7 +422,7 @@
 
     window.onload = function() {
         loadData();
-        updateProfile();
+        updateProfile(); // 載入後立即更新學員資料顯示
         renderLists();
         renderExchangeLog();
     };
@@ -445,28 +444,43 @@
     }
 
     function saveData() { localStorage.setItem(SK_LISTS, JSON.stringify(allLists)); }
+    
+    // --- 關鍵修改：存檔同時更新介面 ---
     function saveUser() { 
         localStorage.setItem(SK_USER, studentName); 
         localStorage.setItem(SK_GEMS, totalGems); 
         localStorage.setItem(SK_LOG, JSON.stringify(exchangeLog));
+        updateProfile(); // 只要存檔，就更新畫面上學員的寶石數
     }
+    
     function saveRankData() { localStorage.setItem(SK_RANK, JSON.stringify(rankData)); }
 
     /* --- 介面切換與共用功能 --- */
     function showPage(pid) {
         document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
         document.getElementById(pid).classList.add('active');
-        if(pid==='page-home') renderLists();
+        if(pid==='page-home') {
+            renderLists();
+            updateProfile(); // 回首頁時再次確認顯示正確
+        }
         if(pid==='page-shop') { updateProfile(); renderExchangeLog(); }
     }
 
     function updateProfile() {
+        // 更新首頁名牌
         document.getElementById('display-name').innerText = studentName;
-        document.getElementById('player-name').value = studentName;
+        // 更新結果頁名字
+        let pNameInput = document.getElementById('player-name');
+        if(pNameInput) pNameInput.value = studentName;
+        
         let crowns = Math.floor(totalGems / 100);
         let remain = totalGems % 100;
+        
+        // 更新首頁名牌上的數字
         document.getElementById('stat-crowns').innerText = crowns;
         document.getElementById('stat-gems').innerText = remain;
+        
+        // 更新商店頁面的數字
         if(document.getElementById('shop-crowns')) {
             document.getElementById('shop-crowns').innerText = crowns;
             document.getElementById('shop-gems').innerText = remain;
@@ -475,7 +489,7 @@
 
     function changeName() {
         let n = prompt("請輸入你的名字：", studentName);
-        if(n && n.trim()) { studentName = n.trim(); saveUser(); updateProfile(); }
+        if(n && n.trim()) { studentName = n.trim(); saveUser(); }
     }
 
     function speak(text) {
@@ -592,8 +606,10 @@
                 const d = JSON.parse(e.target.result);
                 if(d.lists) allLists = allLists.concat(d.lists);
                 if(d.user && confirm(`發現使用者 ${d.user} (寶石:${d.gems})，要覆蓋嗎？`)) {
-                    studentName = d.user; totalGems = d.gems; if(d.log) exchangeLog = d.log;
-                    saveUser();
+                    studentName = d.user; 
+                    totalGems = d.gems; 
+                    if(d.log) exchangeLog = d.log;
+                    saveUser(); // 這裡會自動呼叫 updateProfile
                 }
                 saveData(); renderLists(); alert("匯入完成");
             } catch(e) { alert("檔案錯誤"); }
@@ -690,7 +706,7 @@
         }
     }
 
-    /* --- 教學模式核心：算式解析與步驟 (優化版) --- */
+    /* --- 教學模式核心：算式解析與步驟 --- */
     function renderTeachingStep() {
         const d = quizData[currentQIdx];
         const currentExpState = d.history[d.history.length - 1];
@@ -750,13 +766,11 @@
 
     // 尋找下一步運算優先級邏輯
     function findNextStep(expStr) {
-        // 1. 找最內層括號
         let openIdx = expStr.lastIndexOf('(');
         if(openIdx !== -1) {
             let closeIdx = expStr.indexOf(')', openIdx);
             if(closeIdx !== -1) {
                 let inner = expStr.substring(openIdx + 1, closeIdx);
-                // 遞迴檢查括號內是否有運算
                 if(isNaN(Number(inner))) {
                     let innerStep = findNextStepInFlat(inner);
                     if(innerStep) {
@@ -770,7 +784,6 @@
                         };
                     }
                 } else {
-                    // 括號內只剩數字，但理論上被 checkStepAnswer 處理掉了，這裡作為保險
                     return {
                         fullExp: expStr,
                         target: `(${inner})`,
@@ -785,7 +798,6 @@
         return findNextStepInFlat(expStr);
     }
 
-    // 在沒有括號的字串中找優先運算 (不捕捉負號)
     function findNextStepInFlat(str) {
         let reMulDiv = /(\d+(?:\.\d+)?)([\*\/])(\d+(?:\.\d+)?)/;
         let match = str.match(reMulDiv);
@@ -827,14 +839,12 @@
                          currentStepInfo.val + 
                          currentStepInfo.fullExp.substring(currentStepInfo.idxEnd);
             
-            // --- 核心修正：自動脫去純數字括號 ---
-            // 例如 (2+6)*3 -> (8)*3 -> 自動轉為 8*3
+            // 自動脫去純數字括號
             while(/\(\d+(?:\.\d+)?\)/.test(newExp)) {
                 newExp = newExp.replace(/\((\d+(?:\.\d+)?)\)/g, '$1');
             }
-            // --------------------------------
 
-            // 更新目前題目的狀態：加入 history
+            // 更新目前題目的狀態
             quizData[currentQIdx].history.push(newExp);
             quizData[currentQIdx].currentExp = newExp; 
 
@@ -842,7 +852,6 @@
                 renderTeachingStep();
             }, 600);
         } else {
-            // 錯誤
             inp.classList.add('wrong');
             speak("算錯囉，再試試看");
             setTimeout(() => inp.classList.remove('wrong'), 500);
@@ -858,7 +867,6 @@
         }
     }
 
-    // 綁定輸入框 Enter
     document.addEventListener('keydown', function(e) {
         if(e.target.id === 'step-input' && e.key === 'Enter') {
             checkStepAnswer();
@@ -885,7 +893,6 @@
         document.getElementById('res-detail').innerText = `答對 ${correct} / ${total} 題`;
         document.getElementById('res-time').innerText = `耗時 ${document.getElementById('q-timer').innerText}`;
 
-        // 計算獎勵
         const rArea = document.getElementById('reward-area'); rArea.innerHTML = '';
         let earned = 0;
         let target = currentList.passScore;
@@ -895,16 +902,23 @@
 
         if(earned > 0) {
             let oldCrowns = Math.floor(totalGems/100);
-            totalGems += earned;
-            saveUser();
+            totalGems += earned; // 累加全域變數
+            saveUser(); // 存檔並更新 UI
             let newCrowns = Math.floor(totalGems/100);
             
+            // --- 修正：在結算畫面明確顯示總累積數 ---
             if(newCrowns > oldCrowns) {
-                rArea.innerHTML = `<div class="reward-popup" style="color:#e67e22; border-color:#e67e22;">👑 恭喜升級！獲得 ${newCrowns-oldCrowns} 頂皇冠！</div>`;
+                rArea.innerHTML = `<div class="reward-popup" style="color:#e67e22; border-color:#e67e22;">
+                    👑 恭喜升級！獲得 ${newCrowns-oldCrowns} 頂皇冠！<br>
+                    <span style="font-size:0.9rem; color:#666;">(目前累積總數: ${totalGems} 💎)</span>
+                </div>`;
                 spawnParticles('👑');
                 speak(`太棒了！升級獲得皇冠！`);
             } else {
-                rArea.innerHTML = `<div class="reward-popup">🎉 獲得 ${earned} 顆寶石！</div>`;
+                rArea.innerHTML = `<div class="reward-popup">
+                    🎉 獲得 ${earned} 顆寶石！<br>
+                    <span style="font-size:0.9rem; color:#666;">(目前累積總數: ${totalGems} 💎)</span>
+                </div>`;
                 spawnParticles('💎');
                 speak(`恭喜獲得${earned}顆寶石！`);
             }
