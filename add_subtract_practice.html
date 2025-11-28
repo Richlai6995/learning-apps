@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>加減法闖關王 2.5 (位數與小數修正版)</title>
+    <title>加減法闖關王 2.6 (符號修復版)</title>
     <style>
         :root {
             --primary: #e67e22;
@@ -78,7 +78,7 @@
         .btn-help:active { box-shadow: 0 0; transform: translateY(4px); }
         .btn-block { width: 100%; margin-top: 10px; }
 
-        /* Grid System (Updated Layout) */
+        /* Grid System */
         .grid-container {
             display: grid; justify-content: center; margin: 20px 0; gap: 0;
         }
@@ -89,7 +89,7 @@
             position: relative;
         }
         /* Row Styling */
-        .row-header { height: 30px; font-size: 0.9rem; color: #7f8c8d; align-items: flex-end; padding-bottom: 5px; } /* 新增：位數標題 */
+        .row-header { height: 30px; font-size: 0.9rem; color: #7f8c8d; align-items: flex-end; padding-bottom: 5px; } 
         .row-carry { height: 40px; align-items: flex-end; } 
         .row-num { height: 60px; } 
         .row-line { height: 6px; border-bottom: 4px solid #333; } 
@@ -178,6 +178,7 @@
         @keyframes blink { 50% { opacity: 0.5; } }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 
+        /* Result Table */
         .result-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .result-table th, .result-table td { border: 1px solid #ddd; padding: 10px; text-align: center; font-size: 1.1rem; }
         .result-table th { background-color: #fdf2e9; }
@@ -222,7 +223,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v2.5 (位數與小數修正版)</div>
+        <div class="version-tag">版本：v2.6 (符號修復版)</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -254,7 +255,6 @@
             <div>💎教學: <input type="number" id="list-teach-gems" value="2" style="width:50px;"></div>
             <div>🎯及格: <input type="number" id="list-pass-score" value="100" style="width:50px;"></div>
         </div>
-        
         <div class="gen-controls">
             <span>自動生成:</span>
             <select id="gen-op" style="padding:5px;">
@@ -268,7 +268,6 @@
             小數<input type="number" id="gen-dec" value="0" style="width:50px;">
             <button class="btn-warning" onclick="autoGenerate()">生成</button>
         </div>
-
         <div id="editor-rows" style="max-height:300px; overflow-y:auto;"></div>
         <button class="btn-gray" onclick="addEditRow()">+ 手動增加</button>
         <div style="display:flex; gap:10px; margin-top:15px;">
@@ -357,7 +356,6 @@
     function loadData() {
         if(localStorage.getItem(STORAGE_PREFIX + 'lists')) allLists = JSON.parse(localStorage.getItem(STORAGE_PREFIX + 'lists'));
         else { 
-            // 預設題庫
             allLists = [{name: "基礎加法練習", timer:0, gems:5, teachGems:2, passScore:100, qs: genQs('+', 5, 2, 2, 0)}]; 
             saveData(); 
         }
@@ -375,13 +373,11 @@
         updateProfile();
     }
 
-    // --- 語音 ---
     function speak(text) {
         let force = text.includes("寶石") || text.includes("皇冠") || text.includes("全對") || text.includes("時間");
         if(currentMode === 'teach' && !quizSettings.voice && !force) return;
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
-            // 優化讀音
             let clean = text.replace(/<[^>]*>/g, '').replace(/-/g, '減').replace(/\+/g, '加').replace(/\./g, '點').replace(/=/g, '等於');
             const u = new SpeechSynthesisUtterance(clean);
             u.lang = 'zh-TW'; u.rate = 1.0; 
@@ -389,7 +385,6 @@
         }
     }
 
-    // --- UI 切換 ---
     function showPage(pid) {
         document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
         document.getElementById(pid).classList.add('active');
@@ -418,7 +413,6 @@
         if(n && n.trim()) { studentName = n.trim(); saveStudentData(); }
     }
 
-    // --- 題庫管理 ---
     function renderLists() {
         const c = document.getElementById('lists-container'); c.innerHTML='';
         allLists.forEach((l,i) => {
@@ -530,7 +524,7 @@
     function delList(i) { if(confirm("刪除？")){allLists.splice(i,1); saveData(); renderLists();} }
     
     function exportData() {
-        const obj = { version: "2.2", student: {name: studentName, totalGems}, lists: allLists, exchangeLog };
+        const obj = { version: "2.6", student: {name: studentName, totalGems}, lists: allLists, exchangeLog };
         const blob = new Blob([JSON.stringify(obj)], {type: "application/json"});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
         a.download = `addsub_backup_${new Date().toISOString().slice(0,10)}.json`; a.click();
@@ -548,7 +542,6 @@
         }; r.readAsText(f);
     }
 
-    // --- 測驗核心 ---
     function prepareQuiz(i) { currentList = allLists[i]; showPage('page-mode'); }
 
     function startQuiz(mode) {
@@ -594,7 +587,6 @@
         }
     }
 
-    // --- 資料結構準備 ---
     function prepareQuestionData(rawQ) {
         let sA = rawQ.a.toString(), sB = rawQ.b.toString();
         let aDecIdx = sA.indexOf('.'), bDecIdx = sB.indexOf('.');
@@ -655,7 +647,6 @@
     function generateTeachSteps(q) {
         q.steps = [];
         let carry = 0;
-        // 從最右邊開始
         for (let c = q.gridWidth - 1; c >= 0; c--) {
             let charA = q.arrA[c];
             let charB = q.arrB[c];
@@ -705,7 +696,6 @@
         
         box.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
         
-        // 找出小數點位置 (用於Header)
         let dotIdx = q.arrA.indexOf('.');
         
         for(let r=0; r<rows; r++) {
@@ -721,9 +711,7 @@
                 
                 cell.id = `c-${r}-${c}`;
                 
-                // Header Logic
                 if (r===0) {
-                    // 如果有小數點
                     if (dotIdx !== -1) {
                         let dist = dotIdx - c;
                         if (dist > 0) {
@@ -734,21 +722,21 @@
                              if(Math.abs(dist) <= places.length) cell.innerText = places[Math.abs(dist)-1];
                         }
                     } else {
-                         // 無小數點: 最右邊是個位
                          let dist = (cols - 1) - c;
                          const places = ['個','十','百','千','萬'];
                          if(dist < places.length) cell.innerText = places[dist];
                     }
                 }
 
-                // 靜態內容
                 if (r === 2) cell.innerText = q.arrA[c];
                 if (r === 3) {
+                    cell.innerText = q.arrB[c];
                     if (c === 0) { 
-                        let opSpan = document.createElement('span'); opSpan.innerText = q.op; opSpan.className = 'op-cell';
+                        let opSpan = document.createElement('span'); 
+                        opSpan.innerText = q.op; 
+                        opSpan.className = 'op-cell';
                         cell.appendChild(opSpan);
                     }
-                    cell.innerText = q.arrB[c];
                 }
                 if (r === 5 && q.arrAns[c] === '.') cell.innerText = '.';
 
@@ -756,13 +744,11 @@
             }
         }
 
-        // 渲染已完成步驟
         for(let k=0; k<q.stepIdx; k++) {
             let s = q.steps[k];
             let ansCell = document.getElementById(`c-5-${s.col}`);
             if(ansCell) ansCell.innerText = s.val;
             if(s.carry > 0) {
-                // Carry Logic Fix: 如果左邊是小數點，再往左移
                 let carryCol = s.col - 1;
                 if(q.arrA[carryCol] === '.') carryCol--;
                 
@@ -776,7 +762,6 @@
             }
         }
 
-        // 當前步驟
         if(q.stepIdx < q.steps.length) {
             let cur = q.steps[q.stepIdx];
             if(quizSettings.text) msg.innerText = cur.hint; else msg.innerText = "";
@@ -789,7 +774,6 @@
             if(cellA) cellA.classList.add('hl-active');
             if(cellB) cellB.classList.add('hl-active');
 
-            // 答案輸入格
             let ansCell = document.getElementById(`c-5-${colIdx}`);
             if(ansCell) {
                 ansCell.innerHTML = '';
@@ -798,10 +782,8 @@
                 inp.id = 'inp-ans';
                 inp.maxLength=1;
                 
-                // 進位輸入格
                 let carryInp = null;
                 if (cur.needsCarryInput) {
-                    // Carry Logic Fix
                     let carryCol = colIdx - 1;
                     if (q.arrA[carryCol] === '.') carryCol--;
                     
@@ -914,7 +896,7 @@
         let score = Math.round((correct/total)*100);
         
         document.getElementById('res-score').innerText = score;
-        document.getElementById('res-summary').innerText = `${timeUp?'時間到！':''} 答對 ${correct}/${total}`;
+        document.getElementById('res-summary').innerText = `${timeUp?'時間到！':''} 答對 ${correct}/${total} 題`;
         
         let rewardArea = document.getElementById('reward-area'); rewardArea.innerHTML='';
         let passScore = currentList.passScore||100;
