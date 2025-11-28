@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>四則運算闖關王 (逐步引導版)</title>
+    <style>
+        :root {
+            --primary: #2980b9;
+            --secondary: #3498db;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --success: #27ae60;
+            --danger: #c0392b;
+            --warning: #f39c12;
+            --highlight: #e74c3c;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        h1 { color: var(--primary); margin: 10px 0; text-align: center; font-size: 1.8rem;}
+
+        /* --- 學員名牌 & 獎勵 --- */
+        .user-profile {
+            background-color: #fff3cd;
+            border: 2px dashed #f39c12;
+            border-radius: 10px;
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #d35400;
+            display: flex; align-items: center; gap: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .user-profile:active { transform: scale(0.98); }
+        
+        .stats-badge {
+            background: #fff;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex; align-items: center; gap: 5px;
+            color: #2c3e50;
+        }
+
+        .container {
+            width: 100%; max-width: 900px; background: white; border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px;
+            display: none;
+        }
+        .container.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
+
+        button {
+            border: none; border-radius: 6px; padding: 8px 15px; font-size: 1rem; font-weight: bold;
+            cursor: pointer; color: white; margin: 2px; transition: 0.2s;
+        }
+        .btn-primary { background-color: var(--primary); }
+        .btn-secondary { background-color: var(--secondary); }
+        .btn-success { background-color: var(--success); }
+        .btn-danger { background-color: var(--danger); }
+        .btn-warning { background-color: var(--warning); }
+        .btn-gray { background-color: #95a5a6; }
+        .btn-accent { background-color: #f39c12; }
+        .btn-help { background-color: #e67e22; box-shadow: 0 4px #d35400; }
+        .btn-help:active { box-shadow: 0 0 #d35400; transform: translateY(4px); }
+        .btn-block { width: 100%; padding: 12px; margin-top: 10px; }
+        
+        .btn-next-level {
+            background-color: #27ae60; color: white; font-size: 1.5rem; padding: 15px 30px;
+            border-radius: 50px; box-shadow: 0 6px #1e8449; margin-top: 20px;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: none; 
+        }
+        .btn-next-level:active { transform: translateY(6px); box-shadow: 0 0 #1e8449; }
+        @keyframes popIn { from {transform: scale(0);} to {transform: scale(1);} }
+
+        /* --- 列表與標籤 --- */
+        .list-item {
+            background: #eafaf1; border: 1px solid #d5f5e3; padding: 10px; margin-bottom: 8px;
+            border-radius: 6px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .gem-tag { color: #2980b9; font-weight: bold; background: #d6eaf8; padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; margin-left: 5px;}
+        .teach-gem-tag { color: #27ae60; font-weight: bold; background: #d5f5e3; padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; margin-left: 5px;}
+        .score-tag { color: #d35400; font-weight: bold; background: #fdebd0; padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; margin-left: 5px;}
+
+        /* --- 編輯器相關 --- */
+        .editor-input-area {
+            display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;
+            background: #f4f6f7; padding: 15px; border-radius: 8px;
+        }
+        .keypad {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 10px;
+        }
+        .keypad button {
+            background: #fff; border: 1px solid #bdc3c7; color: #2c3e50; font-size: 1.2rem; padding: 10px;
+            border-radius: 5px; box-shadow: 0 2px #ecf0f1;
+        }
+        .keypad button:active { transform: translateY(2px); box-shadow: none; }
+        .keypad button.op-key { background: #d6eaf8; color: #2980b9; font-weight: bold; }
+        
+        .eq-row { display: flex; align-items: center; justify-content: space-between; background: #fff; padding: 8px; border:1px solid #eee; margin-bottom: 5px; border-radius: 4px;}
+        .eq-text { font-family: monospace; font-size: 1.1rem; flex: 1; overflow-x: auto;}
+
+        /* --- 測驗區域 (核心) --- */
+        .quiz-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 15px; background: #eee; padding: 10px; border-radius: 6px; }
+        
+        .equation-display {
+            font-size: 2rem; text-align: center; margin: 30px 0; font-family: 'Courier New', monospace;
+            line-height: 1.5;
+        }
+        
+        .step-highlight {
+            color: #e74c3c;
+            font-weight: bold;
+            border-bottom: 3px solid #e74c3c;
+            padding: 0 5px;
+            display: inline-block;
+        }
+
+        .step-input-container {
+            text-align: center; margin: 20px 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        
+        .game-input { 
+            width: 120px; height: 50px; font-size: 1.5rem; text-align: center; 
+            border: 3px solid var(--primary); border-radius: 8px; background: #fff; outline: none; margin-bottom: 10px;
+        }
+        .game-input.correct { border-color: #27ae60; background-color: #d5f5e3; color: #27ae60; }
+        .game-input.wrong { background: #fadbd8; border-color: var(--danger); animation: shake 0.4s; }
+        .game-input:focus { border-color: #2ecc71; background: #e8f8f5; box-shadow: 0 0 10px rgba(46, 204, 113, 0.5); }
+
+        .help-box {
+            background: #fff8e1; border-left: 5px solid #ffc107; padding: 10px; margin: 10px auto;
+            border-radius: 5px; display: none; font-size: 1.1rem; text-align: left; max-width: 80%;
+        }
+
+        /* --- 其他 UI 元件 --- */
+        .settings-panel {
+            background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 8px;
+            padding: 15px; margin-bottom: 20px; text-align: left; max-width: 400px; margin-left: auto; margin-right: auto;
+        }
+        .settings-panel label { display: block; margin-bottom: 8px; cursor: pointer; font-size: 1.1rem; }
+        .settings-panel input[type="checkbox"] { transform: scale(1.3); margin-right: 10px; }
+
+        .shop-balance {
+            background: linear-gradient(135deg, #f39c12 0%, #d35400 100%);
+            color: white; padding: 20px; border-radius: 15px; text-align: center;
+            margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .exchange-form { background: #f8f9fa; padding: 15px; border-radius: 12px; border: 1px solid #eee; }
+        .exchange-input { padding: 10px; width: 100%; border: 2px solid #ddd; border-radius: 8px; margin-bottom: 10px;}
+
+        .reward-popup {
+            background: #fff8e1; border: 3px solid #f1c40f; padding: 20px;
+            border-radius: 15px; margin-top: 20px; font-weight: bold; color: #d35400;
+            font-size: 1.5rem; text-align: center;
+            box-shadow: 0 5px 15px rgba(241, 196, 15, 0.4);
+            animation: bounceIn 0.8s;
+        }
+
+        /* 粒子動畫 */
+        #particle-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 9999; overflow: hidden; display: none;
+        }
+        .particle {
+            position: absolute; font-size: 2rem;
+            animation: fall linear forwards;
+        }
+        @keyframes fall {
+            0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+        }
+        @keyframes bounceIn { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        
+        .tabs { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 15px; }
+        .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #777; font-weight: bold; }
+        .tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+    </style>
+</head>
+<body>
+
+    <div id="particle-container"></div>
+
+    <div id="page-home" class="container active">
+        <h1>➗ 四則運算闖關王</h1>
+        
+        <div class="user-profile" onclick="changeName()">
+            <div>🎓 <span id="display-name">設定學員姓名</span> ✎</div>
+            <div class="stats-badge">👑 <span id="stat-crowns">0</span></div>
+            <div class="stats-badge">💎 <span id="stat-gems">0</span></div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('quiz')">選擇題庫</div>
+            <div class="tab" onclick="switchTab('rank')">英雄榜</div>
+        </div>
+
+        <div id="tab-quiz">
+            <button class="btn-accent btn-block" style="margin-bottom:15px; box-shadow:0 4px #d35400;" onclick="showPage('page-shop')">🎁 獎勵兌換商店</button>
+            <div id="lists-container"></div>
+            <button class="btn-secondary btn-block" onclick="createNewList()">+ 手動建立新題庫</button>
+            <div style="margin-top:15px; border-top:1px dashed #ccc; padding-top:10px; display:flex; gap:5px;">
+                <button class="btn-gray" style="flex:1" onclick="exportData()">匯出備份</button>
+                <button class="btn-gray" style="flex:1" onclick="document.getElementById('import-file').click()">匯入</button>
+                <input type="file" id="import-file" style="display:none" accept=".json" onchange="handleImport(this)">
+            </div>
+        </div>
+
+        <div id="tab-rank" style="display:none;">
+            <div id="rank-container"></div>
+            <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
+        </div>
+        
+        <div style="text-align:center; color:#95a5a6; margin-top:20px; font-size:0.9rem;">four_arithmetic.html v1.0</div>
+    </div>
+
+    <div id="page-shop" class="container">
+        <h2>🎁 獎勵兌換商店</h2>
+        <div class="shop-balance">
+            <h3>目前持有</h3>
+            <div style="display:flex; justify-content:center; gap:20px; font-size:1.5rem; font-weight:bold;">
+                <span>👑 <span id="shop-crowns">0</span></span>
+                <span>💎 <span id="shop-gems">0</span></span>
+            </div>
+        </div>
+        <div class="exchange-form">
+            <input type="text" id="gift-name" class="exchange-input" placeholder="輸入獎品名稱 (如: 看電視10分鐘)">
+            <input type="number" id="gift-cost" class="exchange-input" placeholder="花費數量" min="1">
+            <select id="gift-currency" class="exchange-input">
+                <option value="gems">💎 寶石</option>
+                <option value="crowns">👑 皇冠</option>
+            </select>
+            <button class="btn-primary btn-block" onclick="processExchange()">確認兌換</button>
+        </div>
+        <div style="margin-top:20px;">
+            <h4>📜 兌換紀錄</h4>
+            <div id="exchange-log" style="max-height:150px; overflow-y:auto; font-size:0.9rem; color:#666;"></div>
+        </div>
+        <button class="btn-gray btn-block" onclick="showPage('page-home')">返回首頁</button>
+    </div>
+
+    <div id="page-editor" class="container">
+        <h2>✏️ 編輯四則運算題庫</h2>
+        <div style="background:#eee; padding:10px; border-radius:8px; margin-bottom:15px;">
+            名稱: <input type="text" id="list-name" style="padding:5px; width:70%; margin-bottom:5px;">
+            <div style="display:flex; gap:10px; font-size:0.9rem;">
+                <label>💎測驗: <input type="number" id="list-gems" value="5" style="width:40px;"></label>
+                <label>💎教學: <input type="number" id="list-teach-gems" value="2" style="width:40px;"></label>
+                <label>🎯過關分: <input type="number" id="list-pass-score" value="100" style="width:45px;"></label>
+            </div>
+        </div>
+
+        <div class="editor-input-area">
+            <div style="font-weight:bold; color:#555;">新增題目 (請輸入算式):</div>
+            <input type="text" id="editor-input" class="exchange-input" placeholder="例如: (2+6)*3" readonly onclick="this.focus()">
+            <div class="keypad">
+                <button onclick="keyPad('(')">(</button>
+                <button onclick="keyPad(')')">)</button>
+                <button onclick="keyPad('AC')" class="btn-danger">C</button>
+                <button onclick="keyPad('DEL')">←</button>
+                <button onclick="keyPad('7')">7</button>
+                <button onclick="keyPad('8')">8</button>
+                <button onclick="keyPad('9')">9</button>
+                <button onclick="keyPad('/')" class="op-key">÷</button>
+                <button onclick="keyPad('4')">4</button>
+                <button onclick="keyPad('5')">5</button>
+                <button onclick="keyPad('6')">6</button>
+                <button onclick="keyPad('*')" class="op-key">×</button>
+                <button onclick="keyPad('1')">1</button>
+                <button onclick="keyPad('2')">2</button>
+                <button onclick="keyPad('3')">3</button>
+                <button onclick="keyPad('-')" class="op-key">-</button>
+                <button onclick="keyPad('0')">0</button>
+                <button onclick="keyPad('.')">.</button>
+                <button onclick="addCurrentToList()" class="btn-success" style="grid-column: span 1;">ADD</button>
+                <button onclick="keyPad('+')" class="op-key">+</button>
+            </div>
+        </div>
+
+        <div style="max-height: 250px; overflow-y: auto; border:1px solid #ddd; padding:5px; border-radius:5px;" id="editor-rows"></div>
+        
+        <div style="margin-top:15px; display:flex; gap:10px;">
+            <button class="btn-gray" style="flex:1" onclick="showPage('page-home')">取消</button>
+            <button class="btn-primary" style="flex:1" onclick="saveList()">儲存</button>
+        </div>
+    </div>
+
+    <div id="page-mode" class="container">
+        <h2>選擇模式</h2>
+        <div class="settings-panel">
+            <h3>🛠️ 教學輔助設定</h3>
+            <label><input type="checkbox" id="opt-voice" checked> 🔊 語音提示</label>
+            <label><input type="checkbox" id="opt-text" checked> 🔤 文字提示</label>
+        </div>
+        <div style="text-align: center;">
+            <button class="btn-success btn-block" onclick="startQuiz('teach')">📖 教學模式 (逐步引導)</button>
+            <button class="btn-danger btn-block" onclick="startQuiz('test')">📝 測驗模式 (直接計算)</button>
+            <button class="btn-gray" onclick="showPage('page-home')" style="margin-top:20px;">返回</button>
+        </div>
+    </div>
+
+    <div id="page-quiz" class="container">
+        <div class="quiz-header">
+            <span id="q-info">題目 1/5</span>
+            <span id="q-timer">00:00</span>
+            <span id="q-mode">模式</span>
+        </div>
+
+        <div id="quiz-area">
+            <div style="text-align: center; margin-bottom: 10px; min-height: 1.5em;">
+                <div id="teach-msg" style="color:#8e44ad; font-weight:bold; font-size:1.2rem;"></div>
+            </div>
+
+            <div id="equation-display" class="equation-display"></div>
+
+            <div id="step-input-container" class="step-input-container" style="display:none;">
+                <div style="font-size:1rem; color:#777; margin-bottom:5px;">請輸入 <span id="target-highlight-text" style="color:var(--danger); font-weight:bold;"></span> 的答案：</div>
+                <input type="number" id="step-input" class="game-input">
+                <div>
+                    <button class="btn-warning" onclick="checkStepAnswer()">確認</button>
+                    <button id="btn-help" class="btn-help" onclick="useHelp()">💡 求助</button>
+                </div>
+            </div>
+            
+            <div id="help-content" class="help-box"></div>
+
+            <div style="text-align: center;">
+                <button id="btn-next-q" class="btn-next-level" onclick="goToNextQuestion()">🎉 下一題 ➡</button>
+            </div>
+        </div>
+
+        <div class="quiz-nav" style="display:flex; justify-content:space-between; margin-top:20px;">
+            <button class="btn-gray" id="btn-prev" onclick="navQuestion(-1)" style="visibility:hidden">上一題</button>
+            <button class="btn-success" id="btn-submit" onclick="submitTest()" style="display:none;">交卷</button>
+        </div>
+        
+        <button class="btn-danger" style="float:right; margin-top:10px;" onclick="quitQuiz()">中途退出</button>
+    </div>
+
+    <div id="page-result" class="container">
+        <div style="text-align: center;">
+            <h2>測驗結果</h2>
+            <div style="font-size: 3rem; color: var(--primary); font-weight: bold;" id="res-score">100</div>
+            <div id="res-detail" style="font-size: 1.2rem; margin: 10px;">答對 5 / 5 題</div>
+            <div id="res-time" style="color:#777;">耗時 01:20</div>
+            
+            <div id="reward-area"></div>
+
+            <div style="margin-top:20px;">
+                你的名字: <input type="text" id="player-name" style="padding:5px; font-size:1.2rem; text-align:center;" readonly>
+                <button class="btn-warning" onclick="saveRank()">登記榜單</button>
+            </div>
+            <button class="btn-gray btn-block" onclick="showPage('page-home')">回首頁</button>
+        </div>
+    </div>
+
+<script>
+    /* --- 全域變數與初始化 --- */
+    let studentName = "小小學員";
+    let totalGems = 0;
+    let allLists = [];
+    let rankData = [];
+    let exchangeLog = [];
+
+    // 遊戲狀態
+    let currentList = null;
+    let quizData = []; // [{q: "2+3*4", correctAns: 14, userAns: null, isCorrect: false}]
+    let currentQIdx = 0;
+    let currentMode = '';
+    let editingId = null;
+    let timerInt, startTime;
+    let currentStepInfo = null; // 教學模式當前步驟資訊
+
+    // LocalStorage Keys
+    const SK_LISTS = 'fa_lists_v1';
+    const SK_USER = 'fa_user_v1';
+    const SK_GEMS = 'fa_gems_v1';
+    const SK_RANK = 'fa_rank_v1';
+    const SK_LOG = 'fa_log_v1';
+
+    window.onload = function() {
+        loadData();
+        updateProfile();
+        renderLists();
+        renderExchangeLog();
+    };
+
+    function loadData() {
+        if(localStorage.getItem(SK_LISTS)) allLists = JSON.parse(localStorage.getItem(SK_LISTS));
+        else {
+            // 預設題庫
+            allLists = [
+                {name: "基礎練習 (先乘除)", gems: 5, teachGems: 2, passScore: 100, qs: ["2+3*4", "10-2*3", "5*6+2"]},
+                {name: "進階挑戰 (含括號)", gems: 10, teachGems: 4, passScore: 100, qs: ["(2+6)*3", "4*(5+2)", "20/(2+3)"]}
+            ];
+            saveData();
+        }
+        if(localStorage.getItem(SK_USER)) studentName = localStorage.getItem(SK_USER);
+        if(localStorage.getItem(SK_GEMS)) totalGems = parseInt(localStorage.getItem(SK_GEMS)) || 0;
+        if(localStorage.getItem(SK_RANK)) rankData = JSON.parse(localStorage.getItem(SK_RANK));
+        if(localStorage.getItem(SK_LOG)) exchangeLog = JSON.parse(localStorage.getItem(SK_LOG));
+    }
+
+    function saveData() { localStorage.setItem(SK_LISTS, JSON.stringify(allLists)); }
+    function saveUser() { 
+        localStorage.setItem(SK_USER, studentName); 
+        localStorage.setItem(SK_GEMS, totalGems); 
+        localStorage.setItem(SK_LOG, JSON.stringify(exchangeLog));
+    }
+    function saveRankData() { localStorage.setItem(SK_RANK, JSON.stringify(rankData)); }
+
+    /* --- 介面切換與共用功能 --- */
+    function showPage(pid) {
+        document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
+        document.getElementById(pid).classList.add('active');
+        if(pid==='page-home') renderLists();
+        if(pid==='page-shop') { updateProfile(); renderExchangeLog(); }
+    }
+
+    function updateProfile() {
+        document.getElementById('display-name').innerText = studentName;
+        document.getElementById('player-name').value = studentName;
+        let crowns = Math.floor(totalGems / 100);
+        let remain = totalGems % 100;
+        document.getElementById('stat-crowns').innerText = crowns;
+        document.getElementById('stat-gems').innerText = remain;
+        if(document.getElementById('shop-crowns')) {
+            document.getElementById('shop-crowns').innerText = crowns;
+            document.getElementById('shop-gems').innerText = remain;
+        }
+    }
+
+    function changeName() {
+        let n = prompt("請輸入你的名字：", studentName);
+        if(n && n.trim()) { studentName = n.trim(); saveUser(); updateProfile(); }
+    }
+
+    function speak(text) {
+        if(currentMode === 'teach' && !document.getElementById('opt-voice').checked) return;
+        if('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            let safeText = text.replace(/\*/g,'乘以').replace(/\//g,'除以').replace(/\+/g,'加').replace(/\-/g,'減').replace(/=/g,'等於').replace(/\(/g,'括號').replace(/\)/g,'');
+            const u = new SpeechSynthesisUtterance(safeText);
+            u.lang = 'zh-TW';
+            window.speechSynthesis.speak(u);
+        }
+    }
+
+    function switchTab(t) {
+        document.getElementById('tab-quiz').style.display = t==='quiz'?'block':'none';
+        document.getElementById('tab-rank').style.display = t==='rank'?'block':'none';
+        if(t==='rank') renderRank();
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+
+    /* --- 題庫列表與編輯器 --- */
+    function renderLists() {
+        const c = document.getElementById('lists-container'); c.innerHTML='';
+        allLists.forEach((l,i) => {
+            const d = document.createElement('div'); d.className='list-item';
+            d.innerHTML = `
+                <div>
+                    <strong>${l.name}</strong> (${l.qs.length}題)
+                    <br><span class="gem-tag">💎${l.gems}</span> <span class="teach-gem-tag">📖${l.teachGems}</span>
+                </div>
+                <div>
+                    <button class="btn-primary" onclick="prepareQuiz(${i})">開始</button>
+                    <button class="btn-gray" onclick="editList(${i})">編輯</button>
+                    <button class="btn-danger" onclick="delList(${i})">刪</button>
+                </div>`;
+            c.appendChild(d);
+        });
+    }
+
+    function createNewList() {
+        editingId = null;
+        document.getElementById('list-name').value = "新題庫";
+        document.getElementById('editor-rows').innerHTML = '';
+        document.getElementById('editor-input').value = '';
+        showPage('page-editor');
+    }
+
+    function editList(i) {
+        editingId = i; const l = allLists[i];
+        document.getElementById('list-name').value = l.name;
+        document.getElementById('list-gems').value = l.gems;
+        document.getElementById('list-teach-gems').value = l.teachGems;
+        document.getElementById('list-pass-score').value = l.passScore;
+        const box = document.getElementById('editor-rows'); box.innerHTML = '';
+        l.qs.forEach(q => addEqRow(q));
+        showPage('page-editor');
+    }
+
+    function keyPad(char) {
+        const inp = document.getElementById('editor-input');
+        if(char === 'AC') inp.value = '';
+        else if(char === 'DEL') inp.value = inp.value.slice(0, -1);
+        else inp.value += char;
+        inp.focus();
+    }
+
+    function addCurrentToList() {
+        let val = document.getElementById('editor-input').value.trim();
+        if(!val) return;
+        try {
+            // 簡易驗證算式是否合法
+            eval(val);
+            addEqRow(val);
+            document.getElementById('editor-input').value = '';
+        } catch(e) {
+            alert("算式格式錯誤，請檢查！");
+        }
+    }
+
+    function addEqRow(val) {
+        const div = document.createElement('div'); div.className = 'eq-row';
+        div.innerHTML = `<span class="eq-text">${val}</span> <button class="btn-danger" onclick="this.parentElement.remove()">×</button>`;
+        document.getElementById('editor-rows').appendChild(div);
+    }
+
+    function saveList() {
+        const name = document.getElementById('list-name').value;
+        const gems = parseInt(document.getElementById('list-gems').value) || 5;
+        const teachGems = parseInt(document.getElementById('list-teach-gems').value) || 2;
+        const passScore = parseInt(document.getElementById('list-pass-score').value) || 100;
+        const qs = [];
+        document.querySelectorAll('.eq-row .eq-text').forEach(s => qs.push(s.innerText));
+        
+        if(qs.length===0) return alert("請至少新增一題");
+        const data = {name, gems, teachGems, passScore, qs};
+        if(editingId === null) allLists.push(data); else allLists[editingId] = data;
+        saveData(); showPage('page-home');
+    }
+    
+    function delList(i) { if(confirm("確定刪除?")) { allLists.splice(i,1); saveData(); renderLists(); } }
+
+    /* --- 匯入匯出 --- */
+    function exportData() {
+        const d = { version: "1.0", lists: allLists, user: studentName, gems: totalGems, log: exchangeLog };
+        const blob = new Blob([JSON.stringify(d)], {type: "application/json"});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = "four_arithmetic_backup.json"; a.click();
+    }
+    function handleImport(inp) {
+        const f = inp.files[0]; if(!f) return;
+        const r = new FileReader();
+        r.onload = (e) => {
+            try {
+                const d = JSON.parse(e.target.result);
+                if(d.lists) allLists = allLists.concat(d.lists);
+                if(d.user && confirm(`發現使用者 ${d.user} (寶石:${d.gems})，要覆蓋嗎？`)) {
+                    studentName = d.user; totalGems = d.gems; if(d.log) exchangeLog = d.log;
+                    saveUser();
+                }
+                saveData(); renderLists(); alert("匯入完成");
+            } catch(e) { alert("檔案錯誤"); }
+        };
+        r.readAsText(f);
+    }
+
+    /* --- 測驗邏輯 --- */
+    function prepareQuiz(i) { currentList = allLists[i]; showPage('page-mode'); }
+
+    function startQuiz(mode) {
+        currentMode = mode;
+        currentQIdx = 0;
+        // 初始化題目資料
+        quizData = currentList.qs.map(q => {
+            try {
+                return { qStr: q, ans: eval(q), currentExp: q, isDone: false, userAns: null };
+            } catch(e) { return null; }
+        }).filter(x => x!==null);
+
+        if(quizData.length === 0) return alert("無有效題目");
+
+        startTime = Date.now();
+        clearInterval(timerInt); timerInt = setInterval(updateTimer, 1000);
+        document.getElementById('q-mode').innerText = mode==='teach'?'教學模式':'測驗模式';
+        document.getElementById('btn-submit').style.display = 'none';
+        
+        showPage('page-quiz');
+        speak("測驗開始，加油！");
+        loadQuestion();
+    }
+
+    function updateTimer() {
+        let sec = Math.floor((Date.now() - startTime)/1000);
+        let m = Math.floor(sec/60).toString().padStart(2,'0');
+        let s = (sec%60).toString().padStart(2,'0');
+        document.getElementById('q-timer').innerText = `${m}:${s}`;
+    }
+
+    function quitQuiz() { if(confirm("確定退出？")) showPage('page-home'); }
+
+    function loadQuestion() {
+        const d = quizData[currentQIdx];
+        document.getElementById('q-info').innerText = `題目 ${currentQIdx+1} / ${quizData.length}`;
+        document.getElementById('teach-msg').innerText = "";
+        document.getElementById('help-content').style.display = 'none';
+        document.getElementById('btn-next-q').style.display = 'none';
+        
+        if(currentMode === 'test') {
+            // 測驗模式：顯示全算式，輸入最終答案
+            document.getElementById('equation-display').innerHTML = `${d.qStr} = ?`;
+            document.getElementById('step-input-container').style.display = 'flex';
+            document.getElementById('target-highlight-text').innerText = "答案";
+            document.getElementById('step-input').value = d.userAns !== null ? d.userAns : '';
+            document.getElementById('step-input').focus();
+            document.getElementById('btn-prev').style.visibility = currentQIdx>0?'visible':'hidden';
+            
+            // 如果是最後一題顯示交卷，否則顯示下一題(這裡邏輯跟教學不同，測驗模式可以前後翻)
+            if(currentQIdx === quizData.length-1) {
+                document.getElementById('btn-submit').style.display = 'inline-block';
+                document.querySelector('#step-input-container button').style.display = 'none'; // 隱藏單步確認
+            } else {
+                document.getElementById('btn-submit').style.display = 'none';
+                document.querySelector('#step-input-container button').style.display = 'none'; // 測驗模式不單步確認
+                document.getElementById('btn-next-q').innerText = "下一題 ➡";
+                document.getElementById('btn-next-q').style.display = 'inline-block';
+            }
+        } else {
+            // 教學模式
+            d.currentExp = d.qStr; // 重置狀態
+            document.getElementById('btn-prev').style.visibility = 'hidden';
+            document.getElementById('btn-submit').style.display = 'none';
+            document.querySelector('#step-input-container button').style.display = 'inline-block';
+            renderTeachingStep();
+        }
+    }
+
+    function navQuestion(dir) {
+        if(currentMode === 'test') {
+            quizData[currentQIdx].userAns = document.getElementById('step-input').value;
+        }
+        currentQIdx += dir;
+        loadQuestion();
+    }
+
+    function goToNextQuestion() {
+        if(currentQIdx < quizData.length - 1) {
+            currentQIdx++;
+            loadQuestion();
+        } else {
+            submitTest();
+        }
+    }
+
+    /* --- 教學模式核心：算式解析與步驟 --- */
+    function renderTeachingStep() {
+        const d = quizData[currentQIdx];
+        // 解析下一步
+        const step = findNextStep(d.currentExp);
+        currentStepInfo = step;
+
+        const displayDiv = document.getElementById('equation-display');
+        const inputDiv = document.getElementById('step-input-container');
+        const msgDiv = document.getElementById('teach-msg');
+        const inp = document.getElementById('step-input');
+
+        if(!step) {
+            // 已經算完
+            displayDiv.innerHTML = `<span style="color:var(--success)">${d.currentExp}</span>`;
+            inputDiv.style.display = 'none';
+            msgDiv.innerText = "太棒了！本題完成！";
+            document.getElementById('btn-next-q').style.display = 'inline-block';
+            document.getElementById('btn-next-q').innerText = (currentQIdx===quizData.length-1)?"全部完成！看成績":"下一題 ➡";
+            speak("完成！");
+            d.isDone = true;
+            d.userAns = parseFloat(d.currentExp); // 記錄答案
+            return;
+        }
+
+        // 渲染算式，將 target 部分加上 highlight class
+        let html = step.fullExp.substring(0, step.idxStart) + 
+                   `<span class="step-highlight">${step.target}</span>` + 
+                   step.fullExp.substring(0 + step.idxEnd);
+        
+        displayDiv.innerHTML = html;
+        inputDiv.style.display = 'flex';
+        document.getElementById('target-highlight-text').innerText = step.target;
+        inp.value = '';
+        inp.className = 'game-input';
+        inp.disabled = false;
+        inp.focus();
+
+        let hint = "";
+        if(step.op === '*') hint = `請先算乘法：${step.target}`;
+        else if(step.op === '/') hint = `請先算除法：${step.target}`;
+        else if(step.op === '+' || step.op === '-') hint = `依序計算：${step.target}`;
+        else hint = `請計算：${step.target}`;
+        
+        if(document.getElementById('opt-text').checked) msgDiv.innerText = hint;
+        speak(hint);
+    }
+
+    // 尋找下一步運算優先級邏輯
+    function findNextStep(expStr) {
+        // 1. 找最內層括號
+        let openIdx = expStr.lastIndexOf('(');
+        if(openIdx !== -1) {
+            let closeIdx = expStr.indexOf(')', openIdx);
+            if(closeIdx !== -1) {
+                let inner = expStr.substring(openIdx + 1, closeIdx);
+                // 遞迴檢查括號內是否有運算
+                if(isNaN(Number(inner))) {
+                    let innerStep = findNextStepInFlat(inner);
+                    if(innerStep) {
+                        return {
+                            fullExp: expStr,
+                            target: innerStep.target,
+                            val: innerStep.val,
+                            idxStart: openIdx + 1 + innerStep.idxStart,
+                            idxEnd: openIdx + 1 + innerStep.idxEnd,
+                            op: innerStep.op
+                        };
+                    }
+                } else {
+                    // 括號內只剩數字，下一步是消括號 (20) -> 20
+                    return {
+                        fullExp: expStr,
+                        target: `(${inner})`,
+                        val: parseFloat(inner),
+                        idxStart: openIdx,
+                        idxEnd: closeIdx + 1,
+                        op: '()'
+                    };
+                }
+            }
+        }
+        return findNextStepInFlat(expStr);
+    }
+
+    // 在沒有括號的字串中找優先運算
+    function findNextStepInFlat(str) {
+        // Regex 找 數字 運算符 數字
+        // 先乘除
+        let reMulDiv = /(-?\d+(?:\.\d+)?)([\*\/])(-?\d+(?:\.\d+)?)/;
+        let match = str.match(reMulDiv);
+        if(match) {
+            let n1 = parseFloat(match[1]);
+            let n2 = parseFloat(match[3]);
+            let op = match[2];
+            let val = op==='*'?n1*n2 : n1/n2;
+            // 處理浮點數精度
+            val = Math.round(val * 10000) / 10000;
+            return { fullExp: str, target: match[0], val: val, idxStart: match.index, idxEnd: match.index + match[0].length, op: op };
+        }
+        // 後加減 (從左到右)
+        let reAddSub = /(-?\d+(?:\.\d+)?)([\+\-])(-?\d+(?:\.\d+)?)/;
+        let match2 = str.match(reAddSub);
+        if(match2) {
+            let n1 = parseFloat(match2[1]);
+            let n2 = parseFloat(match2[3]);
+            let op = match2[2];
+            let val = op==='+'?n1+n2 : n1-n2;
+            val = Math.round(val * 10000) / 10000;
+            return { fullExp: str, target: match2[0], val: val, idxStart: match2.index, idxEnd: match2.index + match2[0].length, op: op };
+        }
+        return null; // 只剩數字
+    }
+
+    function checkStepAnswer() {
+        if(currentMode === 'test') {
+            // 測驗模式只在按 Enter 時觸發，不做單步檢查，這裡是被 enter key 呼叫
+            // 但 submitTest() 才是真正邏輯
+            return; 
+        }
+
+        const inp = document.getElementById('step-input');
+        const userVal = parseFloat(inp.value);
+        if(Math.abs(userVal - currentStepInfo.val) < 0.0001) {
+            // 正確
+            inp.classList.add('correct');
+            speak("答對了");
+            document.getElementById('help-content').style.display = 'none';
+            // 更新算式字串
+            let newExp = currentStepInfo.fullExp.substring(0, currentStepInfo.idxStart) + 
+                         currentStepInfo.val + 
+                         currentStepInfo.fullExp.substring(currentStepInfo.idxEnd);
+            
+            quizData[currentQIdx].currentExp = newExp;
+            setTimeout(() => {
+                renderTeachingStep();
+            }, 600);
+        } else {
+            // 錯誤
+            inp.classList.add('wrong');
+            speak("算錯囉，再試試看");
+            setTimeout(() => inp.classList.remove('wrong'), 500);
+        }
+    }
+
+    function useHelp() {
+        const h = document.getElementById('help-content');
+        if(h.style.display === 'block') { h.style.display='none'; return; }
+        if(currentMode === 'teach' && currentStepInfo) {
+            h.innerHTML = `提示：${currentStepInfo.target} 等於 <strong>${currentStepInfo.val}</strong>`;
+            h.style.display = 'block';
+        }
+    }
+
+    // 綁定輸入框 Enter
+    document.addEventListener('keydown', function(e) {
+        if(e.target.id === 'step-input' && e.key === 'Enter') {
+            checkStepAnswer();
+        }
+    });
+
+    /* --- 結算與獎勵 --- */
+    function submitTest() {
+        clearInterval(timerInt);
+        let correctCount = 0;
+        quizData.forEach(d => {
+            // 測驗模式 d.userAns 來自輸入框，教學模式 d.userAns 自動填入
+            if(d.userAns != null && Math.abs(parseFloat(d.userAns) - d.ans) < 0.001) {
+                correctCount++;
+            }
+        });
+        
+        let score = Math.round((correctCount / quizData.length) * 100);
+        showResult(score, correctCount, quizData.length);
+    }
+
+    function showResult(score, correct, total) {
+        showPage('page-result');
+        document.getElementById('res-score').innerText = score;
+        document.getElementById('res-detail').innerText = `答對 ${correct} / ${total} 題`;
+        document.getElementById('res-time').innerText = `耗時 ${document.getElementById('q-timer').innerText}`;
+
+        // 計算獎勵
+        const rArea = document.getElementById('reward-area'); rArea.innerHTML = '';
+        let earned = 0;
+        let target = currentList.passScore;
+        
+        if(currentMode === 'test' && score >= target) earned = currentList.gems;
+        else if(currentMode === 'teach' && score === 100) earned = currentList.teachGems;
+
+        if(earned > 0) {
+            let oldCrowns = Math.floor(totalGems/100);
+            totalGems += earned;
+            saveUser();
+            let newCrowns = Math.floor(totalGems/100);
+            
+            if(newCrowns > oldCrowns) {
+                rArea.innerHTML = `<div class="reward-popup" style="color:#e67e22; border-color:#e67e22;">👑 恭喜升級！獲得 ${newCrowns-oldCrowns} 頂皇冠！</div>`;
+                spawnParticles('👑');
+                speak(`太棒了！升級獲得皇冠！`);
+            } else {
+                rArea.innerHTML = `<div class="reward-popup">🎉 獲得 ${earned} 顆寶石！</div>`;
+                spawnParticles('💎');
+                speak(`恭喜獲得${earned}顆寶石！`);
+            }
+        } else {
+            speak(`測驗結束，再接再厲！`);
+        }
+    }
+
+    /* --- 排行榜 --- */
+    function saveRank() {
+        const score = document.getElementById('res-score').innerText;
+        const entry = {
+            name: studentName,
+            list: currentList.name,
+            score: score,
+            time: document.getElementById('q-timer').innerText,
+            date: new Date().toLocaleDateString()
+        };
+        rankData.unshift(entry);
+        if(rankData.length > 20) rankData.pop();
+        saveRankData();
+        alert("已登記榜單！");
+        switchTab('rank');
+        showPage('page-home');
+    }
+
+    function renderRank() {
+        const c = document.getElementById('rank-container'); c.innerHTML = '';
+        if(rankData.length===0) { c.innerHTML = '<p style="text-align:center">暫無紀錄</p>'; return; }
+        rankData.forEach((r, i) => {
+            const d = document.createElement('div');
+            d.style.padding = '10px'; d.style.borderBottom = '1px solid #eee'; d.style.display='flex'; d.style.justifyContent='space-between';
+            if(i===0) d.style.color = '#d35400';
+            d.innerHTML = `<span>#${i+1} ${r.name} (${r.list})</span> <span>${r.score}分 / ${r.time}</span>`;
+            c.appendChild(d);
+        });
+    }
+    function clearRank() { if(confirm("清空？")) { rankData=[]; saveRankData(); renderRank(); } }
+
+    /* --- 商店 --- */
+    function renderExchangeLog() {
+        const c = document.getElementById('exchange-log'); c.innerHTML = '';
+        exchangeLog.forEach(l => {
+            const d = document.createElement('div'); d.style.borderBottom='1px solid #eee'; d.style.padding='5px';
+            d.innerHTML = `${l.date} - 兌換 <b>${l.item}</b> (-${l.cost})`;
+            c.appendChild(d);
+        });
+    }
+    function processExchange() {
+        const item = document.getElementById('gift-name').value;
+        const cost = parseInt(document.getElementById('gift-cost').value);
+        const curr = document.getElementById('gift-currency').value;
+        if(!item || isNaN(cost) || cost<=0) return alert("輸入不完整");
+        
+        let realCost = cost * (curr==='crowns' ? 100 : 1);
+        if(totalGems < realCost) return alert("寶石/餘額不足");
+
+        if(confirm(`確認兌換 ${item}？`)) {
+            totalGems -= realCost;
+            exchangeLog.unshift({date: new Date().toLocaleString(), item, cost: `${cost}${curr==='crowns'?'皇冠':'寶石'}`});
+            saveUser();
+            updateProfile();
+            renderExchangeLog();
+            spawnParticles(curr==='crowns'?'👑':'💎');
+            speak("兌換成功");
+            document.getElementById('gift-name').value = '';
+        }
+    }
+
+    function spawnParticles(char) {
+        const con = document.getElementById('particle-container');
+        con.style.display = 'block'; con.innerHTML = '';
+        for(let i=0; i<30; i++) {
+            let p = document.createElement('div'); p.className='particle'; p.innerText = char;
+            p.style.left = Math.random()*100+'vw';
+            p.style.animationDuration = (Math.random()*2+1)+'s';
+            con.appendChild(p);
+        }
+        setTimeout(() => { con.style.display='none'; }, 3000);
+    }
+</script>
+</body>
+</html>
