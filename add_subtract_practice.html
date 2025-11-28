@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>加減法闖關王 2.2 (參數修復版)</title>
+    <title>加減法闖關王 2.3 (進位輔助修正版)</title>
     <style>
         :root {
             --primary: #e67e22;
@@ -15,7 +15,6 @@
             --warning: #f1c40f;
             --help: #8e44ad;
             --hint-carry: #e74c3c;
-            --font-base: 1.2rem;
             --cell-size: 55px;
         }
 
@@ -79,20 +78,30 @@
         .btn-help:active { box-shadow: 0 0; transform: translateY(4px); }
         .btn-block { width: 100%; margin-top: 10px; }
 
-        /* Grid System */
+        /* Grid System (Updated Layout) */
         .grid-container {
             display: grid; justify-content: center; margin: 20px 0; gap: 0;
         }
         .grid-cell {
-            width: var(--cell-size); height: 60px;
+            width: var(--cell-size); 
             display: flex; justify-content: center; align-items: center;
             font-family: 'Courier New', monospace; font-weight: bold; font-size: 2rem;
             position: relative;
         }
-        .line-cell { border-bottom: 4px solid #333; }
-        .op-cell { color: var(--primary); position: absolute; left: -30px; font-size: 1.8rem;}
-        .hl-active { color: #e67e22; transform: scale(1.3); transition: 0.3s; text-shadow: 0 0 5px rgba(230, 126, 34, 0.3); }
+        /* Row Heights */
+        .row-carry { height: 40px; align-items: flex-end; } /* 進位格 */
+        .row-num { height: 60px; } /* 數字格 */
+        .row-line { height: 5px; border-bottom: 4px solid #333; margin-bottom: 5px; } /* 橫線 */
+        .row-ans { height: 60px; } /* 答案格 */
 
+        .op-cell { 
+            color: var(--primary); position: absolute; left: 10px; font-size: 2rem; font-weight: 900;
+        }
+        
+        /* Active Digit Highlight */
+        .hl-active { color: #e67e22; transform: scale(1.2); transition: 0.3s; font-weight: 900; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
+
+        /* Inputs */
         .game-input { 
             width: 45px; height: 45px; font-size: 1.8rem; text-align: center; 
             border: 3px solid var(--primary); border-radius: 8px; background: #fff;
@@ -101,22 +110,30 @@
         .game-input.active-input {
             background-color: #fff3cd !important; border-color: #d35400; box-shadow: 0 0 10px rgba(211, 84, 0, 0.5);
         }
+        .game-input.correct { border-color: var(--success); background-color: #d5f5e3; color: var(--success); }
+        .game-input.wrong { border-color: var(--danger); background-color: #fadbd8; animation: shake 0.4s; }
+        
+        /* Carry Input (Top Row) */
         .carry-input {
-            width: 30px; height: 30px; font-size: 1rem; text-align: center;
-            border: 2px solid #e74c3c; border-radius: 50%; background: #fadbd8; 
-            color: #c0392b; position: absolute; bottom: 5px; z-index: 20;
+            width: 35px; height: 35px; font-size: 1.2rem; text-align: center;
+            border: 2px solid #e74c3c; border-radius: 8px; background: #fff0f0; 
+            color: #c0392b; z-index: 20; outline: none;
         }
+        .carry-input.active-input { box-shadow: 0 0 8px #e74c3c; }
         .carry-display {
             width: 30px; height: 30px; font-size: 1rem; text-align: center;
-            color: #e74c3c; position: absolute; bottom: 5px; font-weight: bold;
+            color: #7f8c8d; font-weight: bold;
             display: flex; justify-content: center; align-items: center;
+            border: 1px dashed #ccc; border-radius: 50%;
         }
 
+        /* Helper Box */
         .help-box {
             background: #e8f8f5; border-left: 5px solid #1abc9c; padding: 15px; margin: 10px 0;
             border-radius: 8px; display: none; font-size: 1.1rem; text-align: left;
         }
         
+        /* Lists */
         .list-item {
             background: #fdf2e9; border: 2px solid #fae5d3; padding: 12px; margin-bottom: 10px;
             border-radius: 12px; display: flex; justify-content: space-between; align-items: center;
@@ -132,13 +149,15 @@
         .edit-row input { padding: 8px; width: 80px; text-align: center; border: 1px solid #ccc; border-radius: 5px; font-size: 1.1rem;}
         .inp-op { width: 60px; }
 
+        /* Test Mode */
         .test-mode-box { text-align: center; padding: 30px; font-size: 2rem; font-family: monospace; }
         .test-input { font-size: 2rem; padding: 10px; width: 150px; text-align: center; border: 3px solid #ccc; border-radius: 8px; }
 
-        /* Shop */
+        /* Reward Shop */
         .shop-balance {
             background: linear-gradient(135deg, #f39c12 0%, #d35400 100%);
-            color: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px;
+            color: white; padding: 20px; border-radius: 15px; text-align: center;
+            margin-bottom: 20px;
         }
         .balance-row { display: flex; justify-content: center; gap: 20px; font-size: 1.5rem; font-weight: bold; }
         .exchange-form { background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #eee; }
@@ -148,6 +167,7 @@
         .log-list { max-height: 200px; overflow-y: auto; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px; font-size: 0.9rem; color: #666; }
         .log-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
 
+        /* Effects */
         .reward-popup {
             background: #fff8e1; border: 3px solid #f1c40f; padding: 20px; border-radius: 15px; 
             margin-top: 20px; font-weight: bold; color: #d35400; font-size: 1.3rem; text-align: center;
@@ -158,11 +178,14 @@
         .particle { position: absolute; font-size: 2rem; animation: fall linear forwards; }
         @keyframes fall { 0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotate(360deg); opacity: 0; } }
         
+        /* Quiz Header */
         .quiz-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 15px; background: #eee; padding: 10px; border-radius: 6px; }
         #q-timer { font-family: monospace; font-size: 1.5rem; color: #2c3e50; }
         .timer-urgent { color: #c0392b !important; animation: blink 1s infinite; font-weight: 900; }
         @keyframes blink { 50% { opacity: 0.5; } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 
+        /* Result Table */
         .result-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .result-table th, .result-table td { border: 1px solid #ddd; padding: 10px; text-align: center; font-size: 1.1rem; }
         .result-table th { background-color: #fdf2e9; }
@@ -207,7 +230,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v2.2 (參數修復版)</div>
+        <div class="version-tag">版本：v2.3 (進位輔助修正版)</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -227,7 +250,7 @@
             <button class="btn-primary btn-block" onclick="processExchange()">確認兌換</button>
         </div>
         <div id="exchange-log" class="log-list"></div>
-        <button class="btn-gray btn-block" onclick="showPage('page-home')">返回</button>
+        <button class="btn-gray btn-block" onclick="showPage('page-home')">返回首頁</button>
     </div>
 
     <div id="page-editor" class="container">
@@ -239,21 +262,15 @@
             <div>💎教學: <input type="number" id="list-teach-gems" value="2" style="width:50px;"></div>
             <div>🎯及格: <input type="number" id="list-pass-score" value="100" style="width:50px;"></div>
         </div>
-        
         <div class="gen-controls">
-            <span>自動生成:</span>
-            <select id="gen-op" style="padding:5px;">
-                <option value="+">加法 (+)</option>
-                <option value="-">減法 (-)</option>
-                <option value="mix">混合 (+/-)</option>
-            </select>
+            <span>生成:</span>
+            <select id="gen-op"><option value="+">加法</option><option value="-">減法</option><option value="mix">混合</option></select>
             題數<input type="number" id="gen-count" value="5" style="width:50px;">
             位數A<input type="number" id="gen-int-a" value="2" style="width:50px;">
             位數B<input type="number" id="gen-int-b" value="2" style="width:50px;">
             小數<input type="number" id="gen-dec" value="0" style="width:50px;">
             <button class="btn-warning" onclick="autoGenerate()">生成</button>
         </div>
-
         <div id="editor-rows" style="max-height:300px; overflow-y:auto;"></div>
         <button class="btn-gray" onclick="addEditRow()">+ 手動增加</button>
         <div style="display:flex; gap:10px; margin-top:15px;">
@@ -268,8 +285,8 @@
             <label><input type="checkbox" id="opt-voice" checked> 🔊 語音提示</label><br>
             <label><input type="checkbox" id="opt-text" checked> 📝 文字提示</label>
         </div>
-        <button class="btn-success btn-block" onclick="startQuiz('teach')">📖 教學模式 (逐步引導)</button>
-        <button class="btn-danger btn-block" onclick="startQuiz('test')">📝 測驗模式 (直接計算)</button>
+        <button class="btn-success btn-block" onclick="startQuiz('teach')">📖 進入教學模式</button>
+        <button class="btn-danger btn-block" onclick="startQuiz('test')">📝 進入測驗模式</button>
         <button class="btn-gray" style="margin-top:20px;" onclick="showPage('page-home')">返回</button>
     </div>
 
@@ -277,7 +294,7 @@
         <div class="quiz-header">
             <span id="q-info">題目 1/5</span>
             <span id="q-timer">00:00</span>
-            <button class="btn-danger" onclick="quitQuiz()">🚪</button>
+            <button class="btn-danger" onclick="quitQuiz()">🚪 退出</button>
         </div>
 
         <div id="teach-area" style="display:none;">
@@ -330,7 +347,7 @@
     let quizSettings = { voice: true, text: true };
     let isWarningPlayed = false;
     
-    const STORAGE_PREFIX = 'addsub_v2_';
+    const STORAGE_PREFIX = 'addsub_v3_';
 
     // --- 初始化 ---
     window.onload = function() {
@@ -342,7 +359,6 @@
     function loadData() {
         if(localStorage.getItem(STORAGE_PREFIX + 'lists')) allLists = JSON.parse(localStorage.getItem(STORAGE_PREFIX + 'lists'));
         else { 
-            // 預設題庫
             allLists = [{name: "基礎加法練習", timer:0, gems:5, teachGems:2, passScore:100, qs: genQs('+', 5, 2, 2, 0)}]; 
             saveData(); 
         }
@@ -366,7 +382,6 @@
         if(currentMode === 'teach' && !quizSettings.voice && !force) return;
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
-            // 優化讀音
             let clean = text.replace(/<[^>]*>/g, '').replace(/-/g, '減').replace(/\+/g, '加').replace(/\./g, '點').replace(/=/g, '等於');
             const u = new SpeechSynthesisUtterance(clean);
             u.lang = 'zh-TW'; u.rate = 1.0; 
@@ -390,12 +405,12 @@
     function updateProfile() {
         document.getElementById('display-name').innerText = studentName;
         let crowns = Math.floor(totalGems / 100);
-        let remainGems = totalGems % 100;
+        let gems = totalGems % 100;
         document.getElementById('stat-crowns').innerText = crowns;
-        document.getElementById('stat-gems').innerText = remainGems;
+        document.getElementById('stat-gems').innerText = gems;
         if(document.getElementById('shop-crowns')) {
             document.getElementById('shop-crowns').innerText = crowns;
-            document.getElementById('shop-gems').innerText = remainGems;
+            document.getElementById('shop-gems').innerText = gems;
         }
     }
     function changeName() {
@@ -441,7 +456,7 @@
         document.getElementById('list-teach-gems').value = l.teachGems||2;
         document.getElementById('list-pass-score').value = l.passScore||100;
         document.getElementById('list-timer').value = l.timer||0;
-        document.getElementById('editor-rows').innerHTML='';
+        const box = document.getElementById('editor-rows'); box.innerHTML = '';
         l.qs.forEach(q => addEditRow(q.op, q.a, q.b));
         showPage('page-editor');
     }
@@ -461,17 +476,14 @@
         const dec = parseInt(document.getElementById('gen-dec').value);
         const op = document.getElementById('gen-op').value;
         const box = document.getElementById('editor-rows'); box.innerHTML='';
-        
         let newQs = genQs(op, count, intA, intB, dec);
         newQs.forEach(q => addEditRow(q.op, q.a, q.b));
     }
-    
     function genQs(op, count, intA, intB, dec) {
         let qs = [];
         for(let i=0; i<count; i++) {
             let minA = Math.pow(10, intA-1), maxA = Math.pow(10, intA)-1;
             let minB = Math.pow(10, intB-1), maxB = Math.pow(10, intB)-1;
-            
             let aVal = Math.floor(Math.random()*(maxA-minA+1)) + minA;
             let bVal = Math.floor(Math.random()*(maxB-minB+1)) + minB;
             
@@ -481,20 +493,14 @@
                 finalB = parseFloat((bVal + Math.random()).toFixed(dec));
             }
             
-            // 決定本題符號
             let currentOp = op;
-            if (op === 'mix') {
-                currentOp = Math.random() > 0.5 ? '+' : '-';
-            }
+            if (op === 'mix') { currentOp = Math.random() > 0.5 ? '+' : '-'; }
             
-            if (currentOp === '-' && finalA < finalB) {
-                [finalA, finalB] = [finalB, finalA];
-            }
+            if (currentOp === '-' && finalA < finalB) { [finalA, finalB] = [finalB, finalA]; }
             qs.push({op: currentOp, a: finalA, b: finalB});
         }
         return qs;
     }
-
     function saveList() {
         const name = document.getElementById('list-name').value;
         const gems = parseInt(document.getElementById('list-gems').value)||5;
@@ -519,7 +525,7 @@
     
     // --- 匯入匯出 ---
     function exportData() {
-        const obj = { version: "2.2", student: {name: studentName, totalGems}, lists: allLists, exchangeLog };
+        const obj = { version: "2.3", student: {name: studentName, totalGems}, lists: allLists, exchangeLog };
         const blob = new Blob([JSON.stringify(obj)], {type: "application/json"});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
         a.download = `addsub_backup_${new Date().toISOString().slice(0,10)}.json`; a.click();
@@ -547,11 +553,8 @@
             quizSettings.text = document.getElementById('opt-text').checked;
         }
         
-        // 初始化題目
         quizData = currentList.qs.map(q => prepareQuestionData(q));
-        if(mode==='test') {
-            quizData.sort(() => Math.random() - 0.5);
-        }
+        if(mode==='test') { quizData.sort(() => Math.random() - 0.5); }
 
         currentQIdx = 0;
         limitSeconds = currentList.timer || 0;
@@ -588,10 +591,8 @@
 
     // --- 資料結構準備 ---
     function prepareQuestionData(rawQ) {
-        let sA = rawQ.a.toString();
-        let sB = rawQ.b.toString();
-        let aDecIdx = sA.indexOf('.');
-        let bDecIdx = sB.indexOf('.');
+        let sA = rawQ.a.toString(), sB = rawQ.b.toString();
+        let aDecIdx = sA.indexOf('.'), bDecIdx = sB.indexOf('.');
         let aDecLen = aDecIdx === -1 ? 0 : sA.length - aDecIdx - 1;
         let bDecLen = bDecIdx === -1 ? 0 : sB.length - bDecIdx - 1;
         let maxDec = Math.max(aDecLen, bDecLen);
@@ -603,16 +604,18 @@
         let bIntLen = fB.indexOf('.'); if(bIntLen===-1) bIntLen=fB.length;
         let maxInt = Math.max(aIntLen, bIntLen);
         
-        let arrA = fA.padStart(maxInt + (maxDec>0?1:0) + maxDec, ' ').split('');
-        let arrB = fB.padStart(maxInt + (maxDec>0?1:0) + maxDec, ' ').split('');
+        // 對齊處理: 長度 = maxInt + dot(1) + maxDec + 1(padding)
+        let width = maxInt + (maxDec>0?1:0) + maxDec;
+        let arrA = fA.padStart(width, ' ').split('');
+        let arrB = fB.padStart(width, ' ').split('');
         
         let ansVal = rawQ.op === '+' ? (parseFloat(sA) + parseFloat(sB)) : (parseFloat(sA) - parseFloat(sB));
         ansVal = parseFloat(ansVal.toFixed(maxDec));
         let fAns = ansVal.toFixed(maxDec);
         let arrAns = fAns.split('');
-        
-        let gridWidth = Math.max(arrA.length, arrB.length, arrAns.length);
-        
+
+        // Grid寬度: 需要容納最長的數字 + 1 (符號/最左進位)
+        let gridWidth = Math.max(arrA.length, arrB.length, arrAns.length) + 1;
         while(arrA.length < gridWidth) arrA.unshift(' ');
         while(arrB.length < gridWidth) arrB.unshift(' ');
         while(arrAns.length < gridWidth) arrAns.unshift(' ');
@@ -646,22 +649,23 @@
         }
     }
 
-    // --- 教學模式邏輯 ---
     function generateTeachSteps(q) {
         q.steps = [];
         let carry = 0;
         
+        // 從最右邊開始遍歷 (Col = gridWidth - 1 down to 0)
         for (let c = q.gridWidth - 1; c >= 0; c--) {
             let charA = q.arrA[c];
             let charB = q.arrB[c];
             let charAns = q.arrAns[c];
 
-            if (charA === '.') continue; 
-            if (charA === ' ' && charB === ' ' && charAns === ' ') continue;
+            if (charA === '.') continue; // 跳過小數點
+            // 若該列全是空白且沒有進位，跳過 (處理最左邊對齊用的空白)
+            if (charA === ' ' && charB === ' ' && charAns === ' ' && carry === 0) continue;
 
             let valA = parseInt(charA) || 0;
             let valB = parseInt(charB) || 0;
-            let step = { col: c, hint: "", explain: "" };
+            let step = { col: c, hint: "", explain: "", needsCarryInput: false };
 
             if (q.op === '+') {
                 let sum = valA + valB + carry;
@@ -669,8 +673,11 @@
                 step.carry = Math.floor(sum / 10);
                 step.hint = `計算：${valA} + ${valB} ${carry>0?'+ 進位'+carry:''}`;
                 step.explain = `${valA} + ${valB} + ${carry} = ${sum}。 填 ${step.val}，進 ${step.carry}`;
+                // 進位產生，下一位(c-1)需要顯示進位輸入格
+                if (step.carry > 0) step.needsCarryInput = true;
                 carry = step.carry;
             } else {
+                // 減法借位
                 let valA_borrow = valA - carry; 
                 let needed = valB;
                 let borrowNext = 0;
@@ -682,8 +689,12 @@
                 step.carry = borrowNext;
                 step.hint = `計算：${valA} - ${valB} ${carry>0?'- 借位'+carry:''}`;
                 step.explain = `${valA}${carry>0?'被借1剩'+(valA-carry):''} 減 ${valB}。${(valA-carry)<valB?'不夠向左借1。':''} ${valA-carry<valB?valA-carry+10:valA-carry} - ${valB} = ${step.val}`;
+                if (step.carry > 0) step.needsCarryInput = true;
                 carry = borrowNext;
             }
+            
+            // 特殊情況：最後一位如果有進位/借位，但已經沒有更左邊的位數了
+            // 加法：直接顯示進位數字 (這會在 prepareQuestionData 的 gridWidth 處理掉，因為我們預留了+1空間)
             q.steps.push(step);
         }
     }
@@ -694,7 +705,7 @@
         document.getElementById('help-content').style.display = 'none';
         
         const cols = q.gridWidth;
-        const rows = 5; 
+        const rows = 5; // 0:Carry, 1:A, 2:Op+B, 3:Line, 4:Ans
         
         box.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
         
@@ -702,53 +713,112 @@
             for(let c=0; c<cols; c++) {
                 let cell = document.createElement('div');
                 cell.className = 'grid-cell';
-                if (r === 3) cell.className += ' line-cell';
+                if (r===0) cell.className += ' row-carry';
+                if (r===1) cell.className += ' row-num';
+                if (r===2) cell.className += ' row-num';
+                if (r===3) cell.className += ' row-line';
+                if (r===4) cell.className += ' row-ans';
                 
+                cell.id = `c-${r}-${c}`;
+                
+                // 靜態內容
                 if (r === 1) cell.innerText = q.arrA[c];
                 if (r === 2) {
-                    if (c === 0) { 
+                    if (c === 0) { // 運算符號固定在最左
                         let opSpan = document.createElement('span'); opSpan.innerText = q.op; opSpan.className = 'op-cell';
                         cell.appendChild(opSpan);
                     }
                     cell.innerText = q.arrB[c];
                 }
-                
-                if (q.stepIdx < q.steps.length) {
-                    let curStep = q.steps[q.stepIdx];
-                    if (c === curStep.col) {
-                         if (r===1 || r===2) cell.classList.add('hl-active');
-                         if (r === 4) {
-                            let inp = document.createElement('input');
-                            inp.className = 'game-input active-input';
-                            inp.type='tel'; inp.maxLength=1;
-                            inp.onkeydown = (e)=>{ if(e.key==='Enter') checkTeachAnswer(inp.value, curStep, q); };
-                            cell.appendChild(inp);
-                            setTimeout(()=>inp.focus(), 100);
-                         }
-                         // 顯示上一位(高位)的借/進位提示 (如果有的話)
-                         // 注意：carry 是產生給 "左邊一位" (c-1) 的
-                         // 這裡為了簡化 UI，我們不強制輸入進位，但可以在視覺上提示
-                    } else if (q.stepIdx > 0) {
-                        let prevStepIndex = q.steps.findIndex(s => s.col === c);
-                        if (prevStepIndex !== -1 && prevStepIndex < q.stepIdx) {
-                             if (r===4) cell.innerText = q.arrAns[c];
-                        }
-                    }
-                } else {
-                    if (r===4) cell.innerText = q.arrAns[c];
-                }
-                
-                if (r===4 && q.arrAns[c] === '.') cell.innerText = '.'; 
+                if (r === 4 && q.arrAns[c] === '.') cell.innerText = '.';
 
                 box.appendChild(cell);
             }
         }
 
-        if (q.stepIdx < q.steps.length) {
+        // 根據 Step 渲染狀態
+        // 已完成的步驟
+        for(let k=0; k<q.stepIdx; k++) {
+            let s = q.steps[k];
+            let ansCell = document.getElementById(`c-4-${s.col}`);
+            if(ansCell) ansCell.innerText = s.val;
+            // 顯示已輸入的進位
+            if(s.carry > 0) {
+                let carryCell = document.getElementById(`c-0-${s.col-1}`);
+                if(carryCell) {
+                    let mark = document.createElement('div');
+                    mark.className = 'carry-display'; 
+                    mark.innerText = s.carry;
+                    carryCell.appendChild(mark);
+                }
+            }
+        }
+
+        // 當前步驟
+        if(q.stepIdx < q.steps.length) {
             let cur = q.steps[q.stepIdx];
-            if(quizSettings.text) msg.innerText = cur.hint; else msg.innerText = "";
+            if(quizSettings.text) msg.innerText = cur.hint; else msg.innerText = "請計算...";
             speak(cur.hint);
             document.getElementById('btn-help').style.display = 'inline-block';
+            
+            let colIdx = cur.col; 
+            // Highlight
+            let cellA = document.getElementById(`c-1-${colIdx}`);
+            let cellB = document.getElementById(`c-2-${colIdx}`);
+            if(cellA) cellA.classList.add('hl-active');
+            if(cellB) cellB.classList.add('hl-active');
+
+            // 1. 進位輸入格 (在上一位 c-1, row 0)
+            // 只有當這一步的計算會產生進位/借位時，才需要顯示這個輸入格
+            if (cur.needsCarryInput) {
+                let carryCol = colIdx - 1;
+                if (carryCol >= 0) {
+                    let carryCell = document.getElementById(`c-0-${carryCol}`);
+                    if(carryCell && !carryCell.hasChildNodes()) { 
+                         let cinp = document.createElement('input');
+                         cinp.className = 'carry-input';
+                         cinp.id = 'inp-carry';
+                         cinp.type = 'tel';
+                         cinp.maxLength = 1;
+                         carryCell.appendChild(cinp);
+                    }
+                }
+            }
+
+            // 2. 答案輸入格
+            let ansCell = document.getElementById(`c-4-${colIdx}`);
+            if(ansCell) {
+                ansCell.innerHTML = '';
+                let inp = document.createElement('input');
+                inp.type='tel'; inp.className='game-input active-input';
+                inp.id = 'inp-ans';
+                inp.maxLength=1;
+                // 如果有進位格，先 Focus 進位格，否則 Focus 答案格
+                let carryInp = document.getElementById('inp-carry');
+                if(carryInp) {
+                    // 進位格輸入後自動跳答案格
+                    carryInp.oninput = ()=>{ if(carryInp.value.length===1) inp.focus(); };
+                    setTimeout(()=>carryInp.focus(), 100);
+                } else {
+                    setTimeout(()=>inp.focus(), 100);
+                }
+                
+                // Enter 檢查
+                let checkFunc = (e)=>{ if(e.key==='Enter') checkTeachAnswer(cur, q); };
+                inp.onkeydown = checkFunc;
+                if(carryInp) carryInp.onkeydown = checkFunc;
+                
+                ansCell.appendChild(inp);
+            }
+            
+            // OK 按鈕
+            let btn = document.createElement('button'); 
+            btn.className='btn-warning'; btn.innerText='確定'; 
+            btn.onclick = () => checkTeachAnswer(cur, q);
+            // 清除舊按鈕
+            let oldBtn = msg.querySelector('button'); if(oldBtn) oldBtn.remove();
+            msg.appendChild(document.createElement('br')); msg.appendChild(btn);
+
         } else {
             msg.innerText = "完成！";
             q.isCorrect = true;
@@ -757,15 +827,30 @@
         }
     }
 
-    function checkTeachAnswer(val, step, q) {
-        if (parseInt(val) === step.val) {
+    function checkTeachAnswer(step, q) {
+        let ansInp = document.getElementById('inp-ans');
+        let carryInp = document.getElementById('inp-carry');
+        
+        let ansVal = parseInt(ansInp.value);
+        let carryVal = carryInp ? parseInt(carryInp.value) : 0;
+        
+        let isAnsCorrect = ansVal === step.val;
+        let isCarryCorrect = true;
+        
+        if(step.needsCarryInput) {
+            // 如果需要進位輸入，必須檢查
+            // 如果使用者沒填，視為0或錯誤? 這裡嚴格檢查
+            if(isNaN(carryVal) || carryVal !== step.carry) isCarryCorrect = false;
+        }
+
+        if(isAnsCorrect && isCarryCorrect) {
             speak("答對了");
             q.stepIdx++;
             renderTeachGrid(q);
         } else {
             speak("算錯囉");
-            let inp = document.querySelector('.game-input');
-            if(inp) { inp.value=''; inp.focus(); inp.classList.add('wrong'); }
+            if(!isAnsCorrect) { ansInp.classList.add('wrong'); ansInp.value=''; ansInp.focus(); }
+            if(!isCarryCorrect && carryInp) { carryInp.classList.add('wrong'); carryInp.value=''; carryInp.focus(); }
         }
     }
     
@@ -779,7 +864,6 @@
         }
     }
 
-    // --- 測驗驗證 ---
     function checkTestAnswer() {
         const q = quizData[currentQIdx];
         const uAns = document.getElementById('test-ans').value;
@@ -803,14 +887,14 @@
             currentQIdx++;
             loadQuestion();
         } else {
-            finishQuiz();
+            finishQuiz(false);
         }
     }
 
-    // --- 結算與獎勵 ---
     function finishQuiz(timeUp=false) {
         clearInterval(timerInt);
         showPage('page-result');
+        
         let correct = quizData.filter(q=>q.isCorrect).length;
         let total = quizData.length;
         let score = Math.round((correct/total)*100);
@@ -842,7 +926,6 @@
         });
     }
 
-    // --- 獎勵系統 ---
     function processExchange() {
         const name = document.getElementById('gift-name').value;
         const cost = parseInt(document.getElementById('gift-cost').value);
@@ -874,7 +957,7 @@
         }
         setTimeout(()=>{c.style.display='none';},3000);
     }
-
+    function quitQuiz() { if(confirm("確定退出？")){clearInterval(timerInt); showPage('page-home');} }
     function saveRank() {
         const s = document.getElementById('res-score').innerText;
         rankData.push({name: studentName, score: parseInt(s), time: 'N/A', list: currentList.name});
