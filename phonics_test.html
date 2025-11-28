@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Phonics 拼字闖關王 9.0 (寶石獎勵版)</title>
+    <title>Phonics 拼字闖關王 9.1 (獎勵兌換版)</title>
     <style>
         :root {
             --primary: #FF6B6B;
@@ -31,7 +31,7 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            touch-action: none; /* 防止 iPad 預設手勢干擾 */
+            touch-action: none; 
             overflow-x: hidden;
             overflow-y: auto; 
         }
@@ -65,19 +65,15 @@
         .btn-outline { background: transparent; border: 1px solid #999; color: #666; padding: 5px 10px; font-size: 0.85rem;}
         .btn-block { width: 100%; margin: 5px 0; padding: 12px; font-size: 1.1rem; }
 
-        /* --- 學員名牌 & 獎勵 --- */
+        /* --- 學員名牌 --- */
         .user-profile {
             background-color: var(--user-bg);
             border: 2px dashed #f39c12;
             border-radius: 10px;
             padding: 10px 15px;
             margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            flex-wrap: wrap;
-            gap: 10px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; flex-wrap: wrap; gap: 10px;
         }
         .user-name { font-size: 1.2rem; font-weight: bold; color: #d35400; margin-right: 5px;}
         .stats-badge {
@@ -94,7 +90,6 @@
         .list-content-wrapper { flex: 1; display: flex; flex-direction: column; gap: 8px; }
         .list-header { display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap;}
         .list-actions { display: flex; gap: 5px; justify-content: flex-end; width: 100%; flex-wrap: wrap; }
-        
         .gem-tag { color: #2980b9; font-weight: bold; background: #d6eaf8; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; margin-left: 5px;}
         .score-tag { color: #d35400; font-weight: bold; background: #fdebd0; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; margin-left: 5px;}
 
@@ -108,8 +103,6 @@
         .rank-score { font-weight: bold; color: var(--primary); }
         .rank-item.rank-1 { background: linear-gradient(to right, #fff, #fff9c4); border: 2px solid var(--rank-1); }
         .rank-item.rank-1 .rank-num { color: #d4ac0d; font-size: 2rem; }
-        .rank-item.rank-2 { border-left: 5px solid var(--rank-2); } .rank-item.rank-2 .rank-num { color: #7f8c8d; }
-        .rank-item.rank-3 { border-left: 5px solid var(--rank-3); } .rank-item.rank-3 .rank-num { color: #a0522d; }
 
         /* --- 歷史紀錄 --- */
         .history-item {
@@ -132,10 +125,11 @@
         .thumb-preview { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; background: #eee; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .file-input { display: none; }
         
+        /* --- 測驗區 --- */
         .quiz-header { display: flex; justify-content: space-between; font-weight: bold; color: #7f8c8d; margin-bottom: 15px; background: #f1f2f6; padding: 10px; border-radius: 8px; }
         .timer-badge { background: var(--dark); color: #fff; padding: 2px 8px; border-radius: 4px; font-family: monospace; }
         .question-area { text-align: center; margin-bottom: 15px; }
-        .q-image-box { height: 140px; display: flex; justify-content: center; align-items: center; margin-bottom: 10px; }
+        .q-image-box { height: 140px; display: flex; justify-content: center; align-items: center; margin-bottom: 10px; overflow: hidden;}
         .q-image-box img { max-height: 100%; max-width: 100%; border-radius: 8px; }
         .q-image-box span { font-size: 5rem; }
         
@@ -164,6 +158,23 @@
 
         .version-tag { margin-top: 30px; color: #ccc; font-size: 0.8rem; text-align: center; }
 
+        /* --- 獎勵兌換區 (新) --- */
+        .shop-balance {
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+            color: white; padding: 20px; border-radius: 15px; text-align: center;
+            margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .shop-balance h3 { color: white; margin: 0 0 10px 0; font-weight: normal; font-size: 1rem; opacity: 0.9; }
+        .balance-row { display: flex; justify-content: center; gap: 20px; font-size: 1.5rem; font-weight: bold; }
+        
+        .exchange-form { background: #f8f9fa; padding: 15px; border-radius: 12px; border: 1px solid #eee; }
+        .exchange-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        .exchange-input { flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1.1rem; text-align: center; }
+        .exchange-select { padding: 5px; border: 2px solid #ddd; border-radius: 8px; font-size: 1.1rem; background: white; }
+        
+        .log-list { max-height: 200px; overflow-y: auto; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px; font-size: 0.9rem; color: #666; }
+        .log-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; }
+
         /* --- 獲獎動畫與特效 --- */
         .reward-popup {
             background: #fff8e1; border: 3px solid #f1c40f; padding: 15px;
@@ -179,7 +190,7 @@
             100% { transform: scale(1); }
         }
 
-        /* 粒子動畫容器 */
+        /* 粒子動畫 */
         #particle-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 9999; overflow: hidden; display: none;
@@ -214,6 +225,7 @@
         </div>
 
         <div id="tab-quiz-content">
+            <button class="btn-accent btn-block" style="margin-bottom:15px; box-shadow:0 4px #d35400;" onclick="showPage('page-shop')">🎁 獎勵兌換商店</button>
             <div id="lists-container"></div>
             <button class="btn-secondary btn-block" onclick="createNewList()">+ 新增自訂題庫</button>
             
@@ -235,7 +247,44 @@
             <button class="btn-gray btn-block" onclick="clearAllHistory()">清空所有紀錄</button>
         </div>
 
-        <div class="version-tag">版本：v9.0 (寶石獎勵版)</div>
+        <div class="version-tag">版本：v9.1 (獎勵兌換版)</div>
+    </div>
+
+    <div id="page-shop" class="container">
+        <h2>🎁 獎勵兌換商店</h2>
+        
+        <div class="shop-balance">
+            <h3>目前持有</h3>
+            <div class="balance-row">
+                <span>👑 <span id="shop-crowns">0</span></span>
+                <span>💎 <span id="shop-gems">0</span></span>
+            </div>
+        </div>
+
+        <div class="exchange-form">
+            <div style="text-align:center; margin-bottom:10px; color:#555; font-weight:bold;">我要兌換...</div>
+            <div class="exchange-row">
+                <input type="text" id="gift-name" class="exchange-input" placeholder="輸入獎品名稱 (如: 看電視10分鐘)">
+            </div>
+            
+            <div style="text-align:center; margin-bottom:10px; color:#555; font-weight:bold;">需要花費</div>
+            <div class="exchange-row">
+                <input type="number" id="gift-cost" class="exchange-input" placeholder="數量" min="1">
+                <select id="gift-currency" class="exchange-select">
+                    <option value="gems">💎 寶石</option>
+                    <option value="crowns">👑 皇冠</option>
+                </select>
+            </div>
+
+            <button class="btn-primary btn-block" onclick="processExchange()">確認兌換</button>
+        </div>
+
+        <div style="margin-top:20px;">
+            <h4>📜 兌換紀錄</h4>
+            <div id="exchange-log" class="log-list"></div>
+        </div>
+
+        <button class="btn-gray btn-block" style="margin-top:20px;" onclick="showPage('page-home')">返回首頁</button>
     </div>
 
     <div id="page-editor" class="container">
@@ -314,8 +363,15 @@
         words: [{word: 'cat', img: '🐱'}, {word: 'dog', img: '🐶'}, {word: 'pig', img: '🐷'}]
     };
 
+    const STORAGE_KEY_DATA = 'phonics_lists_v9';
+    const STORAGE_KEY_HISTORY = 'phonics_history_v9';
+    const STORAGE_KEY_NAME = 'phonics_student_name';
+    const STORAGE_KEY_GEMS = 'phonics_total_gems';
+    const STORAGE_KEY_EXCHANGE_LOG = 'phonics_exchange_log';
+
     let allLists = [];
     let historyLog = [];
+    let exchangeLog = [];
     let studentName = "小小學員";
     let totalGems = 0;
 
@@ -333,29 +389,34 @@
         loadData();
         renderLists();
         renderHistory();
+        renderExchangeLog();
         updateProfileDisplay();
     };
 
     function loadData() {
-        const storedLists = localStorage.getItem('phonics_lists_v9');
+        const storedLists = localStorage.getItem(STORAGE_KEY_DATA);
         if (storedLists) { allLists = JSON.parse(storedLists); } 
         else { allLists = [DEFAULT_LIST]; saveListData(); }
         
-        const storedHistory = localStorage.getItem('phonics_history_v9');
+        const storedHistory = localStorage.getItem(STORAGE_KEY_HISTORY);
         if (storedHistory) { historyLog = JSON.parse(storedHistory); }
         
-        const storedName = localStorage.getItem('phonics_student_name');
+        const storedName = localStorage.getItem(STORAGE_KEY_NAME);
         if (storedName) studentName = storedName;
 
-        const storedGems = localStorage.getItem('phonics_total_gems');
+        const storedGems = localStorage.getItem(STORAGE_KEY_GEMS);
         if (storedGems) totalGems = parseInt(storedGems) || 0;
+
+        const storedExLog = localStorage.getItem(STORAGE_KEY_EXCHANGE_LOG);
+        if (storedExLog) exchangeLog = JSON.parse(storedExLog);
     }
 
-    function saveListData() { localStorage.setItem('phonics_lists_v9', JSON.stringify(allLists)); }
-    function saveHistoryData() { localStorage.setItem('phonics_history_v9', JSON.stringify(historyLog)); }
+    function saveListData() { localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(allLists)); }
+    function saveHistoryData() { localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(historyLog)); }
     function saveStudentData() { 
-        localStorage.setItem('phonics_student_name', studentName); 
-        localStorage.setItem('phonics_total_gems', totalGems);
+        localStorage.setItem(STORAGE_KEY_NAME, studentName); 
+        localStorage.setItem(STORAGE_KEY_GEMS, totalGems);
+        localStorage.setItem(STORAGE_KEY_EXCHANGE_LOG, JSON.stringify(exchangeLog));
         updateProfileDisplay();
     }
     
@@ -372,12 +433,19 @@
         let remainGems = totalGems % 100;
         document.getElementById('stat-crowns').innerText = crowns;
         document.getElementById('stat-gems').innerText = remainGems;
+        
+        // Shop Update
+        if(document.getElementById('shop-crowns')) {
+            document.getElementById('shop-crowns').innerText = crowns;
+            document.getElementById('shop-gems').innerText = remainGems;
+        }
     }
 
     function showPage(pageId) {
         document.querySelectorAll('.container').forEach(el => el.classList.remove('active'));
         document.getElementById(pageId).classList.add('active');
         if (pageId === 'page-home') { renderLists(); renderHistory(); updateProfileDisplay(); }
+        if (pageId === 'page-shop') { updateProfileDisplay(); renderExchangeLog(); }
     }
 
     function switchTab(tabName) {
@@ -385,6 +453,59 @@
         event.target.classList.add('active');
         document.getElementById('tab-quiz-content').style.display = tabName === 'quiz' ? 'block' : 'none';
         document.getElementById('tab-history-content').style.display = tabName === 'history' ? 'block' : 'none';
+    }
+
+    // --- 獎勵兌換邏輯 ---
+    function processExchange() {
+        const giftName = document.getElementById('gift-name').value.trim();
+        const costVal = parseInt(document.getElementById('gift-cost').value);
+        const currency = document.getElementById('gift-currency').value;
+
+        if (!giftName) { alert("請輸入獎品名稱"); return; }
+        if (isNaN(costVal) || costVal <= 0) { alert("請輸入有效的數量"); return; }
+
+        let costInGems = costVal;
+        if (currency === 'crowns') {
+            costInGems = costVal * 100;
+        }
+
+        if (totalGems >= costInGems) {
+            if(confirm(`確定要花費 ${costVal} ${currency === 'crowns' ? '皇冠' : '寶石'} 兌換「${giftName}」嗎？`)) {
+                totalGems -= costInGems;
+                
+                // 紀錄
+                const logItem = {
+                    date: new Date().toLocaleString(),
+                    item: giftName,
+                    cost: `${costVal} ${currency === 'crowns' ? '👑' : '💎'}`
+                };
+                exchangeLog.unshift(logItem);
+                
+                saveStudentData();
+                renderExchangeLog();
+                
+                // 清空輸入
+                document.getElementById('gift-name').value = '';
+                document.getElementById('gift-cost').value = '';
+                
+                triggerRewardAnimation(currency === 'crowns' ? 'crown' : 'gem');
+                speak(`兌換成功！享受你的獎勵吧！`, true, 'zh-TW');
+            }
+        } else {
+            alert("餘額不足喔！再多練習賺取寶石吧！");
+        }
+    }
+
+    function renderExchangeLog() {
+        const div = document.getElementById('exchange-log');
+        if(!div) return;
+        div.innerHTML = '';
+        exchangeLog.forEach(log => {
+            const row = document.createElement('div');
+            row.className = 'log-item';
+            row.innerHTML = `<span>📅 ${log.date} - 兌換 <strong>${log.item}</strong></span> <span>-${log.cost}</span>`;
+            div.appendChild(row);
+        });
     }
 
     // --- 列表與匯出 ---
@@ -428,16 +549,12 @@
     // 修改：匯出包含學員資料 (Backup)
     function exportSelectedData() {
         const checkboxes = document.querySelectorAll('.list-checkbox:checked');
-        // 如果沒選，就匯出全部
         let listsToExport = [];
-        if (checkboxes.length === 0) {
-            listsToExport = allLists;
-        } else {
-            checkboxes.forEach(cb => { listsToExport.push(allLists[parseInt(cb.dataset.index)]); });
-        }
+        if (checkboxes.length === 0) { listsToExport = allLists; } 
+        else { checkboxes.forEach(cb => { listsToExport.push(allLists[parseInt(cb.dataset.index)]); }); }
 
         const exportObj = {
-            version: "9.0",
+            version: "9.1",
             student: { name: studentName, totalGems: totalGems },
             lists: listsToExport
         };
@@ -458,11 +575,9 @@
             try {
                 const data = JSON.parse(e.target.result);
                 if(Array.isArray(data)) {
-                    // 舊版格式 (純陣列)
                     allLists = allLists.concat(data);
                     alert(`匯入 ${data.length} 個題庫 (舊格式)`);
                 } else if (data.lists) {
-                    // 新版格式
                     allLists = allLists.concat(data.lists);
                     if(data.student) {
                         if(confirm(`匯入資料包含學員：${data.student.name} (寶石:${data.student.totalGems})。\n要覆蓋目前的進度嗎？`)) {
@@ -486,9 +601,7 @@
         currentListId = list.id; 
         currentListName = list.name;
         
-        // 紀錄該次測驗的設定
         currentQuizList = [...list.words].sort(() => 0.5 - Math.random());
-        // 為了不要太長，取前10題，或全部
         const maxQ = Math.min(10, currentQuizList.length);
         currentQuizList = currentQuizList.slice(0, maxQ);
         
@@ -559,7 +672,6 @@
         const rewardArea = document.getElementById('reward-area');
         rewardArea.innerHTML = '';
         
-        // 找出目前的題庫設定
         const listCfg = allLists.find(l => l.id === currentListId) || DEFAULT_LIST;
         let targetScore = listCfg.passScore || 100;
         let gemsReward = listCfg.gems || 5;
