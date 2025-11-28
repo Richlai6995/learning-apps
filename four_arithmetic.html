@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>四則運算闖關王 (寶石累加修正版)</title>
+    <title>四則運算闖關王 (視覺優化版)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -128,21 +128,22 @@
             width: 100%;
         }
 
+        /* 修改後的算式樣式 */
         .calc-row {
             font-family: 'Courier New', monospace;
-            font-size: 1.5rem;
-            color: #bdc3c7; 
+            font-size: 2.2rem;  /* 統一字體大小 */
+            color: #27ae60;     /* 過去步驟：綠色 */
+            font-weight: bold;
+            margin: 5px 0;
+            padding: 5px 15px;
+            border-radius: 8px;
             transition: all 0.3s;
         }
 
+        /* 當前步驟的樣式 */
         .calc-row.active {
-            font-size: 2.2rem;
-            color: #2c3e50;
-            font-weight: bold;
-            margin: 10px 0;
-            padding: 5px 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
+            color: #2c3e50;     /* 當前步驟：深藍/黑色 */
+            background: #f8f9fa; /* 當前步驟保留背景色 */
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
         
@@ -252,7 +253,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
         
-        <div style="text-align:center; color:#95a5a6; margin-top:20px; font-size:0.9rem;">four_arithmetic.html v2.2 (寶石修正版)</div>
+        <div style="text-align:center; color:#95a5a6; margin-top:20px; font-size:0.9rem;">four_arithmetic.html v2.3 (字體顏色優化版)</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -398,7 +399,7 @@
 <script>
     /* --- 全域變數與初始化 --- */
     let studentName = "小小學員";
-    let totalGems = 0; // 這是學員的總寶石，會存在 SK_GEMS
+    let totalGems = 0; 
     let allLists = [];
     let rankData = [];
     let exchangeLog = [];
@@ -445,12 +446,11 @@
 
     function saveData() { localStorage.setItem(SK_LISTS, JSON.stringify(allLists)); }
     
-    // --- 關鍵修改：存檔同時更新介面 ---
     function saveUser() { 
         localStorage.setItem(SK_USER, studentName); 
         localStorage.setItem(SK_GEMS, totalGems); 
         localStorage.setItem(SK_LOG, JSON.stringify(exchangeLog));
-        updateProfile(); // 只要存檔，就更新畫面上學員的寶石數
+        updateProfile(); 
     }
     
     function saveRankData() { localStorage.setItem(SK_RANK, JSON.stringify(rankData)); }
@@ -461,7 +461,7 @@
         document.getElementById(pid).classList.add('active');
         if(pid==='page-home') {
             renderLists();
-            updateProfile(); // 回首頁時再次確認顯示正確
+            updateProfile(); 
         }
         if(pid==='page-shop') { updateProfile(); renderExchangeLog(); }
     }
