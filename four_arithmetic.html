@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>四則運算闖關王 (逐步引導版)</title>
+    <title>四則運算闖關王 (逐步引導修正版)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -122,16 +122,38 @@
         /* --- 測驗區域 (核心) --- */
         .quiz-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 15px; background: #eee; padding: 10px; border-radius: 6px; }
         
-        .equation-display {
-            font-size: 2rem; text-align: center; margin: 30px 0; font-family: 'Courier New', monospace;
-            line-height: 1.5;
+        /* 歷史算式容器 */
+        #history-container {
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+            margin: 20px 0;
+            width: 100%;
+        }
+
+        .calc-row {
+            font-family: 'Courier New', monospace;
+            font-size: 1.5rem;
+            color: #bdc3c7; /* 舊步驟灰色 */
+            transition: all 0.3s;
+        }
+
+        .calc-row.active {
+            font-size: 2.2rem;
+            color: #2c3e50;
+            font-weight: bold;
+            margin: 10px 0;
+            padding: 5px 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
         
         .step-highlight {
             color: #e74c3c;
+            background-color: #fceceb;
+            border-radius: 4px;
+            padding: 0 4px;
             font-weight: bold;
             border-bottom: 3px solid #e74c3c;
-            padding: 0 5px;
             display: inline-block;
         }
 
@@ -231,7 +253,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
         
-        <div style="text-align:center; color:#95a5a6; margin-top:20px; font-size:0.9rem;">four_arithmetic.html v1.0</div>
+        <div style="text-align:center; color:#95a5a6; margin-top:20px; font-size:0.9rem;">four_arithmetic.html v2.0</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -272,7 +294,7 @@
 
         <div class="editor-input-area">
             <div style="font-weight:bold; color:#555;">新增題目 (請輸入算式):</div>
-            <input type="text" id="editor-input" class="exchange-input" placeholder="例如: (2+6)*3" readonly onclick="this.focus()">
+            <input type="text" id="editor-input" class="exchange-input" placeholder="例如: 10-2*3" readonly onclick="this.focus()">
             <div class="keypad">
                 <button onclick="keyPad('(')">(</button>
                 <button onclick="keyPad(')')">)</button>
@@ -331,7 +353,7 @@
                 <div id="teach-msg" style="color:#8e44ad; font-weight:bold; font-size:1.2rem;"></div>
             </div>
 
-            <div id="equation-display" class="equation-display"></div>
+            <div id="history-container"></div>
 
             <div id="step-input-container" class="step-input-container" style="display:none;">
                 <div style="font-size:1rem; color:#777; margin-bottom:5px;">請輸入 <span id="target-highlight-text" style="color:var(--danger); font-weight:bold;"></span> 的答案：</div>
@@ -384,7 +406,8 @@
 
     // 遊戲狀態
     let currentList = null;
-    let quizData = []; // [{q: "2+3*4", correctAns: 14, userAns: null, isCorrect: false}]
+    let quizData = []; 
+    // Data Structure: { qStr: "10-2*3", ans: 4, currentExp: "10-6", history: ["10-2*3", "10-6", "4"], userAns: null }
     let currentQIdx = 0;
     let currentMode = '';
     let editingId = null;
@@ -410,7 +433,7 @@
         else {
             // 預設題庫
             allLists = [
-                {name: "基礎練習 (先乘除)", gems: 5, teachGems: 2, passScore: 100, qs: ["2+3*4", "10-2*3", "5*6+2"]},
+                {name: "基礎練習 (先乘除)", gems: 5, teachGems: 2, passScore: 100, qs: ["10-2*3", "2+3*4", "5*6+2"]},
                 {name: "進階挑戰 (含括號)", gems: 10, teachGems: 4, passScore: 100, qs: ["(2+6)*3", "4*(5+2)", "20/(2+3)"]}
             ];
             saveData();
@@ -524,7 +547,6 @@
         let val = document.getElementById('editor-input').value.trim();
         if(!val) return;
         try {
-            // 簡易驗證算式是否合法
             eval(val);
             addEqRow(val);
             document.getElementById('editor-input').value = '';
@@ -588,7 +610,8 @@
         // 初始化題目資料
         quizData = currentList.qs.map(q => {
             try {
-                return { qStr: q, ans: eval(q), currentExp: q, isDone: false, userAns: null };
+                // 初始化: history 包含原始題目
+                return { qStr: q, ans: eval(q), currentExp: q, history: [q], isDone: false, userAns: null };
             } catch(e) { return null; }
         }).filter(x => x!==null);
 
@@ -620,28 +643,32 @@
         document.getElementById('help-content').style.display = 'none';
         document.getElementById('btn-next-q').style.display = 'none';
         
+        const historyContainer = document.getElementById('history-container');
+        historyContainer.innerHTML = ''; // 清空舊的顯示
+
         if(currentMode === 'test') {
             // 測驗模式：顯示全算式，輸入最終答案
-            document.getElementById('equation-display').innerHTML = `${d.qStr} = ?`;
+            historyContainer.innerHTML = `<div class="calc-row active">${d.qStr} = ?</div>`;
             document.getElementById('step-input-container').style.display = 'flex';
             document.getElementById('target-highlight-text').innerText = "答案";
             document.getElementById('step-input').value = d.userAns !== null ? d.userAns : '';
             document.getElementById('step-input').focus();
             document.getElementById('btn-prev').style.visibility = currentQIdx>0?'visible':'hidden';
             
-            // 如果是最後一題顯示交卷，否則顯示下一題(這裡邏輯跟教學不同，測驗模式可以前後翻)
             if(currentQIdx === quizData.length-1) {
                 document.getElementById('btn-submit').style.display = 'inline-block';
-                document.querySelector('#step-input-container button').style.display = 'none'; // 隱藏單步確認
+                document.querySelector('#step-input-container button').style.display = 'none';
             } else {
                 document.getElementById('btn-submit').style.display = 'none';
-                document.querySelector('#step-input-container button').style.display = 'none'; // 測驗模式不單步確認
+                document.querySelector('#step-input-container button').style.display = 'none';
                 document.getElementById('btn-next-q').innerText = "下一題 ➡";
                 document.getElementById('btn-next-q').style.display = 'inline-block';
             }
         } else {
             // 教學模式
-            d.currentExp = d.qStr; // 重置狀態
+            // 如果還沒做過，重置 currentExp
+            if(!d.isDone && d.history.length === 0) d.history = [d.qStr];
+            
             document.getElementById('btn-prev').style.visibility = 'hidden';
             document.getElementById('btn-submit').style.display = 'none';
             document.querySelector('#step-input-container button').style.display = 'inline-block';
@@ -666,37 +693,51 @@
         }
     }
 
-    /* --- 教學模式核心：算式解析與步驟 --- */
+    /* --- 教學模式核心：算式解析與步驟 (修正版) --- */
     function renderTeachingStep() {
         const d = quizData[currentQIdx];
-        // 解析下一步
-        const step = findNextStep(d.currentExp);
+        // 永遠取 history 的最後一項作為當前計算狀態
+        const currentExpState = d.history[d.history.length - 1];
+        
+        const step = findNextStep(currentExpState);
         currentStepInfo = step;
 
-        const displayDiv = document.getElementById('equation-display');
+        const historyContainer = document.getElementById('history-container');
         const inputDiv = document.getElementById('step-input-container');
         const msgDiv = document.getElementById('teach-msg');
         const inp = document.getElementById('step-input');
 
+        // 重新渲染整個 history
+        historyContainer.innerHTML = '';
+        d.history.forEach((exp, index) => {
+            const div = document.createElement('div');
+            const isLast = (index === d.history.length - 1);
+            div.className = isLast ? 'calc-row active' : 'calc-row';
+            
+            if(isLast && step) {
+                // 如果是當前步驟，且還有下一步，顯示 Highlights
+                 let html = step.fullExp.substring(0, step.idxStart) + 
+                   `<span class="step-highlight">${step.target}</span>` + 
+                   step.fullExp.substring(0 + step.idxEnd);
+                 div.innerHTML = html;
+            } else {
+                 div.innerText = exp;
+            }
+            historyContainer.appendChild(div);
+        });
+
         if(!step) {
             // 已經算完
-            displayDiv.innerHTML = `<span style="color:var(--success)">${d.currentExp}</span>`;
             inputDiv.style.display = 'none';
             msgDiv.innerText = "太棒了！本題完成！";
             document.getElementById('btn-next-q').style.display = 'inline-block';
             document.getElementById('btn-next-q').innerText = (currentQIdx===quizData.length-1)?"全部完成！看成績":"下一題 ➡";
             speak("完成！");
             d.isDone = true;
-            d.userAns = parseFloat(d.currentExp); // 記錄答案
+            d.userAns = parseFloat(currentExpState);
             return;
         }
 
-        // 渲染算式，將 target 部分加上 highlight class
-        let html = step.fullExp.substring(0, step.idxStart) + 
-                   `<span class="step-highlight">${step.target}</span>` + 
-                   step.fullExp.substring(0 + step.idxEnd);
-        
-        displayDiv.innerHTML = html;
         inputDiv.style.display = 'flex';
         document.getElementById('target-highlight-text').innerText = step.target;
         inp.value = '';
@@ -736,7 +777,7 @@
                         };
                     }
                 } else {
-                    // 括號內只剩數字，下一步是消括號 (20) -> 20
+                    // 括號內只剩數字，消括號 (20) -> 20
                     return {
                         fullExp: expStr,
                         target: `(${inner})`,
@@ -751,23 +792,29 @@
         return findNextStepInFlat(expStr);
     }
 
-    // 在沒有括號的字串中找優先運算
+    // 在沒有括號的字串中找優先運算 (修正：不貪婪捕捉負號)
     function findNextStepInFlat(str) {
-        // Regex 找 數字 運算符 數字
+        // Regex 修正重點：(\d+) 而不是 (-?\d+)
+        // 這樣 10-2*3 時，會抓到 2*3，前面的 - 號會被視為 operator，保留在算式中
+        
         // 先乘除
-        let reMulDiv = /(-?\d+(?:\.\d+)?)([\*\/])(-?\d+(?:\.\d+)?)/;
+        let reMulDiv = /(\d+(?:\.\d+)?)([\*\/])(\d+(?:\.\d+)?)/;
         let match = str.match(reMulDiv);
         if(match) {
             let n1 = parseFloat(match[1]);
             let n2 = parseFloat(match[3]);
             let op = match[2];
             let val = op==='*'?n1*n2 : n1/n2;
-            // 處理浮點數精度
             val = Math.round(val * 10000) / 10000;
             return { fullExp: str, target: match[0], val: val, idxStart: match.index, idxEnd: match.index + match[0].length, op: op };
         }
+        
         // 後加減 (從左到右)
-        let reAddSub = /(-?\d+(?:\.\d+)?)([\+\-])(-?\d+(?:\.\d+)?)/;
+        // 這裡同樣只抓正數，以確保 10-6 被視為 10 減 6
+        // 注意：若第一個數是負數 (例如 -5+3)，這裡的 regex (\d+) 抓不到 -5。
+        // 但國小四則運算通常不會以負數開頭做運算，若有需要可再微調。
+        // 目前邏輯符合 "10-2*3 -> 10-6 -> 4"
+        let reAddSub = /(\d+(?:\.\d+)?)([\+\-])(\d+(?:\.\d+)?)/;
         let match2 = str.match(reAddSub);
         if(match2) {
             let n1 = parseFloat(match2[1]);
@@ -781,11 +828,7 @@
     }
 
     function checkStepAnswer() {
-        if(currentMode === 'test') {
-            // 測驗模式只在按 Enter 時觸發，不做單步檢查，這裡是被 enter key 呼叫
-            // 但 submitTest() 才是真正邏輯
-            return; 
-        }
+        if(currentMode === 'test') { return; }
 
         const inp = document.getElementById('step-input');
         const userVal = parseFloat(inp.value);
@@ -794,12 +837,16 @@
             inp.classList.add('correct');
             speak("答對了");
             document.getElementById('help-content').style.display = 'none';
-            // 更新算式字串
+            
+            // 計算新算式
             let newExp = currentStepInfo.fullExp.substring(0, currentStepInfo.idxStart) + 
                          currentStepInfo.val + 
                          currentStepInfo.fullExp.substring(currentStepInfo.idxEnd);
             
-            quizData[currentQIdx].currentExp = newExp;
+            // 更新目前題目的狀態：加入 history
+            quizData[currentQIdx].history.push(newExp);
+            quizData[currentQIdx].currentExp = newExp; // 雖然 render 改用 history，但保持數據一致性
+
             setTimeout(() => {
                 renderTeachingStep();
             }, 600);
@@ -832,7 +879,6 @@
         clearInterval(timerInt);
         let correctCount = 0;
         quizData.forEach(d => {
-            // 測驗模式 d.userAns 來自輸入框，教學模式 d.userAns 自動填入
             if(d.userAns != null && Math.abs(parseFloat(d.userAns) - d.ans) < 0.001) {
                 correctCount++;
             }
