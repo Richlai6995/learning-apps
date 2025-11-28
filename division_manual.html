@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>除法闖關王 4.1 (寶石獎勵版)</title>
+    <title>除法闖關王 4.5 (全功能獎勵版)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -103,6 +103,7 @@
         .btn-warning { background-color: var(--warning); }
         .btn-help { background-color: var(--help); }
         .btn-gray { background-color: #95a5a6; }
+        .btn-accent { background-color: #f39c12; }
         .btn-block { width: 100%; padding: 15px; margin-top: 15px; font-size: 1.3rem; }
 
         /* --- 列表 --- */
@@ -112,7 +113,8 @@
             font-size: 1.2rem;
         }
         .list-info small { color: #e74c3c; font-weight: bold; display: block; margin-top: 5px;}
-        .gem-tag { color: #8e44ad; font-weight: bold; background: #f4ecf7; padding: 2px 8px; border-radius: 10px; font-size: 0.95rem; margin-left: 5px;}
+        .gem-tag { color: #2980b9; font-weight: bold; background: #d6eaf8; padding: 2px 8px; border-radius: 10px; font-size: 0.95rem; margin-left: 5px;}
+        .teach-gem-tag { color: #27ae60; font-weight: bold; background: #d5f5e3; padding: 2px 8px; border-radius: 10px; font-size: 0.95rem; margin-left: 5px;}
         .score-tag { color: #d35400; font-weight: bold; background: #fdebd0; padding: 2px 8px; border-radius: 10px; font-size: 0.95rem; margin-left: 5px;}
         
         /* --- 編輯區 --- */
@@ -195,6 +197,23 @@
             font-family: monospace; border-top: 1px dashed #eee; padding-top: 10px;
         }
 
+        /* --- 獎勵兌換區 --- */
+        .shop-balance {
+            background: linear-gradient(135deg, #2980b9 0%, #6dd5fa 100%);
+            color: white; padding: 20px; border-radius: 15px; text-align: center;
+            margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .shop-balance h3 { color: white; margin: 0 0 10px 0; font-weight: normal; font-size: 1rem; opacity: 0.9; }
+        .balance-row { display: flex; justify-content: center; gap: 20px; font-size: 1.5rem; font-weight: bold; }
+        
+        .exchange-form { background: #f8f9fa; padding: 15px; border-radius: 12px; border: 1px solid #eee; }
+        .exchange-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        .exchange-input { flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1.1rem; text-align: center; }
+        .exchange-select { padding: 5px; border: 2px solid #ddd; border-radius: 8px; font-size: 1.1rem; background: white; }
+        
+        .log-list { max-height: 200px; overflow-y: auto; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px; font-size: 0.9rem; color: #666; }
+        .log-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; }
+
         /* --- 獲獎動畫與特效 --- */
         .reward-popup {
             background: #fff8e1; border: 3px solid #f1c40f; padding: 20px;
@@ -245,6 +264,7 @@
         </div>
 
         <div id="tab-quiz">
+            <button class="btn-accent btn-block" style="margin-bottom:15px; box-shadow:0 4px #d35400;" onclick="showPage('page-shop')">🎁 獎勵兌換商店</button>
             <div id="lists-container"></div>
             <button class="btn-secondary btn-block" onclick="createNewList()">+ 新增/生成題庫</button>
             <div style="margin-top:20px; display:flex; gap:10px;">
@@ -259,14 +279,52 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v4.1 (寶石獎勵版)</div>
+        <div class="version-tag">版本：v4.5 (全功能獎勵版)</div>
+    </div>
+
+    <div id="page-shop" class="container">
+        <h2>🎁 獎勵兌換商店</h2>
+        
+        <div class="shop-balance">
+            <h3>目前持有</h3>
+            <div class="balance-row">
+                <span>👑 <span id="shop-crowns">0</span></span>
+                <span>💎 <span id="shop-gems">0</span></span>
+            </div>
+        </div>
+
+        <div class="exchange-form">
+            <div style="text-align:center; margin-bottom:10px; color:#555; font-weight:bold;">我要兌換...</div>
+            <div class="exchange-row">
+                <input type="text" id="gift-name" class="exchange-input" placeholder="輸入獎品名稱 (如: 看電視10分鐘)">
+            </div>
+            
+            <div style="text-align:center; margin-bottom:10px; color:#555; font-weight:bold;">需要花費</div>
+            <div class="exchange-row">
+                <input type="number" id="gift-cost" class="exchange-input" placeholder="數量" min="1">
+                <select id="gift-currency" class="exchange-select">
+                    <option value="gems">💎 寶石</option>
+                    <option value="crowns">👑 皇冠</option>
+                </select>
+            </div>
+
+            <button class="btn-primary btn-block" onclick="processExchange()">確認兌換</button>
+        </div>
+
+        <div style="margin-top:20px;">
+            <h4>📜 兌換紀錄</h4>
+            <div id="exchange-log" class="log-list"></div>
+        </div>
+
+        <button class="btn-gray btn-block" style="margin-top:20px;" onclick="showPage('page-home')">返回首頁</button>
     </div>
 
     <div id="page-editor" class="container">
         <h2>✏️ 編輯題庫</h2>
         <div style="margin-bottom:15px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; background:#eee; padding:15px; border-radius:10px;">
             <div style="flex:100%">名稱: <input type="text" id="list-name" style="padding:8px; width:70%; font-size:1.2rem;"></div>
-            <div>💎 獎勵寶石: <input type="number" id="list-gems" placeholder="5" style="padding:8px; width:80px; font-size:1.2rem;" value="5"></div>
+            <div>💎 測驗寶石: <input type="number" id="list-gems" placeholder="5" style="padding:8px; width:80px; font-size:1.2rem;" value="5"></div>
+            <div>💎 教學寶石: <input type="number" id="list-teach-gems" placeholder="2" style="padding:8px; width:80px; font-size:1.2rem;" value="2"></div>
             <div>🎯 獲獎分數: <input type="number" id="list-pass-score" placeholder="100" style="padding:8px; width:80px; font-size:1.2rem;" value="100"></div>
         </div>
         <div class="gen-controls">
@@ -287,7 +345,6 @@
     <div id="page-mode" class="container">
         <h2>選擇模式</h2>
         <div class="settings-box">
-            <div class="settings-title">⚙️ 教學模式輔助設定：</div>
             <div class="checkbox-group">
                 <label class="checkbox-item"><input type="checkbox" id="opt-voice" checked> 🔊 語音提示</label>
                 <label class="checkbox-item"><input type="checkbox" id="opt-text" checked> 📝 文字提示</label>
@@ -304,16 +361,23 @@
         <div class="quiz-header">
             <span id="q-info">題目 1/5</span>
             <span id="q-timer">00:00</span>
-            <button class="btn-danger" onclick="quitQuiz()">🚪 退出</button>
+            <span id="q-mode">模式</span>
         </div>
 
         <div id="teach-area" style="display:none;">
-            <div id="teach-msg" style="font-weight:bold; font-size:1.3rem; min-height: 3.6rem;"></div>
-            <div style="margin: 10px 0;">
-                <button class="btn-help" onclick="toggleHelp()">💡 我卡住了，求助！</button>
+            <div style="text-align: center; margin-bottom: 10px;">
+                <div id="teach-msg" style="color:#8e44ad; font-weight:bold; font-size:1.2rem; min-height:1.5em; margin-bottom:10px;"></div>
+                <div style="margin-bottom: 10px;">
+                    <button id="btn-help-trigger" class="btn-help" onclick="toggleHelp()">💡 我卡住了，求助！</button>
+                </div>
                 <div id="help-content" class="help-box"></div>
             </div>
+            
             <div class="grid-container" id="gridBoard"></div>
+            
+            <div style="text-align: center;">
+                <button id="btn-next-q" style="display:none; background:#27ae60; color:white; font-size:1.2rem; padding:10px 20px; border-radius:30px; margin-top:20px;">🎉 本題完成！進入下一題 ➡</button>
+            </div>
         </div>
 
         <div id="test-area" style="display:none;">
@@ -324,6 +388,8 @@
                 <button class="btn-primary" onclick="checkTestAnswer()">送出答案</button>
             </div>
         </div>
+        
+        <button class="btn-danger" style="float:right; margin-top:10px;" onclick="quitQuiz()">退出</button>
     </div>
 
     <div id="page-result" class="container">
@@ -352,7 +418,7 @@
     let totalGems = 0; // 學員總寶石數
 
     function speak(text) {
-        let force = text.includes("寶石") || text.includes("皇冠") || text.includes("全對");
+        let force = text.includes("寶石") || text.includes("皇冠") || text.includes("全對") || text.includes("兌換成功");
         if(currentMode === 'teach' && !quizSettings.voice && !force) return;
 
         if ('speechSynthesis' in window) {
@@ -367,29 +433,37 @@
 
     // --- 資料 ---
     let allLists = [], currentList = null, quizData = [];
-    let currentQIdx = 0, currentMode = '';
+    let currentQIdx = 0, currentMode = '', editingId = null;
     let timerInt, startTime;
     let rankData = [];
-    let editingId = null; 
+    let exchangeLog = [];
+
+    const STORAGE_KEY_LISTS = 'div_v4_5_lists';
+    const STORAGE_KEY_RANK = 'div_v4_5_rank';
+    const STORAGE_KEY_USER = 'div_v4_5_user';
+    const STORAGE_KEY_GEMS = 'div_v4_5_gems';
+    const STORAGE_KEY_EXCHANGE = 'div_v4_5_exchange';
 
     window.onload = function() {
-        if(localStorage.getItem('div_v3_lists')) allLists = JSON.parse(localStorage.getItem('div_v3_lists'));
-        else { allLists = [{name: "範例：估算練習", gems: 5, passScore: 100, qs: [{a:963, b:36}, {a:846, b:32}, {a:96, b:3}]}]; saveData(); }
+        if(localStorage.getItem(STORAGE_KEY_LISTS)) allLists = JSON.parse(localStorage.getItem(STORAGE_KEY_LISTS));
+        else { allLists = [{name: "範例：估算練習", gems: 5, teachGems: 2, passScore: 100, qs: [{a:963, b:36}, {a:846, b:32}, {a:96, b:3}]}]; saveData(); }
         
-        if(localStorage.getItem('div_v3_rank')) rankData = JSON.parse(localStorage.getItem('div_v3_rank'));
-        
-        if(localStorage.getItem('div_student')) studentName = localStorage.getItem('div_student');
-        if(localStorage.getItem('div_gems')) totalGems = parseInt(localStorage.getItem('div_gems')) || 0;
+        if(localStorage.getItem(STORAGE_KEY_RANK)) rankData = JSON.parse(localStorage.getItem(STORAGE_KEY_RANK));
+        if(localStorage.getItem(STORAGE_KEY_USER)) studentName = localStorage.getItem(STORAGE_KEY_USER);
+        if(localStorage.getItem(STORAGE_KEY_GEMS)) totalGems = parseInt(localStorage.getItem(STORAGE_KEY_GEMS)) || 0;
+        if(localStorage.getItem(STORAGE_KEY_EXCHANGE)) exchangeLog = JSON.parse(localStorage.getItem(STORAGE_KEY_EXCHANGE));
         
         updateProfile();
         renderLists();
+        renderExchangeLog();
     };
 
-    function saveData() { localStorage.setItem('div_v3_lists', JSON.stringify(allLists)); }
-    function saveRankData() { localStorage.setItem('div_v3_rank', JSON.stringify(rankData)); }
+    function saveData() { localStorage.setItem(STORAGE_KEY_LISTS, JSON.stringify(allLists)); }
+    function saveRankData() { localStorage.setItem(STORAGE_KEY_RANK, JSON.stringify(rankData)); }
     function saveStudentData() {
-        localStorage.setItem('div_student', studentName);
-        localStorage.setItem('div_gems', totalGems);
+        localStorage.setItem(STORAGE_KEY_USER, studentName);
+        localStorage.setItem(STORAGE_KEY_GEMS, totalGems);
+        localStorage.setItem(STORAGE_KEY_EXCHANGE, JSON.stringify(exchangeLog));
         updateProfile();
     }
     
@@ -403,12 +477,19 @@
         let remainGems = totalGems % 100;
         document.getElementById('stat-crowns').innerText = crowns;
         document.getElementById('stat-gems').innerText = remainGems;
+
+        if(document.getElementById('shop-crowns')) {
+            document.getElementById('shop-crowns').innerText = crowns;
+            document.getElementById('shop-gems').innerText = remainGems;
+        }
     }
 
     function showPage(pid) {
         document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
         document.getElementById(pid).classList.add('active');
         if(pid === 'page-home') renderLists();
+        if(pid === 'page-shop') { updateProfile(); renderExchangeLog(); }
+        if(pid === 'page-result') updateProfile(); 
     }
     function switchTab(t) {
         document.getElementById('tab-quiz').style.display = t==='quiz'?'block':'none';
@@ -418,18 +499,71 @@
         event.target.classList.add('active');
     }
 
+    // --- 獎勵兌換邏輯 ---
+    function processExchange() {
+        const giftName = document.getElementById('gift-name').value.trim();
+        const costVal = parseInt(document.getElementById('gift-cost').value);
+        const currency = document.getElementById('gift-currency').value;
+
+        if (!giftName) { alert("請輸入獎品名稱"); return; }
+        if (isNaN(costVal) || costVal <= 0) { alert("請輸入有效的數量"); return; }
+
+        let costInGems = costVal;
+        if (currency === 'crowns') {
+            costInGems = costVal * 100;
+        }
+
+        if (totalGems >= costInGems) {
+            if(confirm(`確定要花費 ${costVal} ${currency === 'crowns' ? '皇冠' : '寶石'} 兌換「${giftName}」嗎？`)) {
+                totalGems -= costInGems;
+                
+                const logItem = {
+                    date: new Date().toLocaleString(),
+                    item: giftName,
+                    cost: `${costVal} ${currency === 'crowns' ? '👑' : '💎'}`
+                };
+                exchangeLog.unshift(logItem);
+                
+                saveStudentData();
+                renderExchangeLog();
+                
+                document.getElementById('gift-name').value = '';
+                document.getElementById('gift-cost').value = '';
+                
+                triggerRewardAnimation(currency === 'crowns' ? 'crown' : 'gem');
+                speak(`兌換成功！享受你的獎勵吧！`);
+            }
+        } else {
+            alert("餘額不足喔！再多練習賺取寶石吧！");
+        }
+    }
+
+    function renderExchangeLog() {
+        const div = document.getElementById('exchange-log');
+        if(!div) return;
+        div.innerHTML = '';
+        exchangeLog.forEach(log => {
+            const row = document.createElement('div');
+            row.className = 'log-item';
+            row.innerHTML = `<span>📅 ${log.date} - 兌換 <strong>${log.item}</strong></span> <span>-${log.cost}</span>`;
+            div.appendChild(row);
+        });
+    }
+
     function renderLists() {
         const c = document.getElementById('lists-container'); c.innerHTML='';
         allLists.forEach((l,i) => {
             const d = document.createElement('div'); d.className='list-item';
             let gemVal = l.gems ? l.gems : 5; 
+            let teachGemVal = l.teachGems ? l.teachGems : 2;
             let passVal = l.passScore ? l.passScore : 100;
-            
+
             d.innerHTML = `
-                <div class="list-info">
+                <div>
                     <strong>${l.name}</strong> (${l.qs.length}題)
                     <div style="margin-top:5px;">
-                        <span class="gem-tag">💎 +${gemVal}</span>
+                        <span class="gem-tag">💎測驗+${gemVal}</span>
+                        <span class="teach-gem-tag">💎教學+${teachGemVal}</span>
                         <span class="score-tag">🎯 ${passVal}分</span>
                     </div>
                 </div>
@@ -446,6 +580,7 @@
         editingId = null; 
         document.getElementById('list-name').value="新題庫"; 
         document.getElementById('list-gems').value = 5; 
+        document.getElementById('list-teach-gems').value = 2;
         document.getElementById('list-pass-score').value = 100;
         document.getElementById('editor-rows').innerHTML=''; 
         showPage('page-editor'); 
@@ -455,18 +590,20 @@
         editingId=i; const l=allLists[i]; 
         document.getElementById('list-name').value=l.name; 
         document.getElementById('list-gems').value=l.gems || 5;
+        document.getElementById('list-teach-gems').value=l.teachGems || 2;
         document.getElementById('list-pass-score').value=l.passScore || 100;
         document.getElementById('editor-rows').innerHTML=''; 
         l.qs.forEach(q=>addEditRow(q.a,q.b)); 
         showPage('page-editor'); 
     }
-
     function addEditRow(a='', b='') { const d=document.createElement('div'); d.className='edit-row'; d.innerHTML=`<input type="number" class="inp-a" value="${a}">÷<input type="number" class="inp-b" value="${b}"><button class="btn-danger" onclick="this.parentElement.remove()">×</button>`; document.getElementById('editor-rows').appendChild(d); }
     
     function saveList() { 
         const n=document.getElementById('list-name').value; 
         const gVal=parseInt(document.getElementById('list-gems').value);
         const gems = isNaN(gVal) ? 5 : gVal;
+        const tgVal=parseInt(document.getElementById('list-teach-gems').value);
+        const teachGems = isNaN(tgVal) ? 2 : tgVal;
         const pVal=parseInt(document.getElementById('list-pass-score').value);
         const passScore = isNaN(pVal) ? 100 : pVal;
 
@@ -475,7 +612,7 @@
         rs.forEach(r=>{const a=parseInt(r.querySelector('.inp-a').value); const b=parseInt(r.querySelector('.inp-b').value); if(a&&b)qs.push({a,b})}); 
         if(qs.length<1)return alert("請輸入題目"); 
         
-        const data = {name:n, gems:gems, passScore:passScore, qs:qs};
+        const data = {name:n, gems:gems, teachGems:teachGems, passScore:passScore, qs:qs};
         if(editingId===null) allLists.push(data); else allLists[editingId]=data; 
         
         saveData(); showPage('page-home'); editingId=null; 
@@ -488,9 +625,10 @@
         const now = new Date();
         const dateStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}`;
         const exportObj = {
-            version: "4.1",
+            version: "4.5",
             student: { name: studentName, totalGems: totalGems },
-            lists: allLists
+            lists: allLists,
+            exchangeLog: exchangeLog
         };
         const b=new Blob([JSON.stringify(exportObj)],{type:"application/json"}); 
         const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=`div_backup_${dateStr}.json`; a.click(); 
@@ -499,23 +637,23 @@
         const f=inp.files[0]; const r=new FileReader(); 
         r.onload=(e)=>{ 
             try {
-                const data = JSON.parse(e.target.result);
-                if (Array.isArray(data)) {
-                    allLists = allLists.concat(data); 
-                } else if (data.lists) {
-                    allLists = allLists.concat(data.lists);
-                    if(data.student) {
-                        if(confirm(`匯入資料包含學員：${data.student.name} (寶石:${data.student.totalGems})。\n要覆蓋目前的進度嗎？`)) {
-                            studentName = data.student.name;
-                            totalGems = data.student.totalGems;
+                const d = JSON.parse(e.target.result);
+                if (Array.isArray(d)) {
+                    allLists = allLists.concat(d); 
+                } else if (d.lists) {
+                    allLists = allLists.concat(d.lists);
+                    if(d.student) {
+                        if(confirm(`匯入資料包含學員：${d.student.name} (寶石:${d.student.totalGems})。\n要覆蓋目前的進度嗎？`)) {
+                            studentName = d.student.name;
+                            totalGems = d.student.totalGems;
+                            if(d.exchangeLog) exchangeLog = d.exchangeLog;
                             saveStudentData();
                         }
                     }
                 }
                 saveData(); renderLists(); alert("匯入成功");
-            } catch(x){alert("檔案格式錯誤");} 
-        }; 
-        r.readAsText(f); 
+            } catch(e){alert("格式錯誤");}
+        }; r.readAsText(f); 
     }
 
     function prepareQuiz(i) { currentList = allLists[i]; showPage('page-mode'); }
@@ -540,6 +678,9 @@
         currentQIdx = 0;
         startTime = Date.now();
         clearInterval(timerInt); timerInt = setInterval(updTime, 1000);
+        document.getElementById('q-mode').innerText = mode==='teach'?'教學模式':'測驗模式';
+        document.getElementById('teach-area').style.display = mode==='teach'?'block':'none';
+        document.getElementById('test-area').style.display = mode==='test'?'block':'none';
         
         showPage('page-quiz');
         speak(`${studentName}，歡迎來到${mode==='teach'?'教學模式':'測驗模式'}，準備開始囉！`);
@@ -556,6 +697,7 @@
     function loadQuestion() {
         const q = quizData[currentQIdx];
         document.getElementById('q-info').innerText = `題目 ${currentQIdx+1} / ${quizData.length}`;
+        document.getElementById('btn-next-q').style.display = 'none'; 
         
         if(currentMode === 'test') {
             document.getElementById('teach-area').style.display = 'none';
@@ -594,6 +736,10 @@
             alert(`❌ 錯誤！\n正確答案：商 ${ansQ} ... 餘 ${ansR}`);
         }
 
+        goToNext();
+    }
+
+    function goToNext() {
         if(currentQIdx < quizData.length - 1) {
             currentQIdx++;
             loadQuestion();
@@ -637,7 +783,7 @@
                     currVal: working,
                     workingStrLen: workingStr.length,
                     dividendEndIdx: col,
-                    highlightRow: workingRow
+                    highlightRow: workingRow 
                 });
             } else {
                 curRem = working; continue;
@@ -707,16 +853,11 @@
             q.isCorrect = true; 
             document.querySelector('.btn-help').style.display = 'none';
             
-            const btn = document.createElement('button'); btn.className='btn-primary';
-            if(currentQIdx < quizData.length-1) {
-                btn.innerText = "下一題 ➡";
-                btn.onclick = () => { currentQIdx++; loadQuestion(); };
-            } else {
-                btn.innerText = "查看成績 🏆";
-                btn.onclick = () => finishQuiz();
-            }
-            msg.appendChild(document.createElement('br'));
-            msg.appendChild(btn);
+            const btn = document.getElementById('btn-next-q');
+            btn.style.display = 'block';
+            if(currentQIdx >= quizData.length - 1) btn.innerText = "全部完成！查看成績 🏆";
+            else btn.innerText = "🎉 本題完成！進入下一題 ➡";
+            btn.onclick = () => goToNext();
             return;
         }
 
@@ -795,7 +936,13 @@
         
         const okBtn = document.createElement('button'); okBtn.className='btn-warning'; okBtn.innerText='OK';
         okBtn.onclick = () => checkTeachAnswerMulti(cur, q);
-        msg.appendChild(document.createElement('br')); msg.appendChild(okBtn);
+        
+        // 避免重複添加按鈕
+        let oldBtn = msg.querySelector('button'); 
+        if(oldBtn) oldBtn.remove();
+        
+        msg.appendChild(document.createElement('br')); 
+        msg.appendChild(okBtn);
     }
 
     function fillCell(r, c, val, type) {
@@ -843,9 +990,22 @@
                     errorMsg = `太小了！${divisor} × ${userVal} = ${prod}，餘數 ${working - prod} 比 ${divisor} 還大。試試大一點。`;
                 }
             }
+            
             speak(errorMsg);
+            
             const msg = document.getElementById('teach-msg');
+            // 移除舊按鈕以免重複
+            let oldBtn = msg.querySelector('button'); 
+            if(oldBtn) oldBtn.remove();
+            
             msg.innerText = errorMsg; 
+            
+            // 重新加回按鈕
+            const okBtn = document.createElement('button'); okBtn.className='btn-warning'; okBtn.innerText='OK';
+            okBtn.onclick = () => checkTeachAnswerMulti(step, q);
+            msg.appendChild(document.createElement('br')); 
+            msg.appendChild(okBtn);
+
             inputs.forEach(inp => inp.value = '');
             if(inputs.length > 0) inputs[0].focus();
         }
@@ -918,39 +1078,43 @@
         const rewardArea = document.getElementById('reward-area');
         rewardArea.innerHTML = '';
         
-        // 取得該題庫設定的及格分數與寶石獎勵 (若無則預設100分/5顆)
         let targetScore = currentList.passScore || 100;
         let gemsReward = currentList.gems || 5;
+        let teachGemsReward = currentList.teachGems || 2;
 
+        let earnedGems = 0;
         if (currentMode === 'test' && score >= targetScore) {
+            earnedGems = gemsReward;
+        } else if (currentMode === 'teach' && score === 100) { 
+            earnedGems = teachGemsReward;
+        }
+
+        if (earnedGems > 0) {
             let oldGems = totalGems;
             let oldCrowns = Math.floor(oldGems / 100);
             
-            totalGems += gemsReward;
-            saveStudentData(); // 儲存
+            totalGems += earnedGems;
+            saveStudentData(); 
             
             let newCrowns = Math.floor(totalGems / 100);
             let earnedCrowns = newCrowns - oldCrowns;
 
-            // 判斷要播放什麼特效
             if (earnedCrowns > 0) {
-                // 獲得皇冠動畫
                 triggerRewardAnimation('crown');
                 rewardArea.innerHTML = `
                     <div class="reward-popup" style="border-color:#e67e22; color:#e67e22;">
                         👑 恭喜升級！獲得 ${earnedCrowns} 頂皇冠！<br>
-                        (同時獲得 ${gemsReward} 顆寶石)
+                        (同時獲得 ${earnedGems} 顆寶石)
                     </div>`;
                 speak(`太厲害了！分數達標！恭喜你獲得了 ${earnedCrowns} 頂皇冠！`);
             } else {
-                // 獲得寶石動畫
                 triggerRewardAnimation('gem');
                 rewardArea.innerHTML = `
                     <div class="reward-popup">
-                        🎉 恭喜達標！獲得 ${gemsReward} 顆寶石 💎<br>
+                        🎉 恭喜達標！獲得 ${earnedGems} 顆寶石 💎<br>
                         目前累積: ${totalGems} 顆
                     </div>`;
-                speak(`太棒了！分數達標！你獲得了 ${gemsReward} 顆寶石！`);
+                speak(`太棒了！分數達標！你獲得了 ${earnedGems} 顆寶石！`);
             }
         } else {
             let praise = score>=60?"表現不錯，下次挑戰拿寶石！":"再多練習幾次，加油！";
@@ -976,27 +1140,26 @@
             tbody.appendChild(tr);
         });
     }
-
-    // --- 酷炫獎勵動畫函式 ---
+    
+    // --- 獎勵兌換與動畫 ---
     function triggerRewardAnimation(type) {
         const container = document.getElementById('particle-container');
         container.style.display = 'block';
-        container.innerHTML = ''; // 清空
+        container.innerHTML = ''; 
 
         let symbol = type === 'crown' ? '👑' : '💎';
-        let count = 30; // 粒子數量
+        let count = 30; 
 
         for (let i = 0; i < count; i++) {
             let p = document.createElement('div');
             p.innerText = symbol;
             p.className = 'particle';
             p.style.left = Math.random() * 100 + 'vw';
-            p.style.animationDuration = (Math.random() * 2 + 1) + 's'; // 1~3秒隨機
+            p.style.animationDuration = (Math.random() * 2 + 1) + 's'; 
             p.style.fontSize = (Math.random() * 2 + 1) + 'rem';
             container.appendChild(p);
         }
 
-        // 3秒後自動關閉動畫
         setTimeout(() => {
             container.style.display = 'none';
             container.innerHTML = '';
