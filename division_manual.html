@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>除法闖關王 4.5 (全功能獎勵版)</title>
+    <title>除法闖關王 4.6 (版面優化版)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -19,9 +19,9 @@
             --hint-high: #27ae60; /* 高位數(綠) */
             --hint-low: #2980b9;  /* 低位數(藍) */
 
-            /* 放大版面設定 */
-            --cell-size: 50px; 
-            --font-base: 1.2rem;
+            /* 修改：縮小格子大小，讓版面更緊湊 */
+            --cell-size: 42px; 
+            --font-base: 1.1rem;
         }
 
         body {
@@ -29,7 +29,7 @@
             background-color: #fdfefe;
             color: var(--dark);
             margin: 0;
-            padding: 15px;
+            padding: 10px; /* 稍微減少邊距 */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -38,17 +38,17 @@
             overflow-x: hidden;
         }
 
-        h1 { color: var(--primary); margin: 10px 0 20px 0; text-align: center; font-size: 2rem; }
+        h1 { color: var(--primary); margin: 10px 0 15px 0; text-align: center; font-size: 1.8rem; }
 
         /* --- 學員名牌 --- */
         .user-profile {
             background-color: #d6eaf8;
             border: 2px dashed var(--primary);
             border-radius: 15px;
-            padding: 10px 25px;
-            margin-bottom: 25px;
+            padding: 8px 20px;
+            margin-bottom: 20px;
             cursor: pointer;
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: bold;
             color: var(--dark);
             display: flex; align-items: center; gap: 15px;
@@ -60,19 +60,19 @@
             background: #fff;
             padding: 5px 12px;
             border-radius: 20px;
-            font-size: 1.1rem;
+            font-size: 1rem;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             display: flex; align-items: center; gap: 5px;
         }
 
         /* --- Tab 選單 --- */
         .tabs { 
-            display: flex; gap: 15px; margin-bottom: 25px; 
+            display: flex; gap: 10px; margin-bottom: 20px; 
             background: #f0f3f4; padding: 5px; border-radius: 30px;
         }
         .tab { 
-            flex: 1; text-align: center; padding: 12px 30px; 
-            cursor: pointer; color: #7f8c8d; font-weight: bold; font-size: 1.2rem;
+            flex: 1; text-align: center; padding: 10px 20px; 
+            cursor: pointer; color: #7f8c8d; font-weight: bold; font-size: 1.1rem;
             border-radius: 25px; transition: all 0.3s ease;
         }
         .tab.active { 
@@ -80,10 +80,12 @@
             box-shadow: 0 4px 10px rgba(41, 128, 185, 0.4); transform: scale(1.05);
         }
 
-        /* --- 容器 --- */
+        /* --- 容器 (修改：縮小內邊距) --- */
         .container {
             width: 100%; max-width: 900px; background: white; border-radius: 15px;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.15); padding: 25px; margin-bottom: 20px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15); 
+            padding: 15px; /* 原本 25px -> 改為 15px */
+            margin-bottom: 20px;
             display: none;
         }
         .container.active { display: block; animation: fadeIn 0.3s; }
@@ -91,8 +93,8 @@
 
         /* --- 按鈕 --- */
         button {
-            border: none; border-radius: 10px; padding: 12px 24px; 
-            font-size: 1.1rem; font-weight: bold;
+            border: none; border-radius: 10px; padding: 10px 20px; 
+            font-size: 1rem; font-weight: bold;
             cursor: pointer; color: white; margin: 5px; transition: 0.2s;
         }
         button:active { transform: scale(0.95); }
@@ -104,27 +106,27 @@
         .btn-help { background-color: var(--help); }
         .btn-gray { background-color: #95a5a6; }
         .btn-accent { background-color: #f39c12; }
-        .btn-block { width: 100%; padding: 15px; margin-top: 15px; font-size: 1.3rem; }
+        .btn-block { width: 100%; padding: 12px; margin-top: 10px; font-size: 1.2rem; }
 
         /* --- 列表 --- */
         .list-item {
-            background: #f8f9fa; border: 2px solid #ddd; padding: 15px; margin-bottom: 15px;
+            background: #f8f9fa; border: 2px solid #ddd; padding: 12px; margin-bottom: 12px;
             border-radius: 12px; display: flex; justify-content: space-between; align-items: center;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
         }
         .list-info small { color: #e74c3c; font-weight: bold; display: block; margin-top: 5px;}
-        .gem-tag { color: #2980b9; font-weight: bold; background: #d6eaf8; padding: 2px 8px; border-radius: 10px; font-size: 0.95rem; margin-left: 5px;}
-        .teach-gem-tag { color: #27ae60; font-weight: bold; background: #d5f5e3; padding: 2px 8px; border-radius: 10px; font-size: 0.95rem; margin-left: 5px;}
-        .score-tag { color: #d35400; font-weight: bold; background: #fdebd0; padding: 2px 8px; border-radius: 10px; font-size: 0.95rem; margin-left: 5px;}
+        .gem-tag { color: #2980b9; font-weight: bold; background: #d6eaf8; padding: 2px 8px; border-radius: 10px; font-size: 0.9rem; margin-left: 5px;}
+        .teach-gem-tag { color: #27ae60; font-weight: bold; background: #d5f5e3; padding: 2px 8px; border-radius: 10px; font-size: 0.9rem; margin-left: 5px;}
+        .score-tag { color: #d35400; font-weight: bold; background: #fdebd0; padding: 2px 8px; border-radius: 10px; font-size: 0.9rem; margin-left: 5px;}
         
         /* --- 編輯區 --- */
         .gen-controls { 
             display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; 
-            background: #eef; padding: 15px; border-radius: 10px; font-size: 1.1rem;
+            background: #eef; padding: 15px; border-radius: 10px; font-size: 1rem;
         }
-        .gen-controls input { padding: 8px; width: 70px; text-align: center; font-size: 1.1rem; border-radius: 5px; border: 1px solid #ccc;}
+        .gen-controls input { padding: 8px; width: 60px; text-align: center; font-size: 1rem; border-radius: 5px; border: 1px solid #ccc;}
         .edit-row { display: flex; gap: 10px; margin-bottom: 8px; align-items: center; }
-        .edit-row input { padding: 10px; flex: 1; text-align: center; font-size: 1.2rem; border-radius: 5px; border: 1px solid #ccc; }
+        .edit-row input { padding: 8px; flex: 1; text-align: center; font-size: 1.1rem; border-radius: 5px; border: 1px solid #ccc; }
 
         /* --- 設定選項 --- */
         .settings-box {
@@ -132,25 +134,44 @@
             padding: 15px; margin-bottom: 20px; text-align: left;
         }
         .checkbox-group { display: flex; gap: 20px; justify-content: center; }
-        .checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 1.2rem; cursor: pointer; }
+        .checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 1.1rem; cursor: pointer; }
         .checkbox-item input { width: 22px; height: 22px; cursor: pointer; }
 
-        /* --- 測驗區 --- */
+        /* --- 測驗區 (修改：更緊湊的樣式) --- */
         .quiz-header { 
             display: flex; justify-content: space-between; align-items: center;
-            font-weight: bold; margin-bottom: 20px; background: #eee; padding: 15px; border-radius: 10px; 
-            font-size: 1.3rem;
+            font-weight: bold; 
+            margin-bottom: 5px; /* 原本 20px -> 改為 5px */
+            background: #eee; 
+            padding: 8px 15px; /* 縮小 Padding */
+            border-radius: 10px; 
+            font-size: 1.1rem;
         }
         
-        /* Grid 設定 */
+        /* 修改：退出按鈕樣式 */
+        .btn-header-quit {
+            background-color: var(--danger);
+            color: white;
+            padding: 5px 12px;
+            font-size: 0.9rem;
+            border-radius: 8px;
+            margin: 0;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        /* Grid 設定 (修改：減少邊距) */
         .grid-container {
-            display: grid; grid-auto-rows: var(--cell-size); justify-content: center; margin: 20px 0; gap: 0; 
+            display: grid; grid-auto-rows: var(--cell-size); justify-content: center; 
+            margin: 5px 0; /* 原本 20px 0 -> 改為 5px 0 */
+            gap: 0; 
         }
         .grid-cell {
             width: var(--cell-size); height: var(--cell-size); 
             display: flex; justify-content: center; align-items: center;
             font-family: 'Courier New', monospace; font-weight: bold; 
-            font-size: 1.8rem; position: relative; margin: 0; border: 1px solid transparent; 
+            font-size: 1.6rem; position: relative; margin: 0; border: 1px solid transparent; 
         }
         .bracket-cell { border-right: 3px solid #333; border-top-right-radius: 15px; margin-right: 0px; }
         .dividend-cell { border-top: 3px solid #333; margin-top: -3px; }
@@ -160,9 +181,10 @@
         .hl-high { color: var(--hint-high); font-weight: 900; transform: scale(1.2); transition: 0.3s; }
         .hl-low { color: var(--hint-low); font-weight: 900; transform: scale(1.2); transition: 0.3s; }
 
-        /* 輸入框樣式 */
+        /* 輸入框樣式 (修改：縮小尺寸) */
         .game-input { 
-            width: 40px; height: 40px; font-size: 1.5rem; text-align: center; 
+            width: 36px; height: 36px; /* 稍微縮小 */
+            font-size: 1.3rem; text-align: center; 
             border: 2px solid var(--primary); border-radius: 6px; background: #fff;
             font-weight: bold; outline: none; z-index: 10; padding: 0;
         }
@@ -170,11 +192,20 @@
             background-color: #ffab40 !important; border-color: #d35400; box-shadow: 0 0 5px rgba(255, 171, 64, 0.8);
         }
 
+        /* 新增：底部控制區樣式 (讓按鈕緊貼) */
+        .quiz-footer {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
         /* --- 求助區塊 --- */
         .help-box {
             display: none; background-color: #f4ecf7; border-left: 6px solid #8e44ad;
-            padding: 15px; margin-top: 15px; border-radius: 8px; text-align: left;
-            font-size: 1.1rem; line-height: 1.6; animation: slideDown 0.3s;
+            padding: 10px; margin-top: 10px; border-radius: 8px; text-align: left;
+            font-size: 1rem; line-height: 1.4; animation: slideDown 0.3s;
         }
         @keyframes slideDown { from{opacity:0; transform: translateY(-10px);} to{opacity:1; transform: translateY(0);} }
         .help-table { width: 100%; margin-top: 5px; font-family: monospace; }
@@ -182,8 +213,8 @@
         .help-correct { color: #27ae60; font-weight: bold; background: #d5f5e3; padding: 0 5px; border-radius: 4px; }
         .help-wrong { color: #c0392b; opacity: 0.7; }
 
-        .test-mode-box { text-align: center; padding: 30px; font-size: 1.8rem; }
-        .test-input { font-size: 1.8rem; padding: 10px; width: 100px; text-align: center; margin: 10px; border-radius: 8px; border: 2px solid #ccc;}
+        .test-mode-box { text-align: center; padding: 20px; font-size: 1.5rem; }
+        .test-input { font-size: 1.5rem; padding: 8px; width: 80px; text-align: center; margin: 10px; border-radius: 8px; border: 2px solid #ccc;}
 
         /* 詳細結果 */
         .result-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -279,7 +310,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v4.5 (全功能獎勵版)</div>
+        <div class="version-tag">版本：v4.6 (版面優化版)</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -359,37 +390,41 @@
 
     <div id="page-quiz" class="container">
         <div class="quiz-header">
-            <span id="q-info">題目 1/5</span>
-            <span id="q-timer">00:00</span>
-            <span id="q-mode">模式</span>
+            <div>
+                <span id="q-info">題目 1/5</span> | 
+                <span id="q-timer">00:00</span>
+                <span id="q-mode" style="font-size:0.8rem; color:#666; margin-left:5px;"></span>
+            </div>
+            <button class="btn-header-quit" onclick="quitQuiz()">退出 ✕</button>
         </div>
 
         <div id="teach-area" style="display:none;">
-            <div style="text-align: center; margin-bottom: 10px;">
-                <div id="teach-msg" style="color:#8e44ad; font-weight:bold; font-size:1.2rem; min-height:1.5em; margin-bottom:10px;"></div>
-                <div style="margin-bottom: 10px;">
-                    <button id="btn-help-trigger" class="btn-help" onclick="toggleHelp()">💡 我卡住了，求助！</button>
+            <div style="text-align: center; margin-bottom: 5px;">
+                <div id="teach-msg" style="color:#8e44ad; font-weight:bold; font-size:1.1rem; min-height:1.2em; margin-bottom:5px;"></div>
+                
+                <div style="margin-bottom: 5px;">
+                    <button id="btn-help-trigger" class="btn-help" style="padding: 5px 15px; font-size: 1rem;" onclick="toggleHelp()">💡 求助</button>
                 </div>
                 <div id="help-content" class="help-box"></div>
             </div>
             
             <div class="grid-container" id="gridBoard"></div>
             
-            <div style="text-align: center;">
-                <button id="btn-next-q" style="display:none; background:#27ae60; color:white; font-size:1.2rem; padding:10px 20px; border-radius:30px; margin-top:20px;">🎉 本題完成！進入下一題 ➡</button>
+            <div class="quiz-footer">
+                <button id="btn-next-q" style="display:none; background:#27ae60; color:white; font-size:1.1rem; padding:8px 25px; border-radius:30px; box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3);">
+                    🎉 下一題 ➡
+                </button>
             </div>
         </div>
 
         <div id="test-area" style="display:none;">
             <div class="test-mode-box">
-                <div id="test-q-text" style="font-size:3rem; margin-bottom:30px; font-family: monospace;"></div>
+                <div id="test-q-text" style="font-size:2.5rem; margin-bottom:20px; font-family: monospace;"></div>
                 商: <input type="number" id="test-quo" class="test-input"> <br>
                 餘: <input type="number" id="test-rem" class="test-input"> <br><br>
                 <button class="btn-primary" onclick="checkTestAnswer()">送出答案</button>
             </div>
         </div>
-        
-        <button class="btn-danger" style="float:right; margin-top:10px;" onclick="quitQuiz()">退出</button>
     </div>
 
     <div id="page-result" class="container">
