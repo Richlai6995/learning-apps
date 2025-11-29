@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>除法闖關王 4.6 (版面優化版)</title>
+    <title>除法闖關王 4.7 (按鈕置頂版)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -16,10 +16,10 @@
             --help: #8e44ad;
             
             /* 視覺提示顏色 */
-            --hint-high: #27ae60; /* 高位數(綠) */
-            --hint-low: #2980b9;  /* 低位數(藍) */
+            --hint-high: #27ae60;
+            --hint-low: #2980b9;
 
-            /* 修改：縮小格子大小，讓版面更緊湊 */
+            /* 格子大小維持緊湊 */
             --cell-size: 42px; 
             --font-base: 1.1rem;
         }
@@ -29,7 +29,7 @@
             background-color: #fdfefe;
             color: var(--dark);
             margin: 0;
-            padding: 10px; /* 稍微減少邊距 */
+            padding: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -38,9 +38,102 @@
             overflow-x: hidden;
         }
 
-        h1 { color: var(--primary); margin: 10px 0 15px 0; text-align: center; font-size: 1.8rem; }
+        h1 { color: var(--primary); margin: 5px 0 15px 0; text-align: center; font-size: 1.8rem; }
 
-        /* --- 學員名牌 --- */
+        /* --- 標題列 (Header) 修改：讓按鈕群組在右側 --- */
+        .quiz-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            font-weight: bold; 
+            margin-bottom: 5px; 
+            background: #eee; 
+            padding: 8px 12px; 
+            border-radius: 10px; 
+            font-size: 1.1rem;
+            width: 100%;
+            max-width: 900px;
+            box-sizing: border-box; /* 確保 padding 不會撐破寬度 */
+        }
+
+        .header-info {
+            flex: 1; /* 佔據左側空間 */
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            white-space: nowrap; /* 防止文字換行 */
+            overflow: hidden;
+            font-size: 1rem;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 8px; /* 按鈕之間的距離 */
+            align-items: center;
+        }
+
+        /* 標題列中的按鈕統一樣式 */
+        .btn-header-quit, .btn-header-next {
+            padding: 6px 12px;
+            font-size: 0.95rem;
+            border-radius: 8px;
+            margin: 0;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .btn-header-quit {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-header-next {
+            background-color: var(--success);
+            color: white;
+            box-shadow: 0 2px 5px rgba(39, 174, 96, 0.4);
+            animation: pulse-green 1.5s infinite;
+        }
+
+        @keyframes pulse-green {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* --- 容器 --- */
+        .container {
+            width: 100%; max-width: 900px; background: white; border-radius: 15px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15); 
+            padding: 15px; 
+            margin-bottom: 20px;
+            display: none;
+            box-sizing: border-box;
+        }
+        .container.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
+
+        /* --- 一般按鈕 --- */
+        button {
+            border: none; border-radius: 10px; padding: 10px 20px; 
+            font-size: 1rem; font-weight: bold;
+            cursor: pointer; color: white; margin: 5px; transition: 0.2s;
+        }
+        button:active { transform: scale(0.95); }
+        
+        /* 按鈕顏色 */
+        .btn-primary { background-color: var(--primary); }
+        .btn-secondary { background-color: var(--secondary); }
+        .btn-success { background-color: var(--success); }
+        .btn-danger { background-color: var(--danger); }
+        .btn-warning { background-color: var(--warning); }
+        .btn-help { background-color: var(--help); }
+        .btn-gray { background-color: #95a5a6; }
+        .btn-accent { background-color: #f39c12; }
+        .btn-block { width: 100%; padding: 12px; margin-top: 10px; font-size: 1.2rem; }
+
+        /* --- 其他樣式維持不變 --- */
         .user-profile {
             background-color: #d6eaf8;
             border: 2px dashed var(--primary);
@@ -54,117 +147,30 @@
             display: flex; align-items: center; gap: 15px;
             flex-wrap: wrap;
             justify-content: center;
-            box-shadow: 0 4px 10px rgba(41, 128, 185, 0.2);
         }
-        .stats-badge {
-            background: #fff;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 1rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            display: flex; align-items: center; gap: 5px;
-        }
+        .stats-badge { background: #fff; padding: 5px 12px; border-radius: 20px; font-size: 1rem; }
 
-        /* --- Tab 選單 --- */
-        .tabs { 
-            display: flex; gap: 10px; margin-bottom: 20px; 
-            background: #f0f3f4; padding: 5px; border-radius: 30px;
-        }
-        .tab { 
-            flex: 1; text-align: center; padding: 10px 20px; 
-            cursor: pointer; color: #7f8c8d; font-weight: bold; font-size: 1.1rem;
-            border-radius: 25px; transition: all 0.3s ease;
-        }
-        .tab.active { 
-            color: white; background-color: var(--primary); 
-            box-shadow: 0 4px 10px rgba(41, 128, 185, 0.4); transform: scale(1.05);
-        }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; background: #f0f3f4; padding: 5px; border-radius: 30px; }
+        .tab { flex: 1; text-align: center; padding: 10px 20px; cursor: pointer; color: #7f8c8d; font-weight: bold; border-radius: 25px; }
+        .tab.active { color: white; background-color: var(--primary); }
 
-        /* --- 容器 (修改：縮小內邊距) --- */
-        .container {
-            width: 100%; max-width: 900px; background: white; border-radius: 15px;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.15); 
-            padding: 15px; /* 原本 25px -> 改為 15px */
-            margin-bottom: 20px;
-            display: none;
-        }
-        .container.active { display: block; animation: fadeIn 0.3s; }
-        @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
-
-        /* --- 按鈕 --- */
-        button {
-            border: none; border-radius: 10px; padding: 10px 20px; 
-            font-size: 1rem; font-weight: bold;
-            cursor: pointer; color: white; margin: 5px; transition: 0.2s;
-        }
-        button:active { transform: scale(0.95); }
-        .btn-primary { background-color: var(--primary); }
-        .btn-secondary { background-color: var(--secondary); }
-        .btn-success { background-color: var(--success); }
-        .btn-danger { background-color: var(--danger); }
-        .btn-warning { background-color: var(--warning); }
-        .btn-help { background-color: var(--help); }
-        .btn-gray { background-color: #95a5a6; }
-        .btn-accent { background-color: #f39c12; }
-        .btn-block { width: 100%; padding: 12px; margin-top: 10px; font-size: 1.2rem; }
-
-        /* --- 列表 --- */
-        .list-item {
-            background: #f8f9fa; border: 2px solid #ddd; padding: 12px; margin-bottom: 12px;
-            border-radius: 12px; display: flex; justify-content: space-between; align-items: center;
-            font-size: 1.1rem;
-        }
-        .list-info small { color: #e74c3c; font-weight: bold; display: block; margin-top: 5px;}
-        .gem-tag { color: #2980b9; font-weight: bold; background: #d6eaf8; padding: 2px 8px; border-radius: 10px; font-size: 0.9rem; margin-left: 5px;}
-        .teach-gem-tag { color: #27ae60; font-weight: bold; background: #d5f5e3; padding: 2px 8px; border-radius: 10px; font-size: 0.9rem; margin-left: 5px;}
-        .score-tag { color: #d35400; font-weight: bold; background: #fdebd0; padding: 2px 8px; border-radius: 10px; font-size: 0.9rem; margin-left: 5px;}
+        .list-item { background: #f8f9fa; border: 2px solid #ddd; padding: 12px; margin-bottom: 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .gem-tag { color: #2980b9; background: #d6eaf8; padding: 2px 8px; border-radius: 10px; font-size: 0.9rem; margin-left: 5px;}
+        .teach-gem-tag { color: #27ae60; background: #d5f5e3; padding: 2px 8px; border-radius: 10px; font-size: 0.9rem; margin-left: 5px;}
+        .score-tag { color: #d35400; background: #fdebd0; padding: 2px 8px; border-radius: 10px; font-size: 0.9rem; margin-left: 5px;}
         
-        /* --- 編輯區 --- */
-        .gen-controls { 
-            display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; 
-            background: #eef; padding: 15px; border-radius: 10px; font-size: 1rem;
-        }
-        .gen-controls input { padding: 8px; width: 60px; text-align: center; font-size: 1rem; border-radius: 5px; border: 1px solid #ccc;}
+        /* 編輯與設定 */
+        .gen-controls { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; background: #eef; padding: 15px; border-radius: 10px; }
+        .gen-controls input { padding: 8px; width: 60px; text-align: center; border-radius: 5px; border: 1px solid #ccc;}
         .edit-row { display: flex; gap: 10px; margin-bottom: 8px; align-items: center; }
-        .edit-row input { padding: 8px; flex: 1; text-align: center; font-size: 1.1rem; border-radius: 5px; border: 1px solid #ccc; }
-
-        /* --- 設定選項 --- */
-        .settings-box {
-            background-color: #f0f8ff; border: 2px solid #bcdbf3; border-radius: 10px;
-            padding: 15px; margin-bottom: 20px; text-align: left;
-        }
+        .edit-row input { padding: 8px; flex: 1; text-align: center; border-radius: 5px; border: 1px solid #ccc; }
+        .settings-box { background-color: #f0f8ff; border: 2px solid #bcdbf3; border-radius: 10px; padding: 15px; margin-bottom: 20px; }
         .checkbox-group { display: flex; gap: 20px; justify-content: center; }
-        .checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 1.1rem; cursor: pointer; }
-        .checkbox-item input { width: 22px; height: 22px; cursor: pointer; }
-
-        /* --- 測驗區 (修改：更緊湊的樣式) --- */
-        .quiz-header { 
-            display: flex; justify-content: space-between; align-items: center;
-            font-weight: bold; 
-            margin-bottom: 5px; /* 原本 20px -> 改為 5px */
-            background: #eee; 
-            padding: 8px 15px; /* 縮小 Padding */
-            border-radius: 10px; 
-            font-size: 1.1rem;
-        }
         
-        /* 修改：退出按鈕樣式 */
-        .btn-header-quit {
-            background-color: var(--danger);
-            color: white;
-            padding: 5px 12px;
-            font-size: 0.9rem;
-            border-radius: 8px;
-            margin: 0;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        
-        /* Grid 設定 (修改：減少邊距) */
+        /* Grid 算式區 */
         .grid-container {
             display: grid; grid-auto-rows: var(--cell-size); justify-content: center; 
-            margin: 5px 0; /* 原本 20px 0 -> 改為 5px 0 */
+            margin: 5px 0; 
             gap: 0; 
         }
         .grid-cell {
@@ -177,102 +183,42 @@
         .dividend-cell { border-top: 3px solid #333; margin-top: -3px; }
         .subtraction-line { border-bottom: 3px solid #333 !important; }
         
-        /* 特效顏色 Class */
         .hl-high { color: var(--hint-high); font-weight: 900; transform: scale(1.2); transition: 0.3s; }
         .hl-low { color: var(--hint-low); font-weight: 900; transform: scale(1.2); transition: 0.3s; }
 
-        /* 輸入框樣式 (修改：縮小尺寸) */
         .game-input { 
-            width: 36px; height: 36px; /* 稍微縮小 */
-            font-size: 1.3rem; text-align: center; 
+            width: 36px; height: 36px; font-size: 1.3rem; text-align: center; 
             border: 2px solid var(--primary); border-radius: 6px; background: #fff;
             font-weight: bold; outline: none; z-index: 10; padding: 0;
         }
-        .game-input.active-input {
-            background-color: #ffab40 !important; border-color: #d35400; box-shadow: 0 0 5px rgba(255, 171, 64, 0.8);
-        }
+        .game-input.active-input { background-color: #ffab40 !important; border-color: #d35400; }
 
-        /* 新增：底部控制區樣式 (讓按鈕緊貼) */
-        .quiz-footer {
-            margin-top: 10px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* --- 求助區塊 --- */
-        .help-box {
-            display: none; background-color: #f4ecf7; border-left: 6px solid #8e44ad;
-            padding: 10px; margin-top: 10px; border-radius: 8px; text-align: left;
-            font-size: 1rem; line-height: 1.4; animation: slideDown 0.3s;
-        }
-        @keyframes slideDown { from{opacity:0; transform: translateY(-10px);} to{opacity:1; transform: translateY(0);} }
+        /* 求助區 */
+        .help-box { display: none; background-color: #f4ecf7; border-left: 6px solid #8e44ad; padding: 10px; margin-top: 10px; border-radius: 8px; text-align: left; animation: slideDown 0.3s; }
         .help-table { width: 100%; margin-top: 5px; font-family: monospace; }
         .help-row { display: flex; justify-content: space-between; padding: 2px 0; }
-        .help-correct { color: #27ae60; font-weight: bold; background: #d5f5e3; padding: 0 5px; border-radius: 4px; }
+        .help-correct { color: #27ae60; background: #d5f5e3; padding: 0 5px; border-radius: 4px; }
         .help-wrong { color: #c0392b; opacity: 0.7; }
 
         .test-mode-box { text-align: center; padding: 20px; font-size: 1.5rem; }
         .test-input { font-size: 1.5rem; padding: 8px; width: 80px; text-align: center; margin: 10px; border-radius: 8px; border: 2px solid #ccc;}
 
-        /* 詳細結果 */
         .result-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .result-table th, .result-table td { border: 1px solid #ddd; padding: 10px; text-align: center; font-size: 1.1rem; }
+        .result-table th, .result-table td { border: 1px solid #ddd; padding: 10px; text-align: center; }
         .result-table th { background-color: #f2f2f2; }
         .res-correct { color: var(--success); font-weight: bold; }
         .res-wrong { color: var(--danger); font-weight: bold; }
 
-        .version-tag {
-            margin-top: 30px; color: #bdc3c7; font-size: 0.9rem; text-align: center;
-            font-family: monospace; border-top: 1px dashed #eee; padding-top: 10px;
-        }
+        .version-tag { margin-top: 30px; color: #bdc3c7; font-size: 0.9rem; text-align: center; border-top: 1px dashed #eee; padding-top: 10px; }
 
-        /* --- 獎勵兌換區 --- */
-        .shop-balance {
-            background: linear-gradient(135deg, #2980b9 0%, #6dd5fa 100%);
-            color: white; padding: 20px; border-radius: 15px; text-align: center;
-            margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-        .shop-balance h3 { color: white; margin: 0 0 10px 0; font-weight: normal; font-size: 1rem; opacity: 0.9; }
-        .balance-row { display: flex; justify-content: center; gap: 20px; font-size: 1.5rem; font-weight: bold; }
-        
+        /* 商店樣式 */
+        .shop-balance { background: linear-gradient(135deg, #2980b9 0%, #6dd5fa 100%); color: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
         .exchange-form { background: #f8f9fa; padding: 15px; border-radius: 12px; border: 1px solid #eee; }
-        .exchange-row { display: flex; gap: 10px; margin-bottom: 15px; }
-        .exchange-input { flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1.1rem; text-align: center; }
-        .exchange-select { padding: 5px; border: 2px solid #ddd; border-radius: 8px; font-size: 1.1rem; background: white; }
+        .reward-popup { background: #fff8e1; border: 3px solid #f1c40f; padding: 20px; border-radius: 15px; margin-top: 20px; font-weight: bold; color: #d35400; font-size: 1.5rem; text-align: center; animation: bounceIn 0.8s; }
         
-        .log-list { max-height: 200px; overflow-y: auto; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px; font-size: 0.9rem; color: #666; }
-        .log-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; }
-
-        /* --- 獲獎動畫與特效 --- */
-        .reward-popup {
-            background: #fff8e1; border: 3px solid #f1c40f; padding: 20px;
-            border-radius: 15px; margin-top: 20px; font-weight: bold; color: #d35400;
-            font-size: 1.5rem; text-align: center;
-            box-shadow: 0 5px 15px rgba(241, 196, 15, 0.4);
-            animation: bounceIn 0.8s;
-        }
-        @keyframes bounceIn {
-            0% { transform: scale(0.3); opacity: 0; }
-            50% { transform: scale(1.05); opacity: 1; }
-            70% { transform: scale(0.9); }
-            100% { transform: scale(1); }
-        }
-
-        /* 粒子動畫容器 */
-        #particle-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 9999; overflow: hidden; display: none;
-        }
-        .particle {
-            position: absolute; font-size: 2rem;
-            animation: fall linear forwards;
-        }
-        @keyframes fall {
-            0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
-            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
-        }
+        #particle-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; overflow: hidden; display: none; }
+        .particle { position: absolute; font-size: 2rem; animation: fall linear forwards; }
+        @keyframes fall { 0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotate(360deg); opacity: 0; } }
 
     </style>
 </head>
@@ -299,7 +245,7 @@
             <div id="lists-container"></div>
             <button class="btn-secondary btn-block" onclick="createNewList()">+ 新增/生成題庫</button>
             <div style="margin-top:20px; display:flex; gap:10px;">
-                <button class="btn-gray" style="flex:1" onclick="exportData()">匯出備份 (含寶石)</button>
+                <button class="btn-gray" style="flex:1" onclick="exportData()">匯出備份</button>
                 <button class="btn-gray" style="flex:1" onclick="document.getElementById('import-file').click()">匯入題庫</button>
                 <input type="file" id="import-file" style="display:none" accept=".json" onchange="handleImport(this)">
             </div>
@@ -310,7 +256,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v4.6 (版面優化版)</div>
+        <div class="version-tag">版本：v4.7 (按鈕置頂版)</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -326,14 +272,14 @@
 
         <div class="exchange-form">
             <div style="text-align:center; margin-bottom:10px; color:#555; font-weight:bold;">我要兌換...</div>
-            <div class="exchange-row">
-                <input type="text" id="gift-name" class="exchange-input" placeholder="輸入獎品名稱 (如: 看電視10分鐘)">
+            <div style="margin-bottom: 15px;">
+                <input type="text" id="gift-name" class="exchange-input" style="width:100%; box-sizing:border-box;" placeholder="輸入獎品名稱 (如: 看電視10分鐘)">
             </div>
             
             <div style="text-align:center; margin-bottom:10px; color:#555; font-weight:bold;">需要花費</div>
-            <div class="exchange-row">
+            <div class="edit-row">
                 <input type="number" id="gift-cost" class="exchange-input" placeholder="數量" min="1">
-                <select id="gift-currency" class="exchange-select">
+                <select id="gift-currency" class="exchange-input" style="background:white;">
                     <option value="gems">💎 寶石</option>
                     <option value="crowns">👑 皇冠</option>
                 </select>
@@ -353,10 +299,10 @@
     <div id="page-editor" class="container">
         <h2>✏️ 編輯題庫</h2>
         <div style="margin-bottom:15px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; background:#eee; padding:15px; border-radius:10px;">
-            <div style="flex:100%">名稱: <input type="text" id="list-name" style="padding:8px; width:70%; font-size:1.2rem;"></div>
-            <div>💎 測驗寶石: <input type="number" id="list-gems" placeholder="5" style="padding:8px; width:80px; font-size:1.2rem;" value="5"></div>
-            <div>💎 教學寶石: <input type="number" id="list-teach-gems" placeholder="2" style="padding:8px; width:80px; font-size:1.2rem;" value="2"></div>
-            <div>🎯 獲獎分數: <input type="number" id="list-pass-score" placeholder="100" style="padding:8px; width:80px; font-size:1.2rem;" value="100"></div>
+            <div style="flex:100%">名稱: <input type="text" id="list-name" style="padding:8px; width:70%; font-size:1rem;"></div>
+            <div>💎 測驗寶石: <input type="number" id="list-gems" style="padding:8px; width:60px;" value="5"></div>
+            <div>💎 教學寶石: <input type="number" id="list-teach-gems" style="padding:8px; width:60px;" value="2"></div>
+            <div>🎯 獲獎分數: <input type="number" id="list-pass-score" style="padding:8px; width:60px;" value="100"></div>
         </div>
         <div class="gen-controls">
             <span>自動生成:</span>
@@ -390,12 +336,16 @@
 
     <div id="page-quiz" class="container">
         <div class="quiz-header">
-            <div>
-                <span id="q-info">題目 1/5</span> | 
+            <div class="header-info">
+                <span id="q-info">1/5</span>
+                <span style="color:#aaa;">|</span>
                 <span id="q-timer">00:00</span>
-                <span id="q-mode" style="font-size:0.8rem; color:#666; margin-left:5px;"></span>
             </div>
-            <button class="btn-header-quit" onclick="quitQuiz()">退出 ✕</button>
+            
+            <div class="header-buttons">
+                <button id="btn-next-q" class="btn-header-next" style="display:none;" onclick="goToNext()">下一題 ➡</button>
+                <button class="btn-header-quit" onclick="quitQuiz()">退出 ✕</button>
+            </div>
         </div>
 
         <div id="teach-area" style="display:none;">
@@ -409,12 +359,6 @@
             </div>
             
             <div class="grid-container" id="gridBoard"></div>
-            
-            <div class="quiz-footer">
-                <button id="btn-next-q" style="display:none; background:#27ae60; color:white; font-size:1.1rem; padding:8px 25px; border-radius:30px; box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3);">
-                    🎉 下一題 ➡
-                </button>
-            </div>
         </div>
 
         <div id="test-area" style="display:none;">
@@ -450,7 +394,7 @@
 <script>
     let quizSettings = { voice: true, text: true };
     let studentName = '小小學員';
-    let totalGems = 0; // 學員總寶石數
+    let totalGems = 0; 
 
     function speak(text) {
         let force = text.includes("寶石") || text.includes("皇冠") || text.includes("全對") || text.includes("兌換成功");
@@ -713,7 +657,8 @@
         currentQIdx = 0;
         startTime = Date.now();
         clearInterval(timerInt); timerInt = setInterval(updTime, 1000);
-        document.getElementById('q-mode').innerText = mode==='teach'?'教學模式':'測驗模式';
+        
+        // 切換模式顯示
         document.getElementById('teach-area').style.display = mode==='teach'?'block':'none';
         document.getElementById('test-area').style.display = mode==='test'?'block':'none';
         
@@ -731,7 +676,7 @@
 
     function loadQuestion() {
         const q = quizData[currentQIdx];
-        document.getElementById('q-info').innerText = `題目 ${currentQIdx+1} / ${quizData.length}`;
+        document.getElementById('q-info').innerText = `${currentQIdx+1}/${quizData.length}`;
         document.getElementById('btn-next-q').style.display = 'none'; 
         
         if(currentMode === 'test') {
@@ -888,11 +833,12 @@
             q.isCorrect = true; 
             document.querySelector('.btn-help').style.display = 'none';
             
+            // 顯示置頂的下一題按鈕
             const btn = document.getElementById('btn-next-q');
-            btn.style.display = 'block';
-            if(currentQIdx >= quizData.length - 1) btn.innerText = "全部完成！查看成績 🏆";
-            else btn.innerText = "🎉 本題完成！進入下一題 ➡";
-            btn.onclick = () => goToNext();
+            btn.style.display = 'inline-block';
+            if(currentQIdx >= quizData.length - 1) btn.innerText = "看成績 🏆";
+            else btn.innerText = "下一題 ➡";
+            // onclick 已經在 HTML 中定義，不需要重複綁定
             return;
         }
 
