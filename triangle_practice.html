@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>三角形探險家 v1.5 (大畫布平移版)</title>
+    <title>三角形探險家 v1.7 (捲動修復版)</title>
     <style>
         :root {
             --primary: #8e44ad;
@@ -25,8 +25,9 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            touch-action: none;
+            /* 修正：移除 touch-action: none 以允許頁面捲動 */
             overflow-x: hidden;
+            overflow-y: auto; /* 確保垂直方向可以捲動 */
         }
 
         h1 { color: var(--primary); margin: 5px 0; text-align: center; font-size: 1.6rem; }
@@ -37,23 +38,26 @@
             background: white; padding: 10px; border-radius: 12px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 10px;
             align-items: center;
+            flex-shrink: 0; /* 防止被壓縮 */
         }
         .user-info { font-weight: bold; font-size: 1.1rem; cursor: pointer; color: var(--primary); }
         .currency { font-size: 1rem; display: flex; gap: 10px; }
 
-        /* 畫布 */
+        /* 畫布區域 */
         .canvas-container {
             position: relative;
             margin-bottom: 10px;
             border-radius: 15px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
             background: white;
-            cursor: crosshair; /* 預設游標 */
+            cursor: crosshair;
             overflow: hidden;
+            flex-shrink: 0; /* 防止被壓縮 */
         }
+        
+        /* 畫布本身禁止瀏覽器預設觸控行為（如捲動），以確保拖曳順暢 */
         canvas { display: block; touch-action: none; }
         
-        /* 新增：畫布操作提示 */
         .canvas-tip {
             position: absolute; bottom: 5px; left: 0; width: 100%;
             text-align: center; font-size: 0.85rem; color: #7f8c8d;
@@ -66,6 +70,7 @@
             background: #fff; border: 2px solid #3498db;
             padding: 15px; border-radius: 12px; margin-bottom: 15px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            box-sizing: border-box; /* 確保 padding 不撐破寬度 */
         }
         
         .input-header { 
@@ -98,6 +103,7 @@
             background: white; padding: 15px; border-radius: 12px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             margin-bottom: 15px; text-align: center;
+            box-sizing: border-box;
         }
         .triangle-type {
             font-size: 1.5rem; font-weight: bold; color: var(--primary); margin-bottom: 5px; min-height: 1.5em;
@@ -114,6 +120,7 @@
         .btn-teach { background-color: var(--success); }
         .btn-quiz { background-color: var(--warning); }
         .btn-build { background-color: var(--danger); }
+        .btn-settings { background-color: #7f8c8d; } 
         .btn-shop { background-color: #3498db; width: 100%; max-width: 600px; margin-top: 10px; padding: 12px;}
         .btn-apply { background-color: var(--primary); width: 100%; margin-top: 15px; border-radius: 10px;}
         .btn-action { background-color: var(--primary); display: none; margin-top: 10px; width: 100%; padding: 12px; animation: pulse 1s infinite;}
@@ -134,9 +141,13 @@
 
         /* 商店彈窗 */
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
-        .modal { background: white; padding: 25px; border-radius: 15px; width: 90%; max-width: 400px; text-align: center; position: relative; animation: popIn 0.3s; }
+        .modal { background: white; padding: 25px; border-radius: 15px; width: 90%; max-width: 400px; text-align: center; position: relative; animation: popIn 0.3s; max-height: 90vh; overflow-y: auto; }
         @keyframes popIn { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
         .close-btn { position: absolute; top: 10px; right: 10px; background: #ccc; width: 30px; height: 30px; border-radius: 50%; border: none; font-weight: bold; color: white; cursor: pointer; }
+
+        /* 設定彈窗內的樣式 */
+        .settings-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; }
+        .settings-row input { width: 60px; padding: 5px; text-align: center; border: 1px solid #ccc; border-radius: 5px; }
 
         #particle-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999; }
         .particle { position: absolute; font-size: 1.5rem; animation: fall 2s linear forwards; }
@@ -165,7 +176,8 @@
     <div class="canvas-container">
         <div id="mode-label" class="mode-badge">教學模式</div>
         <div id="feedback-text" class="quiz-feedback">O</div>
-        <canvas id="geoCanvas" width="600" height="600"></canvas> <div class="canvas-tip">💡 提示：拖曳頂點可改變形狀，拖曳空白處可移動整個三角形。</div>
+        <canvas id="geoCanvas" width="600" height="600"></canvas>
+        <div class="canvas-tip">💡 提示：拖曳頂點可改變形狀，拖曳空白處可移動整個三角形。</div>
     </div>
 
     <div id="manual-panel" class="manual-panel">
@@ -246,6 +258,7 @@
         <button class="btn-teach" onclick="setMode('teach')">📖 自由探索</button>
         <button class="btn-quiz" onclick="setMode('quiz_select')">❓ 屬性測驗</button>
         <button class="btn-build" onclick="setMode('quiz_build')">🔨 建構挑戰</button>
+        <button class="btn-settings" onclick="openSettings()">⚙️ 設定</button>
     </div>
     
     <div style="width: 100%; max-width: 600px; text-align: center;">
@@ -253,7 +266,7 @@
         <button class="btn-shop" onclick="openShop()">🎁 獎勵商店</button>
     </div>
 
-    <div class="version-tag">Version 1.5 (大畫布平移版)</div>
+    <div class="version-tag">Version 1.7 (捲動修復版)</div>
 
     <div id="shop-modal" class="overlay">
         <div class="modal">
@@ -273,6 +286,22 @@
         </div>
     </div>
 
+    <div id="settings-modal" class="overlay">
+        <div class="modal">
+            <button class="close-btn" onclick="closeSettings()">×</button>
+            <h2>⚙️ 獎勵參數設定</h2>
+            <div class="settings-row">
+                <span>❓ 屬性測驗 (答對獲得)</span>
+                <div><input type="number" id="set-reward-select" min="1" value="1"> 💎</div>
+            </div>
+            <div class="settings-row">
+                <span>🔨 建構挑戰 (完成獲得)</span>
+                <div><input type="number" id="set-reward-build" min="1" value="3"> 💎</div>
+            </div>
+            <button class="btn-teach" onclick="saveSettings()">💾 儲存設定</button>
+        </div>
+    </div>
+
 <script>
     const canvas = document.getElementById('geoCanvas');
     const ctx = canvas.getContext('2d');
@@ -280,25 +309,31 @@
     // A=0, B=1, C=2
     let points = [
         {x: 300, y: 100, label: 'A', color: '#e74c3c'}, // Red
-        {x: 100, y: 500, label: 'B', color: '#27ae60'}, // Green (調整初始位置以適應大畫布)
+        {x: 100, y: 500, label: 'B', color: '#27ae60'}, // Green
         {x: 500, y: 500, label: 'C', color: '#2980b9'}  // Blue
     ];
     let dragIdx = -1;
-    // --- 新增平移相關變數 ---
     let isPanning = false;
     let lastPanPos = { x: 0, y: 0 };
-    // -----------------------
     let currentMode = 'teach'; 
     let currentTarget = null; 
-    let user = { name: "小小幾何學家", gems: 0, crowns: 0, log: [] };
-    const STORAGE_KEY = "tri_explorer_v1.5";
+    
+    let user = { 
+        name: "小小幾何學家", 
+        gems: 0, 
+        crowns: 0, 
+        log: [],
+        settings: { rewardSelect: 1, rewardBuild: 3 }
+    };
+    
+    const STORAGE_KEY = "tri_explorer_v1.7";
     const SCALE_FACTOR = 40; // 40px = 1 unit
 
     function init() {
         resizeCanvas();
         loadUser();
         updateUI();
-        toggleInputMode(); // init panel
+        toggleInputMode();
         draw();
         
         canvas.addEventListener('mousedown', onDown);
@@ -313,7 +348,6 @@
     function resizeCanvas() {
         let container = document.querySelector('.canvas-container');
         canvas.width = container.clientWidth;
-        // 加大畫布高度：使用 600px 或螢幕高度的 80% 取較小值 (避免在超長螢幕太長)
         canvas.height = Math.min(600, window.innerHeight * 0.8); 
         draw();
     }
@@ -381,7 +415,6 @@
         return [A, B, C];
     }
 
-    // --- 核心：同步邏輯 ---
     function syncInputsWithCanvas(sides, angles) {
         if(!sides) sides = getSides();
         if(!angles) angles = getAngles(sides);
@@ -480,7 +513,6 @@
         syncInputsWithCanvas();
     }
 
-    // --- 核心：向量變形邏輯 (定點版) ---
     function applyManualInput() {
         const mode = document.getElementById('inputModeSelect').value;
         
@@ -504,7 +536,6 @@
             P2 = points[idxP2];
 
             const currentAngle1 = Math.atan2(P1.y - anchor.y, P1.x - anchor.x);
-            
             const len1 = s1 * SCALE_FACTOR;
             points[idxP1].x = anchor.x + len1 * Math.cos(currentAngle1);
             points[idxP1].y = anchor.y + len1 * Math.sin(currentAngle1);
@@ -553,7 +584,6 @@
             const ang1Rad = ang1Deg * (Math.PI / 180);
             const ang2Rad = ang2Deg * (Math.PI / 180);
             const topAngRad = Math.PI - ang1Rad - ang2Rad;
-            
             const lenL_Top = (sideLen * SCALE_FACTOR) * Math.sin(ang2Rad) / Math.sin(topAngRad);
 
             const oldTop = points[idxTop];
@@ -607,7 +637,6 @@
         speak("變形完成");
     }
 
-    // --- 互動與共用函式 ---
     function getPointerPos(e) {
         let rect = canvas.getBoundingClientRect();
         let clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -615,35 +644,30 @@
         return { x: clientX - rect.left, y: clientY - rect.top };
     }
 
-    // 修改後的 onDown：增加平移偵測
     function onDown(e) {
         if(e.type === 'touchstart') e.preventDefault();
         let pos = getPointerPos(e);
         dragIdx = -1;
         points.forEach((p, i) => { if (dist(pos, p) < 30) dragIdx = i; });
 
-        // 如果沒有點到頂點，則開始平移
         if (dragIdx === -1) {
             isPanning = true;
             lastPanPos = pos;
-            canvas.style.cursor = 'grabbing'; // 改變游標
+            canvas.style.cursor = 'grabbing'; 
         }
     }
 
-    // 修改後的 onMove：處理拖曳頂點或平移
     function onMove(e) {
         if(e.type === 'touchmove') e.preventDefault();
         let pos = getPointerPos(e);
 
         if (dragIdx !== -1) {
-            // 拖曳頂點 (有邊界限制)
             pos.x = Math.max(10, Math.min(canvas.width - 10, pos.x));
             pos.y = Math.max(10, Math.min(canvas.height - 10, pos.y));
             points[dragIdx].x = pos.x;
             points[dragIdx].y = pos.y;
             draw();
         } else if (isPanning) {
-            // 平移整個三角形 (無邊界限制，方便移出畫面外再移回)
             const dx = pos.x - lastPanPos.x;
             const dy = pos.y - lastPanPos.y;
             points.forEach(p => {
@@ -655,11 +679,10 @@
         }
     }
 
-    // 修改後的 onUp：結束平移
     function onUp(e) {
         dragIdx = -1;
         isPanning = false;
-        canvas.style.cursor = 'crosshair'; // 還原游標
+        canvas.style.cursor = 'crosshair';
     }
 
     function setMode(mode) {
@@ -701,11 +724,20 @@
         let sides = getSides(); let angles = getAngles(sides);
         let typeStr = analyzeTriangle(sides, angles);
         let isCorrect = typeStr.includes(currentTarget.target);
+        let reward = user.settings && user.settings.rewardSelect ? parseInt(user.settings.rewardSelect) : 1;
         let feedback = document.getElementById('quiz-question');
-        if (isCorrect) { feedback.innerHTML += `<br><span style="color:green">⭕ 是的！這是 ${typeStr}</span>`; addReward(1); showFeedback(true); } 
-        else { feedback.innerHTML += `<br><span style="color:red">❌ 不是喔，這是 ${typeStr}</span>`; showFeedback(false); }
+        
+        if (isCorrect) { 
+            feedback.innerHTML += `<br><span style="color:green">⭕ 是的！這是 ${typeStr}</span>`; 
+            addReward(reward); 
+            showFeedback(true); 
+        } else { 
+            feedback.innerHTML += `<br><span style="color:red">❌ 不是喔，這是 ${typeStr}</span>`; 
+            showFeedback(false); 
+        }
         let subBtn = document.getElementById('btn-submit'); subBtn.innerText = "➡ 下一題"; subBtn.onclick = startQuizSelect;
     }
+    
     function startQuizBuild() {
         let qBox = document.getElementById('quiz-question');
         qBox.style.display = 'block';
@@ -723,11 +755,20 @@
         let typeStr = analyzeTriangle(sides, angles);
         let target = currentTarget.target;
         let isCorrect = (target === "等腰直角") ? (typeStr.includes("等腰") && typeStr.includes("直角")) : typeStr.includes(target);
-        if (isCorrect) { alert(`太棒了！獲得 3 顆寶石💎`); addReward(3); showFeedback(true); triggerParticles(); setTimeout(startQuizBuild, 1500); } 
-        else { alert(`還差一點點喔！目前是：${typeStr}`); showFeedback(false); }
+        let reward = user.settings && user.settings.rewardBuild ? parseInt(user.settings.rewardBuild) : 3;
+        
+        if (isCorrect) { 
+            alert(`太棒了！獲得 ${reward} 顆寶石💎`); 
+            addReward(reward); 
+            showFeedback(true); 
+            triggerParticles(); 
+            setTimeout(startQuizBuild, 1500); 
+        } else { 
+            alert(`還差一點點喔！目前是：${typeStr}`); 
+            showFeedback(false); 
+        }
     }
     function randomizeTriangle() {
-        // 調整隨機生成的範圍以適應大畫布
         points[0].x = 100 + Math.random()*400; points[0].y = 50 + Math.random()*150;
         points[1].x = 50 + Math.random()*200; points[1].y = 300 + Math.random()*200;
         points[2].x = 350 + Math.random()*200; points[2].y = 300 + Math.random()*200;
@@ -739,9 +780,31 @@
         document.getElementById('u-crowns').innerText = user.crowns;
         if(document.getElementById('shop-gems')) { document.getElementById('shop-gems').innerText = user.gems; document.getElementById('shop-crowns').innerText = user.crowns; }
     }
-    function loadUser() { let data = localStorage.getItem(STORAGE_KEY); if (data) user = JSON.parse(data); }
+    function loadUser() { 
+        let data = localStorage.getItem(STORAGE_KEY); 
+        if (data) {
+            user = JSON.parse(data);
+            if (!user.settings) user.settings = { rewardSelect: 1, rewardBuild: 3 };
+        }
+    }
     function saveUser() { localStorage.setItem(STORAGE_KEY, JSON.stringify(user)); }
     function changeName() { let n = prompt("請輸入你的名字：", user.name); if (n) { user.name = n; saveUser(); updateUI(); } }
+    
+    // --- 設定功能 ---
+    function openSettings() {
+        document.getElementById('settings-modal').style.display = 'flex';
+        document.getElementById('set-reward-select').value = user.settings.rewardSelect;
+        document.getElementById('set-reward-build').value = user.settings.rewardBuild;
+    }
+    function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
+    function saveSettings() {
+        user.settings.rewardSelect = parseInt(document.getElementById('set-reward-select').value);
+        user.settings.rewardBuild = parseInt(document.getElementById('set-reward-build').value);
+        saveUser();
+        closeSettings();
+        alert("設定已儲存！");
+    }
+
     function openShop() { document.getElementById('shop-modal').style.display = 'flex'; renderShopLog(); updateUI(); }
     function closeShop() { document.getElementById('shop-modal').style.display = 'none'; }
     function buyItem() {
@@ -752,6 +815,7 @@
     }
     function successBuy(item, cost, icon) { user.log.unshift(`兌換 ${item} (-${cost}${icon})`); saveUser(); updateUI(); renderShopLog(); alert("兌換成功！"); }
     function renderShopLog() { document.getElementById('shop-log').innerHTML = user.log.map(l => `<div>${l}</div>`).join(''); }
+
     function speak(txt) { if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); let u = new SpeechSynthesisUtterance(txt); u.lang = 'zh-TW'; window.speechSynthesis.speak(u); } }
     function showFeedback(isCorrect) {
         let el = document.getElementById('feedback-text'); el.innerText = isCorrect ? "O" : "X";
