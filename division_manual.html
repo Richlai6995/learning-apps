@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>除法闖關王 4.8 (修復版)</title>
+    <title>除法闖關王 4.9 (儲存修復版)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -151,15 +151,22 @@
         .teach-gem-tag { color: #27ae60; background: #d5f5e3; padding: 2px 8px; border-radius: 10px; font-size: 0.9rem; margin-left: 5px;}
         .score-tag { color: #d35400; background: #fdebd0; padding: 2px 8px; border-radius: 10px; font-size: 0.9rem; margin-left: 5px;}
         
-        /* 編輯區 */
+        /* 編輯區樣式 */
         .gen-controls { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; background: #eef; padding: 15px; border-radius: 10px; }
         .gen-controls input { padding: 8px; width: 60px; text-align: center; border-radius: 5px; border: 1px solid #ccc;}
         
+        /* 題目編輯列 */
         .edit-row { 
             display: flex; gap: 10px; margin-bottom: 8px; align-items: center; 
             background: #fff; padding: 5px; border-radius: 5px; border: 1px solid #eee;
         }
         .edit-row input { padding: 8px; flex: 1; text-align: center; border-radius: 5px; border: 1px solid #ccc; font-size: 1.1rem; }
+        
+        /* 商店列樣式 (獨立出來避免衝突) */
+        .shop-row { 
+            display: flex; gap: 10px; margin-bottom: 8px; align-items: center; 
+            background: #fff; padding: 5px; border-radius: 5px; border: 1px solid #eee;
+        }
         
         .settings-box { background-color: #f0f8ff; border: 2px solid #bcdbf3; border-radius: 10px; padding: 15px; margin-bottom: 20px; }
         .checkbox-group { display: flex; gap: 20px; justify-content: center; }
@@ -252,7 +259,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v4.8 (修復版)</div>
+        <div class="version-tag">版本：v4.9 (儲存修復版)</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -273,8 +280,7 @@
             </div>
             
             <div style="text-align:center; margin-bottom:10px; color:#555; font-weight:bold;">需要花費</div>
-            <div class="edit-row">
-                <input type="number" id="gift-cost" class="exchange-input" placeholder="數量" min="1">
+            <div class="shop-row"> <input type="number" id="gift-cost" class="exchange-input" placeholder="數量" min="1">
                 <select id="gift-currency" class="exchange-input" style="background:white;">
                     <option value="gems">💎 寶石</option>
                     <option value="crowns">👑 皇冠</option>
@@ -477,7 +483,7 @@
         event.target.classList.add('active');
     }
 
-    // --- 題庫管理 (修復重點) ---
+    // --- 題庫管理 ---
     function createNewList() { 
         editingId = null; 
         document.getElementById('list-name').value="新題庫"; 
@@ -516,7 +522,7 @@
         }
     }
     
-    // 儲存題庫
+    // 儲存題庫 (修正：限制搜尋範圍在 #editor-rows 內)
     function saveList() { 
         try {
             const n = document.getElementById('list-name').value; 
@@ -527,17 +533,21 @@
             const pVal = parseInt(document.getElementById('list-pass-score').value);
             const passScore = isNaN(pVal) ? 100 : pVal;
 
-            const rs = document.querySelectorAll('.edit-row'); 
+            // 修正點：只抓取編輯區內的 edit-row，避免抓到商店區塊
+            const rs = document.querySelectorAll('#editor-rows .edit-row'); 
             const qs = []; 
             
             rs.forEach(r => {
-                const aVal = r.querySelector('.inp-a').value;
-                const bVal = r.querySelector('.inp-b').value;
-                const a = parseInt(aVal); 
-                const b = parseInt(bVal); 
+                const aInput = r.querySelector('.inp-a');
+                const bInput = r.querySelector('.inp-b');
                 
-                if(!isNaN(a) && !isNaN(b) && b > 0) {
-                    qs.push({a: a, b: b});
+                if (aInput && bInput) {
+                    const a = parseInt(aInput.value); 
+                    const b = parseInt(bInput.value); 
+                    
+                    if(!isNaN(a) && !isNaN(b) && b > 0) {
+                        qs.push({a: a, b: b});
+                    }
                 }
             }); 
 
@@ -586,7 +596,7 @@
         const now = new Date();
         const dateStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}`;
         const exportObj = {
-            version: "4.8",
+            version: "4.9",
             student: { name: studentName, totalGems: totalGems },
             lists: allLists,
             exchangeLog: exchangeLog
