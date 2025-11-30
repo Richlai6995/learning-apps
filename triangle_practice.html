@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>三角形探險家 6.0 (數值輸入版)</title>
+    <title>三角形探險家 v1.1</title>
     <style>
         :root {
             --primary: #8e44ad;
@@ -54,23 +54,28 @@
         }
         canvas { display: block; touch-action: none; }
 
-        /* --- 手動輸入面板 (新功能) --- */
+        /* --- 手動輸入面板 (改良版) --- */
         .manual-panel {
             width: 100%; max-width: 600px;
-            background: var(--input-bg); border: 2px solid #2980b9;
+            background: #fff; border: 2px solid #3498db;
             padding: 15px; border-radius: 12px; margin-bottom: 15px;
-            display: none; /* 預設隱藏 */
-            animation: slideDown 0.3s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
-        @keyframes slideDown { from{opacity:0; transform: translateY(-10px);} to{opacity:1; transform: translateY(0);} }
         
-        .input-group { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: center; margin-bottom: 10px;}
-        .input-item { display: flex; flex-direction: column; align-items: center; }
-        .input-item label { font-size: 0.9rem; font-weight: bold; color: #555; margin-bottom: 3px; }
-        .input-item input { width: 60px; padding: 5px; text-align: center; border-radius: 5px; border: 1px solid #aaa; }
-        .radio-group { display: flex; gap: 15px; margin-bottom: 10px; justify-content: center; font-weight: bold;}
+        .input-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;}
+        .input-title { font-weight: bold; color: #2980b9; font-size: 1.1rem; }
+        
+        .radio-group { display: flex; gap: 15px; font-size: 0.95rem; }
+        .input-row { display: flex; gap: 10px; justify-content: space-around; align-items: flex-end; margin-top: 10px; }
+        .input-item { display: flex; flex-direction: column; align-items: center; width: 30%; }
+        .input-item label { font-size: 0.9rem; font-weight: bold; margin-bottom: 3px; }
+        .input-item input { 
+            width: 100%; padding: 8px; text-align: center; border-radius: 8px; 
+            border: 1px solid #ccc; font-size: 1.1rem; font-weight: bold; color: #333;
+        }
+        .input-item input:focus { border-color: var(--primary); outline: none; background: #fdf2ff; }
 
-        /* --- 資訊面板 --- */
+        /* --- 資訊顯示 --- */
         .info-panel {
             width: 100%; max-width: 600px;
             background: white; padding: 15px; border-radius: 12px;
@@ -78,22 +83,11 @@
             margin-bottom: 15px; text-align: center;
         }
         .triangle-type {
-            font-size: 1.5rem; font-weight: bold; color: var(--primary); margin-bottom: 5px;
-            min-height: 1.5em;
+            font-size: 1.5rem; font-weight: bold; color: var(--primary); margin-bottom: 5px; min-height: 1.5em;
         }
-        .stats-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-            font-size: 1rem; text-align: left;
-        }
-        .stat-item { background: #f9f9f9; padding: 8px; border-radius: 8px; border-left: 4px solid #ccc;}
-        .stat-angle { border-color: #e67e22; }
-        .stat-side { border-color: #2980b9; }
-
-        /* --- 控制按鈕區 --- */
-        .controls {
-            display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
-            width: 100%; max-width: 600px; margin-bottom: 20px;
-        }
+        
+        /* --- 按鈕 --- */
+        .controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 600px; margin-bottom: 20px; }
         button {
             border: none; border-radius: 25px; padding: 10px 15px;
             font-size: 0.95rem; font-weight: bold; cursor: pointer;
@@ -104,47 +98,33 @@
         .btn-teach { background-color: var(--success); }
         .btn-quiz { background-color: var(--warning); }
         .btn-build { background-color: var(--danger); }
-        .btn-input { background-color: #2980b9; } /* 新按鈕 */
-        
         .btn-shop { background-color: #3498db; width: 100%; max-width: 600px; margin-top: 10px; padding: 12px;}
+        .btn-apply { background-color: var(--primary); width: 100%; margin-top: 15px; border-radius: 10px;}
         .btn-action { background-color: var(--primary); display: none; margin-top: 10px; width: 100%; padding: 12px; animation: pulse 1s infinite;}
-        .btn-apply { background-color: #27ae60; width: 100%; margin-top:5px; }
 
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
 
-        /* --- 模式提示 --- */
         .mode-badge {
             background: var(--dark); color: white; padding: 4px 12px;
             border-radius: 15px; font-size: 0.9rem; position: absolute;
             top: 10px; left: 10px; pointer-events: none; opacity: 0.8;
         }
-
-        /* --- 商店與彈窗 --- */
-        .overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center;
-        }
-        .modal {
-            background: white; padding: 25px; border-radius: 15px; width: 90%; max-width: 400px;
-            text-align: center; position: relative; animation: popIn 0.3s;
-        }
-        @keyframes popIn { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
         
-        .close-btn {
-            position: absolute; top: 10px; right: 10px; background: #ccc;
-            width: 30px; height: 30px; border-radius: 50%; border: none;
-            font-weight: bold; color: white; cursor: pointer;
+        .version-tag {
+            position: fixed; bottom: 5px; left: 5px; font-size: 0.8rem; color: #aaa; font-family: monospace;
         }
+
+        /* 商店彈窗 */
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+        .modal { background: white; padding: 25px; border-radius: 15px; width: 90%; max-width: 400px; text-align: center; position: relative; animation: popIn 0.3s; }
+        @keyframes popIn { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
+        .close-btn { position: absolute; top: 10px; right: 10px; background: #ccc; width: 30px; height: 30px; border-radius: 50%; border: none; font-weight: bold; color: white; cursor: pointer; }
 
         #particle-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999; }
         .particle { position: absolute; font-size: 1.5rem; animation: fall 2s linear forwards; }
         @keyframes fall { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(100vh); } }
 
-        .quiz-feedback { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-size: 4rem; font-weight: bold; text-shadow: 0 0 10px white;
-            display: none; pointer-events: none; z-index: 10;
-        }
+        .quiz-feedback { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 4rem; font-weight: bold; text-shadow: 0 0 10px white; display: none; pointer-events: none; z-index: 10; }
         .correct-txt { color: var(--success); }
         .wrong-txt { color: var(--danger); }
 
@@ -170,50 +150,58 @@
         <canvas id="geoCanvas" width="600" height="400"></canvas>
     </div>
 
-    <div id="input-panel" class="manual-panel">
-        <div class="radio-group">
-            <label><input type="radio" name="inputMode" value="sss" checked onchange="toggleInputMode()"> 已知三邊 (SSS)</label>
-            <label><input type="radio" name="inputMode" value="sas" onchange="toggleInputMode()"> 兩邊一夾角 (SAS)</label>
+    <div id="manual-panel" class="manual-panel">
+        <div class="input-header">
+            <span class="input-title">🛠️ 參數實驗室</span>
+            <div class="radio-group">
+                <label><input type="radio" name="inputMode" value="sss" checked onchange="toggleInputMode()"> 調整三邊 (SSS)</label>
+                <label><input type="radio" name="inputMode" value="sas" onchange="toggleInputMode()"> 調整夾角 (SAS)</label>
+            </div>
         </div>
         
-        <div id="inputs-sss" class="input-group">
-            <div class="input-item"><label style="color:#e74c3c">邊 a</label><input type="number" id="in-a" value="10" min="1"></div>
-            <div class="input-item"><label style="color:#27ae60">邊 b</label><input type="number" id="in-b" value="10" min="1"></div>
-            <div class="input-item"><label style="color:#2980b9">邊 c</label><input type="number" id="in-c" value="10" min="1"></div>
+        <div id="inputs-sss" class="input-row">
+            <div class="input-item">
+                <label style="color:#e74c3c">邊 a (對BC)</label>
+                <input type="number" id="in-a" step="0.1" onkeydown="if(event.key==='Enter') applyManualInput()">
+            </div>
+            <div class="input-item">
+                <label style="color:#27ae60">邊 b (對AC)</label>
+                <input type="number" id="in-b" step="0.1" onkeydown="if(event.key==='Enter') applyManualInput()">
+            </div>
+            <div class="input-item">
+                <label style="color:#2980b9">邊 c (對AB)</label>
+                <input type="number" id="in-c" step="0.1" onkeydown="if(event.key==='Enter') applyManualInput()">
+            </div>
         </div>
 
-        <div id="inputs-sas" class="input-group" style="display:none;">
-            <div class="input-item"><label style="color:#27ae60">邊 b</label><input type="number" id="in-sas-b" value="10" min="1"></div>
-            <div class="input-item"><label style="color:#e67e22">∠A (度)</label><input type="number" id="in-sas-A" value="60" min="1" max="179"></div>
-            <div class="input-item"><label style="color:#2980b9">邊 c</label><input type="number" id="in-sas-c" value="10" min="1"></div>
+        <div id="inputs-sas" class="input-row" style="display:none;">
+            <div class="input-item">
+                <label style="color:#2980b9">邊 c (AB)</label>
+                <input type="number" id="in-sas-c" step="0.1" onkeydown="if(event.key==='Enter') applyManualInput()">
+            </div>
+            <div class="input-item">
+                <label style="color:#e67e22">∠A (夾角)</label>
+                <input type="number" id="in-sas-A" step="1" onkeydown="if(event.key==='Enter') applyManualInput()">
+            </div>
+            <div class="input-item">
+                <label style="color:#27ae60">邊 b (AC)</label>
+                <input type="number" id="in-sas-b" step="0.1" onkeydown="if(event.key==='Enter') applyManualInput()">
+            </div>
         </div>
 
-        <button class="btn-apply" onclick="applyManualInput()">✨ 繪製三角形</button>
-        <div style="text-align:center; font-size:0.8rem; color:#7f8c8d; margin-top:5px;">(系統會自動縮放以符合畫面)</div>
+        <button class="btn-apply" onclick="applyManualInput()">🔄 變更形狀</button>
     </div>
 
     <div class="info-panel">
         <div id="tri-type-display" class="triangle-type">任意三角形</div>
-        <div class="stats-grid">
-            <div class="stat-item stat-side">
-                <strong>邊長 (公分)</strong><br>
-                <span style="color:#e74c3c">a (對BC)</span> = <span id="val-a">0</span><br>
-                <span style="color:#27ae60">b (對AC)</span> = <span id="val-b">0</span><br>
-                <span style="color:#2980b9">c (對AB)</span> = <span id="val-c">0</span>
-            </div>
-            <div class="stat-item stat-angle">
-                <strong>角度 (度)</strong><br>
-                ∠A = <span id="deg-A">0</span>°<br>
-                ∠B = <span id="deg-B">0</span>°<br>
-                ∠C = <span id="deg-C">0</span>°
-            </div>
+        <div id="angle-info" style="font-size:1.1rem; color:#555; margin-top:5px;">
+            ∠A: 0° | ∠B: 0° | ∠C: 0°
         </div>
         <div id="quiz-question" style="display:none; margin-top:10px; font-weight:bold; font-size:1.2rem; color:#d35400;"></div>
     </div>
 
     <div class="controls">
         <button class="btn-teach" onclick="setMode('teach')">📖 自由探索</button>
-        <button class="btn-input" onclick="toggleInputPanel()">✏️ 輸入數值</button>
         <button class="btn-quiz" onclick="setMode('quiz_select')">❓ 屬性測驗</button>
         <button class="btn-build" onclick="setMode('quiz_build')">🔨 建構挑戰</button>
     </div>
@@ -222,6 +210,8 @@
         <button id="btn-submit" class="btn-action" onclick="checkAnswer()">✅ 送出答案</button>
         <button class="btn-shop" onclick="openShop()">🎁 獎勵商店</button>
     </div>
+
+    <div class="version-tag">Version 1.1</div>
 
     <div id="shop-modal" class="overlay">
         <div class="modal">
@@ -242,12 +232,10 @@
     </div>
 
 <script>
-    // --- 核心變數 ---
     const canvas = document.getElementById('geoCanvas');
     const ctx = canvas.getContext('2d');
     
-    // A: 上方紅點, B: 左下綠點, C: 右下藍點
-    // 邊長定義: a(BC長), b(AC長), c(AB長)
+    // 定義頂點 A, B, C (A在上方, B左下, C右下)
     let points = [
         {x: 300, y: 100, label: 'A', color: '#e74c3c'},
         {x: 100, y: 300, label: 'B', color: '#27ae60'},
@@ -257,16 +245,15 @@
     let currentMode = 'teach'; 
     let currentTarget = null; 
     let user = { name: "小小幾何學家", gems: 0, crowns: 0, log: [] };
-    const STORAGE_KEY = "tri_explorer_v6";
+    const STORAGE_KEY = "tri_explorer_v1.1";
+    const SCALE_FACTOR = 40; // 40px = 1 unit
 
-    // --- 初始化 ---
     function init() {
         resizeCanvas();
         loadUser();
         updateUI();
         draw();
         
-        // 畫布事件
         canvas.addEventListener('mousedown', onDown);
         canvas.addEventListener('mousemove', onMove);
         canvas.addEventListener('mouseup', onUp);
@@ -280,144 +267,15 @@
         let container = document.querySelector('.canvas-container');
         canvas.width = container.clientWidth;
         canvas.height = Math.min(400, window.innerHeight * 0.5);
+        // 簡單限制點不跑出畫面
+        points.forEach(p => {
+            p.x = Math.max(10, Math.min(canvas.width - 10, p.x));
+            p.y = Math.max(10, Math.min(canvas.height - 10, p.y));
+        });
         draw();
     }
 
-    // --- 手動輸入邏輯 (新功能) ---
-    function toggleInputPanel() {
-        const panel = document.getElementById('input-panel');
-        if(panel.style.display === 'block') panel.style.display = 'none';
-        else {
-            panel.style.display = 'block';
-            // 如果在測驗模式，提示會切回教學模式
-            if(currentMode !== 'teach') {
-                if(confirm("切換到輸入模式會回到「自由探索」，確定嗎？")) {
-                    setMode('teach');
-                } else {
-                    panel.style.display = 'none';
-                }
-            }
-        }
-    }
-
-    function toggleInputMode() {
-        const mode = document.querySelector('input[name="inputMode"]:checked').value;
-        document.getElementById('inputs-sss').style.display = mode === 'sss' ? 'flex' : 'none';
-        document.getElementById('inputs-sas').style.display = mode === 'sas' ? 'flex' : 'none';
-    }
-
-    function applyManualInput() {
-        const mode = document.querySelector('input[name="inputMode"]:checked').value;
-        let newA, newB, newC; // 座標
-
-        if (mode === 'sss') {
-            const a = parseFloat(document.getElementById('in-a').value);
-            const b = parseFloat(document.getElementById('in-b').value);
-            const c = parseFloat(document.getElementById('in-c').value);
-
-            if (a + b <= c || a + c <= b || b + c <= a) {
-                alert("這三邊無法構成三角形！\n(提示：兩邊之和必須大於第三邊)");
-                return;
-            }
-
-            // 計算座標 (使用餘弦定理求角 A)
-            // Cos A = (b^2 + c^2 - a^2) / 2bc
-            const cosA = (b*b + c*c - a*a) / (2*b*c);
-            const angA = Math.acos(cosA); // 弧度
-
-            // 設定 B 在 (0, 0)，C 在 (c, 0) -> 這是標準AB邊
-            // 但為了配合我們的畫布習慣 (A在上方)，我們重新定義：
-            // A 為原點(0,0)，B 在 (c, 0)，C 根據角A計算
-            // 這裡為了方便，計算相對座標後再置中
-            
-            // 讓 A 位於原點
-            const Ax = 0, Ay = 0;
-            // 讓 C 位於 X 軸上 (AC長度為 b) -> 不對，這樣角A是在原點
-            // 我們習慣：c邊是AB。讓A(0,0), B(c,0)。C點取決於b邊和角A
-            // 這樣 a 邊就是 BC 距離
-            
-            // 重新對應輸入的 a,b,c 到我們的頂點
-            // 輸入 a = BC, b = AC, c = AB
-            // 設 A = (0, 0)
-            // 設 C = (b, 0)  <- AC 在X軸上
-            // B 的座標：需要角A。Cos A = (b^2 + c^2 - a^2) / 2bc
-            // Bx = c * cosA, By = c * sinA
-            
-            const Bx = c * cosA;
-            const By = c * Math.sin(angA);
-            
-            // 原始座標 (未縮放)
-            newA = {x: 0, y: 0};
-            newC = {x: b, y: 0};  // AC = b
-            newB = {x: Bx, y: By}; // AB = c, BC 會自動是 a
-            
-        } else { // SAS
-            const b = parseFloat(document.getElementById('in-sas-b').value);
-            const degA = parseFloat(document.getElementById('in-sas-A').value);
-            const c = parseFloat(document.getElementById('in-sas-c').value);
-            
-            if (degA >= 180 || degA <= 0) { alert("角度必須在 0~180 之間"); return; }
-
-            const radA = degA * (Math.PI / 180);
-            
-            // A 在原點
-            newA = {x: 0, y: 0};
-            // C 在 X 軸 (AC = b)
-            newC = {x: b, y: 0};
-            // B 根據角度 (AB = c)
-            newB = {x: c * Math.cos(radA), y: c * Math.sin(radA)};
-        }
-
-        // --- 自動縮放與置中 ---
-        const coords = [newA, newB, newC];
-        const minX = Math.min(...coords.map(p=>p.x));
-        const maxX = Math.max(...coords.map(p=>p.x));
-        const minY = Math.min(...coords.map(p=>p.y));
-        const maxY = Math.max(...coords.map(p=>p.y));
-        
-        const w = maxX - minX;
-        const h = maxY - minY;
-        
-        // 畫布可用區域 (留邊距 100px)
-        const availW = canvas.width - 100;
-        const availH = canvas.height - 100;
-        
-        const scale = Math.min(availW / w, availH / h);
-        
-        // 畫布中心
-        const cx = canvas.width / 2;
-        const cy = canvas.height / 2;
-        
-        // 圖形中心
-        const figCx = (minX + maxX) / 2;
-        const figCy = (minY + maxY) / 2;
-
-        // 更新全域點位 (套用縮放與平移)
-        // 注意 Canvas Y 軸是向下的，為了讓三角形頂點朝上自然一點，我們可能需要翻轉或直接計算
-        // 這裡直接套用，如果算出 By 是正的，在 Canvas 會往下畫，這符合直角座標系視覺
-        
-        points[0].x = cx + (newA.x - figCx) * scale;
-        points[0].y = cy + (newA.y - figCy) * scale; // 這裡不反轉Y，因為輸入計算通常用正值
-        
-        points[1].x = cx + (newB.x - figCx) * scale;
-        points[1].y = cy + (newB.y - figCy) * scale;
-        
-        points[2].x = cx + (newC.x - figCx) * scale;
-        points[2].y = cy + (newC.y - figCy) * scale;
-
-        draw();
-        
-        // 更新輸入框顯示 (讓使用者知道如果是 SSS 模式算出了什麼角度)
-        if(mode === 'sss') {
-            // 計算完後再說
-        }
-        
-        // 隱藏面板
-        if(window.innerWidth < 600) document.getElementById('input-panel').style.display = 'none';
-        speak("三角形繪製完成！");
-    }
-
-    // --- 繪圖邏輯 ---
+    // --- 核心繪圖與計算 ---
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawGrid();
@@ -428,7 +286,6 @@
         ctx.lineTo(points[1].x, points[1].y);
         ctx.lineTo(points[2].x, points[2].y);
         ctx.closePath();
-        
         ctx.fillStyle = 'rgba(142, 68, 173, 0.1)';
         ctx.fill();
         ctx.lineWidth = 4;
@@ -438,7 +295,7 @@
         let sides = getSides(); 
         let angles = getAngles(sides);
 
-        // 畫頂點
+        // 畫點
         points.forEach((p, i) => {
             ctx.beginPath();
             ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
@@ -447,36 +304,36 @@
             ctx.strokeStyle = 'white';
             ctx.lineWidth = 3;
             ctx.stroke();
-            
             ctx.fillStyle = '#2c3e50';
             ctx.font = 'bold 16px Arial';
             ctx.fillText(p.label, p.x - 5, p.y - 15);
         });
 
-        updateStats(sides, angles);
+        // 只有在非拖曳狀態或拖曳結束時更新輸入框，避免打字衝突
+        // 但為了即時性，我們檢查是否正在聚焦輸入框
+        if (document.activeElement.tagName !== 'INPUT') {
+            updateStatsAndInputs(sides, angles);
+        } else {
+            // 僅更新文字顯示，不更新 Input value 以免干擾輸入
+            updateTextDisplay(sides, angles);
+        }
     }
 
     function drawGrid() {
-        ctx.strokeStyle = '#e0e0e0';
+        ctx.strokeStyle = '#f0f0f0';
         ctx.lineWidth = 1;
         const step = 40;
         for(let x=0; x<canvas.width; x+=step) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
         for(let y=0; y<canvas.height; y+=step) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
     }
 
-    // --- 數學計算 ---
-    function dist(p1, p2) {
-        return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
-    }
+    function dist(p1, p2) { return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2)); }
 
     function getSides() {
-        // 我們這裡做一個"相對比例"的換算，讓顯示的數值好看一點
-        // 假設螢幕上最長邊對應到大約 10~20 的單位，或者依據輸入模式的比例
-        // 為了簡單，我們以 40px = 1單位
-        let scale = 40;
-        let a = dist(points[1], points[2]) / scale; // BC
-        let b = dist(points[0], points[2]) / scale; // AC
-        let c = dist(points[0], points[1]) / scale; // AB
+        // a=BC, b=AC, c=AB
+        let a = dist(points[1], points[2]) / SCALE_FACTOR;
+        let b = dist(points[0], points[2]) / SCALE_FACTOR;
+        let c = dist(points[0], points[1]) / SCALE_FACTOR;
         return [a, b, c];
     }
 
@@ -485,14 +342,42 @@
         let A = Math.acos((b*b + c*c - a*a) / (2*b*c)) * (180 / Math.PI);
         let B = Math.acos((a*a + c*c - b*b) / (2*a*c)) * (180 / Math.PI);
         let C = 180 - A - B;
-        // 避免 NaN (點重合時)
         if(isNaN(A)) A=0; if(isNaN(B)) B=0; if(isNaN(C)) C=0;
         return [A, B, C];
     }
 
+    function updateStatsAndInputs(sides, angles) {
+        updateTextDisplay(sides, angles);
+
+        // 同步更新輸入框數值
+        document.getElementById('in-a').value = sides[0].toFixed(1);
+        document.getElementById('in-b').value = sides[1].toFixed(1);
+        document.getElementById('in-c').value = sides[2].toFixed(1);
+        
+        document.getElementById('in-sas-c').value = sides[2].toFixed(1);
+        document.getElementById('in-sas-b').value = sides[1].toFixed(1);
+        document.getElementById('in-sas-A').value = Math.round(angles[0]);
+    }
+
+    function updateTextDisplay(sides, angles) {
+        let typeText = analyzeTriangle(sides, angles);
+        if (currentMode === 'teach') {
+            document.getElementById('tri-type-display').innerText = typeText;
+            document.getElementById('tri-type-display').style.color = '#8e44ad';
+        } else if (currentMode === 'quiz_build') {
+            document.getElementById('tri-type-display').innerText = "建構中..."; 
+            document.getElementById('tri-type-display').style.color = '#95a5a6';
+        } else {
+            document.getElementById('tri-type-display').innerText = "??? 三角形";
+        }
+
+        document.getElementById('angle-info').innerText = 
+            `∠A: ${Math.round(angles[0])}° | ∠B: ${Math.round(angles[1])}° | ∠C: ${Math.round(angles[2])}°`;
+    }
+
     function analyzeTriangle(sides, angles) {
-        let [a, b, c] = sides;
         let [A, B, C] = angles;
+        let [a, b, c] = sides;
         let maxAngle = Math.max(A, B, C);
         let labels = [];
 
@@ -509,26 +394,73 @@
         return labels.join(" ") + "三角形";
     }
 
-    function updateStats(sides, angles) {
-        document.getElementById('val-a').innerText = sides[0].toFixed(1);
-        document.getElementById('val-b').innerText = sides[1].toFixed(1);
-        document.getElementById('val-c').innerText = sides[2].toFixed(1);
-        
-        document.getElementById('deg-A').innerText = Math.round(angles[0]);
-        document.getElementById('deg-B').innerText = Math.round(angles[1]);
-        document.getElementById('deg-C').innerText = Math.round(angles[2]);
+    // --- 手動輸入變形邏輯 (重點修正) ---
+    function toggleInputMode() {
+        const mode = document.querySelector('input[name="inputMode"]:checked').value;
+        document.getElementById('inputs-sss').style.display = mode === 'sss' ? 'flex' : 'none';
+        document.getElementById('inputs-sas').style.display = mode === 'sas' ? 'flex' : 'none';
+    }
 
-        let typeText = analyzeTriangle(sides, angles);
-        
-        if (currentMode === 'teach') {
-            document.getElementById('tri-type-display').innerText = typeText;
-            document.getElementById('tri-type-display').style.color = '#8e44ad';
-        } else if (currentMode === 'quiz_build') {
-            document.getElementById('tri-type-display').innerText = "建構中..."; 
-            document.getElementById('tri-type-display').style.color = '#95a5a6';
+    function applyManualInput() {
+        const mode = document.querySelector('input[name="inputMode"]:checked').value;
+        let a, b, c, angA;
+
+        // 1. 取得目標邊長與角度
+        if (mode === 'sss') {
+            a = parseFloat(document.getElementById('in-a').value);
+            b = parseFloat(document.getElementById('in-b').value);
+            c = parseFloat(document.getElementById('in-c').value);
+            
+            // 三角形不等式檢查
+            if (a + b <= c || a + c <= b || b + c <= a) {
+                alert("❌ 無法構成三角形！\n提示：任兩邊之和必須大於第三邊。");
+                return;
+            }
+            // 計算角 A
+            angA = Math.acos((b*b + c*c - a*a) / (2*b*c)); // 弧度
         } else {
-            document.getElementById('tri-type-display').innerText = "??? 三角形";
+            c = parseFloat(document.getElementById('in-sas-c').value); // AB
+            b = parseFloat(document.getElementById('in-sas-b').value); // AC
+            let degA = parseFloat(document.getElementById('in-sas-A').value);
+            if (degA >= 180 || degA <= 0) { alert("角度必須在 0~180 之間"); return; }
+            angA = degA * (Math.PI / 180);
         }
+
+        // 2. 進行變形 (保持 A 點不動，保持 AB 邊的方向不動)
+        const pA = points[0]; 
+        const pB = points[1]; 
+        const pC = points[2];
+
+        // 計算目前 AB 的方向向量角度
+        const currentAngleAB = Math.atan2(pB.y - pA.y, pB.x - pA.x);
+        
+        // 更新 B 點：沿著目前 AB 方向延伸 c 長度
+        // 注意：輸入單位要轉回像素單位
+        const pixelC = c * SCALE_FACTOR;
+        pB.x = pA.x + pixelC * Math.cos(currentAngleAB);
+        pB.y = pA.y + pixelC * Math.sin(currentAngleAB);
+
+        // 更新 C 點：
+        // 我們需要知道目前 C 是在 AB 的順時針還是逆時針側，以保持形狀翻轉的一致性
+        // 使用叉積 (Cross Product) 判斷方向
+        // Vector AB = (Bx-Ax, By-Ay), Vector AC = (Cx-Ax, Cy-Ay)
+        // Cross = (Bx-Ax)*(Cy-Ay) - (By-Ay)*(Cx-Ax)
+        const crossProduct = (pB.x - pA.x)*(pC.y - pA.y) - (pB.y - pA.y)*(pC.x - pA.x);
+        
+        // 決定 C 的旋轉方向 (+angA 或 -angA)
+        // 如果 crossProduct > 0，C 在 AB 順時針(視座標系而定)
+        // 簡單來說，我們讓新角度相對於 AB 的偏轉方向與原本一致
+        let direction = crossProduct >= 0 ? 1 : -1;
+        
+        const pixelB = b * SCALE_FACTOR; // AC長度
+        const newAngleAC = currentAngleAB + (direction * angA);
+        
+        pC.x = pA.x + pixelB * Math.cos(newAngleAC);
+        pC.y = pA.y + pixelB * Math.sin(newAngleAC);
+
+        // 3. 重繪
+        draw();
+        speak("變形完成！");
     }
 
     // --- 拖曳互動 ---
@@ -542,9 +474,7 @@
     function onDown(e) {
         if(e.type === 'touchstart') e.preventDefault();
         let pos = getPointerPos(e);
-        points.forEach((p, i) => {
-            if (dist(pos, p) < 30) dragIdx = i;
-        });
+        points.forEach((p, i) => { if (dist(pos, p) < 30) dragIdx = i; });
     }
 
     function onMove(e) {
@@ -553,7 +483,6 @@
             let pos = getPointerPos(e);
             pos.x = Math.max(10, Math.min(canvas.width - 10, pos.x));
             pos.y = Math.max(10, Math.min(canvas.height - 10, pos.y));
-            
             points[dragIdx].x = pos.x;
             points[dragIdx].y = pos.y;
             draw();
@@ -572,9 +501,6 @@
         qBox.style.display = 'none';
         subBtn.style.display = 'none';
         
-        // 隱藏輸入面板
-        document.getElementById('input-panel').style.display = 'none';
-        
         if (mode === 'teach') {
             label.innerText = "教學模式";
             label.style.background = "#2c3e50";
@@ -591,24 +517,20 @@
         draw();
     }
 
-    // --- 測驗邏輯 ---
+    // --- 測驗功能 ---
     function startQuizSelect() {
         randomizeTriangle();
         draw();
         let qBox = document.getElementById('quiz-question');
         qBox.style.display = 'block';
-        
         let types = ["銳角", "直角", "鈍角", "等腰"];
         let target = types[Math.floor(Math.random() * types.length)];
         currentTarget = { type: 'select', target: target };
-        
         qBox.innerHTML = `題目：這是一個 <strong>${target}三角形</strong> 嗎？`;
-        
         let subBtn = document.getElementById('btn-submit');
         subBtn.innerText = "🤔 點此查看答案";
         subBtn.style.display = 'inline-block';
         subBtn.onclick = checkAnswerSelect;
-        
         speak(`題目：這是一個${target}三角形嗎？`);
     }
 
@@ -617,7 +539,6 @@
         let angles = getAngles(sides);
         let typeStr = analyzeTriangle(sides, angles);
         let isCorrect = typeStr.includes(currentTarget.target);
-        
         let feedback = document.getElementById('quiz-question');
         if (isCorrect) {
             feedback.innerHTML += `<br><span style="color:green">⭕ 是的！這是 ${typeStr}</span>`;
@@ -627,7 +548,6 @@
             feedback.innerHTML += `<br><span style="color:red">❌ 不是喔，這是 ${typeStr}</span>`;
             showFeedback(false);
         }
-        
         let subBtn = document.getElementById('btn-submit');
         subBtn.innerText = "➡ 下一題";
         subBtn.onclick = startQuizSelect;
@@ -640,12 +560,10 @@
         subBtn.style.display = 'inline-block';
         subBtn.innerText = "✅ 我做好了！";
         subBtn.onclick = checkAnswerBuild;
-
         let missions = ["直角", "鈍角", "等腰", "正", "等腰直角"];
         let target = missions[Math.floor(Math.random() * missions.length)];
         currentTarget = { type: 'build', target: target };
-        
-        qBox.innerHTML = `任務：請做出一個 <strong>${target}三角形</strong><br><span style='font-size:0.9rem'>(可手動拉動或輸入數值)</span>`;
+        qBox.innerHTML = `任務：請做出一個 <strong>${target}三角形</strong>`;
         speak(`任務開始：請做出一個${target}三角形`);
     }
 
@@ -655,12 +573,8 @@
         let typeStr = analyzeTriangle(sides, angles);
         let target = currentTarget.target;
         let isCorrect = false;
-
-        if (target === "等腰直角") {
-            isCorrect = typeStr.includes("等腰") && typeStr.includes("直角");
-        } else {
-            isCorrect = typeStr.includes(target);
-        }
+        if (target === "等腰直角") isCorrect = typeStr.includes("等腰") && typeStr.includes("直角");
+        else isCorrect = typeStr.includes(target);
 
         if (isCorrect) {
             alert(`太棒了！你成功做出了 ${typeStr}！獲得 3 顆寶石💎`);
@@ -683,18 +597,12 @@
         points[2].y = 250 + Math.random() * 100;
     }
 
-    // --- 獎勵與使用者 ---
+    // --- 系統功能 ---
     function addReward(gems) {
         user.gems += gems;
-        if (user.gems >= 100) {
-            user.gems -= 100;
-            user.crowns += 1;
-            alert("恭喜升級！獲得 1 頂皇冠 👑");
-        }
-        saveUser();
-        updateUI();
+        if (user.gems >= 100) { user.gems -= 100; user.crowns += 1; alert("恭喜升級！獲得 1 頂皇冠 👑"); }
+        saveUser(); updateUI();
     }
-
     function updateUI() {
         document.getElementById('u-name').innerText = user.name;
         document.getElementById('u-gems').innerText = user.gems;
@@ -704,68 +612,24 @@
             document.getElementById('shop-crowns').innerText = user.crowns;
         }
     }
-
-    function loadUser() {
-        let data = localStorage.getItem(STORAGE_KEY);
-        if (data) user = JSON.parse(data);
-    }
-
-    function saveUser() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-    }
-
-    function changeName() {
-        let n = prompt("請輸入你的名字：", user.name);
-        if (n) { user.name = n; saveUser(); updateUI(); }
-    }
-
-    // --- 商店功能 ---
-    function openShop() {
-        document.getElementById('shop-modal').style.display = 'flex';
-        renderShopLog();
-        updateUI();
-    }
-    function closeShop() { document.getElementById('shop-modal').style.display = 'none'; }
+    function loadUser() { let data = localStorage.getItem(STORAGE_KEY); if (data) user = JSON.parse(data); }
+    function saveUser() { localStorage.setItem(STORAGE_KEY, JSON.stringify(user)); }
+    function changeName() { let n = prompt("請輸入你的名字：", user.name); if (n) { user.name = n; saveUser(); updateUI(); } }
     
+    function openShop() { document.getElementById('shop-modal').style.display = 'flex'; renderShopLog(); updateUI(); }
+    function closeShop() { document.getElementById('shop-modal').style.display = 'none'; }
     function buyItem() {
         let name = document.getElementById('gift-name').value;
         let cost = parseInt(document.getElementById('gift-cost').value);
         let type = document.getElementById('gift-currency').value;
-        
         if(!name || !cost) return alert("請輸入完整資訊");
-        
-        if (type === 'gems') {
-            if(user.gems >= cost) { user.gems -= cost; successBuy(name, cost, '💎'); } 
-            else alert("寶石不足！");
-        } else {
-            if(user.crowns >= cost) { user.crowns -= cost; successBuy(name, cost, '👑'); } 
-            else alert("皇冠不足！");
-        }
+        if (type === 'gems') { if(user.gems >= cost) { user.gems -= cost; successBuy(name, cost, '💎'); } else alert("寶石不足！"); } 
+        else { if(user.crowns >= cost) { user.crowns -= cost; successBuy(name, cost, '👑'); } else alert("皇冠不足！"); }
     }
+    function successBuy(item, cost, icon) { user.log.unshift(`兌換 ${item} (-${cost}${icon})`); saveUser(); updateUI(); renderShopLog(); alert("兌換成功！"); }
+    function renderShopLog() { document.getElementById('shop-log').innerHTML = user.log.map(l => `<div>${l}</div>`).join(''); }
 
-    function successBuy(item, cost, icon) {
-        user.log.unshift(`兌換 ${item} (-${cost}${icon}) - ${new Date().toLocaleTimeString()}`);
-        saveUser();
-        updateUI();
-        renderShopLog();
-        alert("兌換成功！");
-    }
-
-    function renderShopLog() {
-        let div = document.getElementById('shop-log');
-        div.innerHTML = user.log.map(l => `<div>${l}</div>`).join('');
-    }
-
-    // --- 特效與語音 ---
-    function speak(txt) {
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-            let u = new SpeechSynthesisUtterance(txt);
-            u.lang = 'zh-TW';
-            window.speechSynthesis.speak(u);
-        }
-    }
-
+    function speak(txt) { if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); let u = new SpeechSynthesisUtterance(txt); u.lang = 'zh-TW'; window.speechSynthesis.speak(u); } }
     function showFeedback(isCorrect) {
         let el = document.getElementById('feedback-text');
         el.innerText = isCorrect ? "O" : "X";
@@ -773,7 +637,6 @@
         el.style.display = "block";
         setTimeout(() => el.style.display = "none", 1000);
     }
-
     function triggerParticles() {
         const container = document.getElementById('particle-container');
         for(let i=0; i<20; i++) {
@@ -787,9 +650,7 @@
         setTimeout(() => container.innerHTML = '', 2000);
     }
 
-    // 啟動
     init();
-
 </script>
 </body>
 </html>
