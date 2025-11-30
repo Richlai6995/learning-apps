@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>除法闖關王 4.7 (完美修復版)</title>
+    <title>除法闖關王 4.8 (修復版)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -15,11 +15,9 @@
             --warning: #f39c12;
             --help: #8e44ad;
             
-            /* 視覺提示顏色 */
             --hint-high: #27ae60;
             --hint-low: #2980b9;
 
-            /* 格子大小維持緊湊 */
             --cell-size: 42px; 
             --font-base: 1.1rem;
         }
@@ -40,7 +38,7 @@
 
         h1 { color: var(--primary); margin: 5px 0 15px 0; text-align: center; font-size: 1.8rem; }
 
-        /* --- 標題列 (Header) 修改：讓按鈕群組在右側 --- */
+        /* 標題列與按鈕 */
         .quiz-header { 
             display: flex; 
             justify-content: space-between; 
@@ -83,11 +81,7 @@
             white-space: nowrap;
         }
 
-        .btn-header-quit {
-            background-color: var(--danger);
-            color: white;
-        }
-
+        .btn-header-quit { background-color: var(--danger); color: white; }
         .btn-header-next {
             background-color: var(--success);
             color: white;
@@ -101,7 +95,7 @@
             100% { transform: scale(1); }
         }
 
-        /* --- 容器 --- */
+        /* 容器 */
         .container {
             width: 100%; max-width: 900px; background: white; border-radius: 15px;
             box-shadow: 0 6px 15px rgba(0,0,0,0.15); 
@@ -113,7 +107,7 @@
         .container.active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
 
-        /* --- 一般按鈕 --- */
+        /* 一般按鈕 */
         button {
             border: none; border-radius: 10px; padding: 10px 20px; 
             font-size: 1rem; font-weight: bold;
@@ -131,7 +125,7 @@
         .btn-accent { background-color: #f39c12; }
         .btn-block { width: 100%; padding: 12px; margin-top: 10px; font-size: 1.2rem; }
 
-        /* --- 其他樣式 --- */
+        /* 其他介面元素 */
         .user-profile {
             background-color: #d6eaf8;
             border: 2px dashed var(--primary);
@@ -157,15 +151,20 @@
         .teach-gem-tag { color: #27ae60; background: #d5f5e3; padding: 2px 8px; border-radius: 10px; font-size: 0.9rem; margin-left: 5px;}
         .score-tag { color: #d35400; background: #fdebd0; padding: 2px 8px; border-radius: 10px; font-size: 0.9rem; margin-left: 5px;}
         
-        /* 編輯與設定 */
+        /* 編輯區 */
         .gen-controls { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; background: #eef; padding: 15px; border-radius: 10px; }
         .gen-controls input { padding: 8px; width: 60px; text-align: center; border-radius: 5px; border: 1px solid #ccc;}
-        .edit-row { display: flex; gap: 10px; margin-bottom: 8px; align-items: center; }
+        
+        .edit-row { 
+            display: flex; gap: 10px; margin-bottom: 8px; align-items: center; 
+            background: #fff; padding: 5px; border-radius: 5px; border: 1px solid #eee;
+        }
         .edit-row input { padding: 8px; flex: 1; text-align: center; border-radius: 5px; border: 1px solid #ccc; font-size: 1.1rem; }
+        
         .settings-box { background-color: #f0f8ff; border: 2px solid #bcdbf3; border-radius: 10px; padding: 15px; margin-bottom: 20px; }
         .checkbox-group { display: flex; gap: 20px; justify-content: center; }
         
-        /* Grid 算式區 */
+        /* 算式區 */
         .grid-container {
             display: grid; grid-auto-rows: var(--cell-size); justify-content: center; 
             margin: 5px 0; 
@@ -191,7 +190,7 @@
         }
         .game-input.active-input { background-color: #ffab40 !important; border-color: #d35400; }
 
-        /* 求助區 */
+        /* 求助與結果 */
         .help-box { display: none; background-color: #f4ecf7; border-left: 6px solid #8e44ad; padding: 10px; margin-top: 10px; border-radius: 8px; text-align: left; animation: slideDown 0.3s; }
         .help-table { width: 100%; margin-top: 5px; font-family: monospace; }
         .help-row { display: flex; justify-content: space-between; padding: 2px 0; }
@@ -209,7 +208,6 @@
 
         .version-tag { margin-top: 30px; color: #bdc3c7; font-size: 0.9rem; text-align: center; border-top: 1px dashed #eee; padding-top: 10px; }
 
-        /* 商店樣式 */
         .shop-balance { background: linear-gradient(135deg, #2980b9 0%, #6dd5fa 100%); color: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
         .exchange-form { background: #f8f9fa; padding: 15px; border-radius: 12px; border: 1px solid #eee; }
         .reward-popup { background: #fff8e1; border: 3px solid #f1c40f; padding: 20px; border-radius: 15px; margin-top: 20px; font-weight: bold; color: #d35400; font-size: 1.5rem; text-align: center; animation: bounceIn 0.8s; }
@@ -254,7 +252,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v4.7 (修復版)</div>
+        <div class="version-tag">版本：v4.8 (修復版)</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -343,7 +341,6 @@
                 <span style="color:#aaa;">|</span>
                 <span id="q-timer">00:00</span>
             </div>
-            
             <div class="header-buttons">
                 <button id="btn-next-q" class="btn-header-next" style="display:none;" onclick="goToNext()">下一題 ➡</button>
                 <button class="btn-header-quit" onclick="quitQuiz()">退出 ✕</button>
@@ -396,6 +393,17 @@
     let quizSettings = { voice: true, text: true };
     let studentName = '小小學員';
     let totalGems = 0; 
+    let allLists = [], currentList = null, quizData = [];
+    let currentQIdx = 0, currentMode = '', editingId = null;
+    let timerInt, startTime;
+    let rankData = [];
+    let exchangeLog = [];
+
+    const STORAGE_KEY_LISTS = 'div_v4_5_lists';
+    const STORAGE_KEY_RANK = 'div_v4_5_rank';
+    const STORAGE_KEY_USER = 'div_v4_5_user';
+    const STORAGE_KEY_GEMS = 'div_v4_5_gems';
+    const STORAGE_KEY_EXCHANGE = 'div_v4_5_exchange';
 
     // --- 語音功能 ---
     function speak(text) {
@@ -412,19 +420,7 @@
         }
     }
 
-    // --- 資料管理 ---
-    let allLists = [], currentList = null, quizData = [];
-    let currentQIdx = 0, currentMode = '', editingId = null;
-    let timerInt, startTime;
-    let rankData = [];
-    let exchangeLog = [];
-
-    const STORAGE_KEY_LISTS = 'div_v4_5_lists';
-    const STORAGE_KEY_RANK = 'div_v4_5_rank';
-    const STORAGE_KEY_USER = 'div_v4_5_user';
-    const STORAGE_KEY_GEMS = 'div_v4_5_gems';
-    const STORAGE_KEY_EXCHANGE = 'div_v4_5_exchange';
-
+    // --- 初始化與資料讀寫 ---
     window.onload = function() {
         if(localStorage.getItem(STORAGE_KEY_LISTS)) allLists = JSON.parse(localStorage.getItem(STORAGE_KEY_LISTS));
         else { allLists = [{name: "範例：估算練習", gems: 5, teachGems: 2, passScore: 100, qs: [{a:963, b:36}, {a:846, b:32}, {a:96, b:3}]}]; saveData(); }
@@ -506,57 +502,64 @@
 
     // 增加編輯列
     function addEditRow(a='', b='') { 
-        const d = document.createElement('div'); 
-        d.className = 'edit-row'; 
-        d.innerHTML = `
-            <input type="number" class="inp-a" placeholder="被除數" value="${a}"> ÷ 
-            <input type="number" class="inp-b" placeholder="除數" value="${b}">
-            <button class="btn-danger" style="padding:5px 10px;" onclick="this.parentElement.remove()">×</button>
-        `; 
-        document.getElementById('editor-rows').appendChild(d); 
+        try {
+            const d = document.createElement('div'); 
+            d.className = 'edit-row'; 
+            d.innerHTML = `
+                <input type="number" class="inp-a" placeholder="被除數" value="${a}"> ÷ 
+                <input type="number" class="inp-b" placeholder="除數" value="${b}">
+                <button class="btn-danger" style="padding:5px 10px;" onclick="this.parentElement.remove()">×</button>
+            `; 
+            document.getElementById('editor-rows').appendChild(d); 
+        } catch(e) {
+            alert("新增失敗，請重新整理頁面。錯誤：" + e.message);
+        }
     }
     
     // 儲存題庫
     function saveList() { 
-        const n = document.getElementById('list-name').value; 
-        const gVal = parseInt(document.getElementById('list-gems').value);
-        const gems = isNaN(gVal) ? 5 : gVal;
-        const tgVal = parseInt(document.getElementById('list-teach-gems').value);
-        const teachGems = isNaN(tgVal) ? 2 : tgVal;
-        const pVal = parseInt(document.getElementById('list-pass-score').value);
-        const passScore = isNaN(pVal) ? 100 : pVal;
+        try {
+            const n = document.getElementById('list-name').value; 
+            const gVal = parseInt(document.getElementById('list-gems').value);
+            const gems = isNaN(gVal) ? 5 : gVal;
+            const tgVal = parseInt(document.getElementById('list-teach-gems').value);
+            const teachGems = isNaN(tgVal) ? 2 : tgVal;
+            const pVal = parseInt(document.getElementById('list-pass-score').value);
+            const passScore = isNaN(pVal) ? 100 : pVal;
 
-        const rs = document.querySelectorAll('.edit-row'); 
-        const qs = []; 
-        
-        rs.forEach(r => {
-            const aVal = r.querySelector('.inp-a').value;
-            const bVal = r.querySelector('.inp-b').value;
-            const a = parseInt(aVal); 
-            const b = parseInt(bVal); 
+            const rs = document.querySelectorAll('.edit-row'); 
+            const qs = []; 
             
-            // 只要不是 NaN 且除數大於 0 即可
-            if(!isNaN(a) && !isNaN(b) && b > 0) {
-                qs.push({a: a, b: b});
-            }
-        }); 
+            rs.forEach(r => {
+                const aVal = r.querySelector('.inp-a').value;
+                const bVal = r.querySelector('.inp-b').value;
+                const a = parseInt(aVal); 
+                const b = parseInt(bVal); 
+                
+                if(!isNaN(a) && !isNaN(b) && b > 0) {
+                    qs.push({a: a, b: b});
+                }
+            }); 
 
-        if(qs.length < 1) {
-            alert("請至少輸入一題有效的題目！(除數不能為0)"); 
-            return;
+            if(qs.length < 1) {
+                alert("請至少輸入一題有效的題目！(注意：除數不能為0、也不能留空)"); 
+                return;
+            }
+            
+            const data = {name: n, gems: gems, teachGems: teachGems, passScore: passScore, qs: qs};
+            
+            if(editingId === null) {
+                allLists.push(data); 
+            } else {
+                allLists[editingId] = data; 
+            }
+            
+            saveData(); 
+            showPage('page-home'); 
+            editingId = null; 
+        } catch (e) {
+            alert("儲存失敗！請檢查輸入資料。錯誤訊息: " + e.message);
         }
-        
-        const data = {name: n, gems: gems, teachGems: teachGems, passScore: passScore, qs: qs};
-        
-        if(editingId === null) {
-            allLists.push(data); 
-        } else {
-            allLists[editingId] = data; 
-        }
-        
-        saveData(); 
-        showPage('page-home'); 
-        editingId = null; 
     }
     
     function delList(i) { if(confirm("確定要刪除這個題庫嗎？")){allLists.splice(i,1); saveData(); renderLists();} }
@@ -571,9 +574,9 @@
         
         for(let i=0; i<c; i++){
             let b = Math.floor(Math.random() * Math.pow(10, lb)); 
-            if(b < 2) b = 2; // 除數最小為 2
+            if(b < 2) b = 2;
             let a = Math.floor(Math.random() * Math.pow(10, la)); 
-            if (a < b) a = b * (Math.floor(Math.random()*9)+1); // 避免被除數小於除數
+            if (a < b) a = b * (Math.floor(Math.random()*9)+1);
             addEditRow(a, b);
         } 
     }
@@ -583,7 +586,7 @@
         const now = new Date();
         const dateStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}`;
         const exportObj = {
-            version: "4.7",
+            version: "4.8",
             student: { name: studentName, totalGems: totalGems },
             lists: allLists,
             exchangeLog: exchangeLog
@@ -734,7 +737,6 @@
         }
     }
 
-    // --- 教學模式邏輯 ---
     function generateDivSteps(dividend, divisor) {
         let dStr = dividend.toString();
         let steps = [];
