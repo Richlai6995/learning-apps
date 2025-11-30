@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>三角形探險家 v1.1</title>
+    <title>三角形探險家 v1.2 (同步修復版)</title>
     <style>
         :root {
             --primary: #8e44ad;
@@ -13,7 +13,7 @@
             --success: #27ae60;
             --warning: #f39c12;
             --danger: #c0392b;
-            --input-bg: #e1f5fe;
+            --input-bg: #fff;
         }
 
         body {
@@ -62,16 +62,23 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
         
-        .input-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;}
-        .input-title { font-weight: bold; color: #2980b9; font-size: 1.1rem; }
+        .input-header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;
+            flex-wrap: wrap; gap: 10px;
+        }
+        .input-title { font-weight: bold; color: #2980b9; font-size: 1.1rem; display: flex; align-items: center; gap: 5px;}
         
-        .radio-group { display: flex; gap: 15px; font-size: 0.95rem; }
-        .input-row { display: flex; gap: 10px; justify-content: space-around; align-items: flex-end; margin-top: 10px; }
-        .input-item { display: flex; flex-direction: column; align-items: center; width: 30%; }
-        .input-item label { font-size: 0.9rem; font-weight: bold; margin-bottom: 3px; }
+        .radio-group { display: flex; gap: 10px; font-size: 0.9rem; flex-wrap: wrap; }
+        .radio-group label { cursor: pointer; display: flex; align-items: center; gap: 3px; }
+
+        .input-row { display: flex; gap: 5px; justify-content: space-between; align-items: flex-end; margin-top: 5px; }
+        .input-item { display: flex; flex-direction: column; align-items: center; width: 32%; }
+        .input-item label { font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; white-space: nowrap; }
         .input-item input { 
-            width: 100%; padding: 8px; text-align: center; border-radius: 8px; 
-            border: 1px solid #ccc; font-size: 1.1rem; font-weight: bold; color: #333;
+            width: 100%; padding: 8px 2px; text-align: center; border-radius: 8px; 
+            border: 2px solid #ddd; font-size: 1.1rem; font-weight: bold; color: #333;
+            box-sizing: border-box; /* 重要 */
         }
         .input-item input:focus { border-color: var(--primary); outline: none; background: #fdf2ff; }
 
@@ -154,22 +161,23 @@
         <div class="input-header">
             <span class="input-title">🛠️ 參數實驗室</span>
             <div class="radio-group">
-                <label><input type="radio" name="inputMode" value="sss" checked onchange="toggleInputMode()"> 調整三邊 (SSS)</label>
-                <label><input type="radio" name="inputMode" value="sas" onchange="toggleInputMode()"> 調整夾角 (SAS)</label>
+                <label><input type="radio" name="inputMode" value="sss" checked onchange="toggleInputMode()"> 三邊 (SSS)</label>
+                <label><input type="radio" name="inputMode" value="sas" onchange="toggleInputMode()"> 夾角 (SAS)</label>
+                <label><input type="radio" name="inputMode" value="asa" onchange="toggleInputMode()"> 兩角 (ASA)</label>
             </div>
         </div>
         
         <div id="inputs-sss" class="input-row">
             <div class="input-item">
-                <label style="color:#e74c3c">邊 a (對BC)</label>
+                <label style="color:#e74c3c">邊 a (BC)</label>
                 <input type="number" id="in-a" step="0.1" onkeydown="if(event.key==='Enter') applyManualInput()">
             </div>
             <div class="input-item">
-                <label style="color:#27ae60">邊 b (對AC)</label>
+                <label style="color:#27ae60">邊 b (AC)</label>
                 <input type="number" id="in-b" step="0.1" onkeydown="if(event.key==='Enter') applyManualInput()">
             </div>
             <div class="input-item">
-                <label style="color:#2980b9">邊 c (對AB)</label>
+                <label style="color:#2980b9">邊 c (AB)</label>
                 <input type="number" id="in-c" step="0.1" onkeydown="if(event.key==='Enter') applyManualInput()">
             </div>
         </div>
@@ -189,12 +197,27 @@
             </div>
         </div>
 
+        <div id="inputs-asa" class="input-row" style="display:none;">
+            <div class="input-item">
+                <label style="color:#e67e22">∠B (左角)</label>
+                <input type="number" id="in-asa-B" step="1" onkeydown="if(event.key==='Enter') applyManualInput()">
+            </div>
+            <div class="input-item">
+                <label style="color:#e74c3c">邊 a (底邊BC)</label>
+                <input type="number" id="in-asa-a" step="0.1" onkeydown="if(event.key==='Enter') applyManualInput()">
+            </div>
+            <div class="input-item">
+                <label style="color:#e67e22">∠C (右角)</label>
+                <input type="number" id="in-asa-C" step="1" onkeydown="if(event.key==='Enter') applyManualInput()">
+            </div>
+        </div>
+
         <button class="btn-apply" onclick="applyManualInput()">🔄 變更形狀</button>
     </div>
 
     <div class="info-panel">
         <div id="tri-type-display" class="triangle-type">任意三角形</div>
-        <div id="angle-info" style="font-size:1.1rem; color:#555; margin-top:5px;">
+        <div id="angle-info" style="font-size:1.1rem; color:#555; margin-top:5px; font-weight:bold;">
             ∠A: 0° | ∠B: 0° | ∠C: 0°
         </div>
         <div id="quiz-question" style="display:none; margin-top:10px; font-weight:bold; font-size:1.2rem; color:#d35400;"></div>
@@ -211,7 +234,7 @@
         <button class="btn-shop" onclick="openShop()">🎁 獎勵商店</button>
     </div>
 
-    <div class="version-tag">Version 1.1</div>
+    <div class="version-tag">Version 1.2</div>
 
     <div id="shop-modal" class="overlay">
         <div class="modal">
@@ -232,10 +255,12 @@
     </div>
 
 <script>
+    // --- 核心變數 ---
     const canvas = document.getElementById('geoCanvas');
     const ctx = canvas.getContext('2d');
     
-    // 定義頂點 A, B, C (A在上方, B左下, C右下)
+    // A: 上方紅點, B: 左下綠點, C: 右下藍點
+    // 邊長定義: a(BC長), b(AC長), c(AB長)
     let points = [
         {x: 300, y: 100, label: 'A', color: '#e74c3c'},
         {x: 100, y: 300, label: 'B', color: '#27ae60'},
@@ -245,7 +270,7 @@
     let currentMode = 'teach'; 
     let currentTarget = null; 
     let user = { name: "小小幾何學家", gems: 0, crowns: 0, log: [] };
-    const STORAGE_KEY = "tri_explorer_v1.1";
+    const STORAGE_KEY = "tri_explorer_v1.2";
     const SCALE_FACTOR = 40; // 40px = 1 unit
 
     function init() {
@@ -267,11 +292,6 @@
         let container = document.querySelector('.canvas-container');
         canvas.width = container.clientWidth;
         canvas.height = Math.min(400, window.innerHeight * 0.5);
-        // 簡單限制點不跑出畫面
-        points.forEach(p => {
-            p.x = Math.max(10, Math.min(canvas.width - 10, p.x));
-            p.y = Math.max(10, Math.min(canvas.height - 10, p.y));
-        });
         draw();
     }
 
@@ -309,14 +329,11 @@
             ctx.fillText(p.label, p.x - 5, p.y - 15);
         });
 
-        // 只有在非拖曳狀態或拖曳結束時更新輸入框，避免打字衝突
-        // 但為了即時性，我們檢查是否正在聚焦輸入框
+        // 除非正在輸入，否則持續更新數值
         if (document.activeElement.tagName !== 'INPUT') {
-            updateStatsAndInputs(sides, angles);
-        } else {
-            // 僅更新文字顯示，不更新 Input value 以免干擾輸入
-            updateTextDisplay(sides, angles);
+            syncInputsWithCanvas(sides, angles);
         }
+        updateTextDisplay(sides, angles);
     }
 
     function drawGrid() {
@@ -330,10 +347,9 @@
     function dist(p1, p2) { return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2)); }
 
     function getSides() {
-        // a=BC, b=AC, c=AB
-        let a = dist(points[1], points[2]) / SCALE_FACTOR;
-        let b = dist(points[0], points[2]) / SCALE_FACTOR;
-        let c = dist(points[0], points[1]) / SCALE_FACTOR;
+        let a = dist(points[1], points[2]) / SCALE_FACTOR; // BC
+        let b = dist(points[0], points[2]) / SCALE_FACTOR; // AC
+        let c = dist(points[0], points[1]) / SCALE_FACTOR; // AB
         return [a, b, c];
     }
 
@@ -346,17 +362,26 @@
         return [A, B, C];
     }
 
-    function updateStatsAndInputs(sides, angles) {
-        updateTextDisplay(sides, angles);
+    // --- 同步邏輯 (修復重點) ---
+    // 獨立出來的同步函數，供 draw() 和 toggleInputMode() 呼叫
+    function syncInputsWithCanvas(sides, angles) {
+        if(!sides) sides = getSides();
+        if(!angles) angles = getAngles(sides);
 
-        // 同步更新輸入框數值
+        // SSS
         document.getElementById('in-a').value = sides[0].toFixed(1);
         document.getElementById('in-b').value = sides[1].toFixed(1);
         document.getElementById('in-c').value = sides[2].toFixed(1);
         
-        document.getElementById('in-sas-c').value = sides[2].toFixed(1);
-        document.getElementById('in-sas-b').value = sides[1].toFixed(1);
-        document.getElementById('in-sas-A').value = Math.round(angles[0]);
+        // SAS
+        document.getElementById('in-sas-c').value = sides[2].toFixed(1); // AB
+        document.getElementById('in-sas-b').value = sides[1].toFixed(1); // AC
+        document.getElementById('in-sas-A').value = Math.round(angles[0]); // A
+
+        // ASA
+        document.getElementById('in-asa-B').value = Math.round(angles[1]); // B
+        document.getElementById('in-asa-a').value = sides[0].toFixed(1); // BC (底)
+        document.getElementById('in-asa-C').value = Math.round(angles[2]); // C
     }
 
     function updateTextDisplay(sides, angles) {
@@ -394,71 +419,108 @@
         return labels.join(" ") + "三角形";
     }
 
-    // --- 手動輸入變形邏輯 (重點修正) ---
+    // --- 手動輸入變形邏輯 ---
     function toggleInputMode() {
         const mode = document.querySelector('input[name="inputMode"]:checked').value;
         document.getElementById('inputs-sss').style.display = mode === 'sss' ? 'flex' : 'none';
         document.getElementById('inputs-sas').style.display = mode === 'sas' ? 'flex' : 'none';
+        document.getElementById('inputs-asa').style.display = mode === 'asa' ? 'flex' : 'none';
+        
+        // 切換時立即同步一次數值，解決「帶出角度不對」的問題
+        syncInputsWithCanvas();
     }
 
     function applyManualInput() {
         const mode = document.querySelector('input[name="inputMode"]:checked').value;
-        let a, b, c, angA;
+        // 計算目標三角形的三點座標，以 A 為原點 (0,0)，AB 在 X 軸 (或任意方向)
+        // 為了簡單，我們計算標準位置，最後再縮放回去
+        let newA = {x:0, y:0}, newB, newC; 
 
-        // 1. 取得目標邊長與角度
         if (mode === 'sss') {
-            a = parseFloat(document.getElementById('in-a').value);
-            b = parseFloat(document.getElementById('in-b').value);
-            c = parseFloat(document.getElementById('in-c').value);
+            const a = parseFloat(document.getElementById('in-a').value);
+            const b = parseFloat(document.getElementById('in-b').value);
+            const c = parseFloat(document.getElementById('in-c').value);
             
-            // 三角形不等式檢查
             if (a + b <= c || a + c <= b || b + c <= a) {
-                alert("❌ 無法構成三角形！\n提示：任兩邊之和必須大於第三邊。");
-                return;
+                alert("❌ 無法構成三角形！\n提示：任兩邊之和必須大於第三邊。"); return;
             }
-            // 計算角 A
-            angA = Math.acos((b*b + c*c - a*a) / (2*b*c)); // 弧度
-        } else {
-            c = parseFloat(document.getElementById('in-sas-c').value); // AB
-            b = parseFloat(document.getElementById('in-sas-b').value); // AC
+            const cosA = (b*b + c*c - a*a) / (2*b*c);
+            const angA = Math.acos(cosA); 
+            newB = {x: c, y: 0}; // AB = c
+            newC = {x: b * Math.cos(angA), y: b * Math.sin(angA)}; // AC = b
+
+        } else if (mode === 'sas') {
+            const c = parseFloat(document.getElementById('in-sas-c').value); // AB
+            const b = parseFloat(document.getElementById('in-sas-b').value); // AC
             let degA = parseFloat(document.getElementById('in-sas-A').value);
             if (degA >= 180 || degA <= 0) { alert("角度必須在 0~180 之間"); return; }
-            angA = degA * (Math.PI / 180);
+            const angA = degA * (Math.PI / 180);
+            newB = {x: c, y: 0};
+            newC = {x: b * Math.cos(angA), y: b * Math.sin(angA)};
+
+        } else if (mode === 'asa') {
+            // ASA: 底邊 a (BC)，角 B，角 C
+            const degB = parseFloat(document.getElementById('in-asa-B').value);
+            const a = parseFloat(document.getElementById('in-asa-a').value); // BC
+            const degC = parseFloat(document.getElementById('in-asa-C').value);
+
+            // --- 角度和檢查 (新功能) ---
+            const sumAngles = degB + degC;
+            if (sumAngles >= 180) {
+                alert(`⚠️ 目前角度和 (B+C) 為 ${sumAngles}°。\n和必須小於 180°，否則無法構成三角形。請調整！`);
+                return;
+            }
+            // ------------------------
+
+            const angB = degB * (Math.PI / 180);
+            const angC = degC * (Math.PI / 180);
+            const angA = Math.PI - angB - angC;
+
+            // 正弦定理求邊長 c (AB) 和 b (AC)
+            // c / sinC = a / sinA  => c = a * sinC / sinA
+            const c = a * Math.sin(angC) / Math.sin(angA);
+            const b = a * Math.sin(angB) / Math.sin(angA);
+
+            // 為了保持畫布習慣，我們設定 B 為原點，C 在 X 軸
+            // B = (0,0), C = (a, 0)
+            // A = (c * cosB, c * sinB)
+            // 這裡變數重用 newA, newB, newC，但意義對應畫布的 points[0](A), [1](B), [2](C)
+            // 所以讓 newB(0,0), newC(a,0), newA(calc)
+            // 為了方便下面統一處理，我們這裡先算相對位置
+            newB = {x: 0, y: 0};
+            newC = {x: a, y: 0};
+            newA = {x: c * Math.cos(angB), y: c * Math.sin(angB)};
         }
 
-        // 2. 進行變形 (保持 A 點不動，保持 AB 邊的方向不動)
-        const pA = points[0]; 
-        const pB = points[1]; 
-        const pC = points[2];
+        // --- 自動縮放與置中 ---
+        // 算出新圖形的邊界
+        const coords = [newA, newB, newC];
+        const minX = Math.min(...coords.map(p=>p.x));
+        const maxX = Math.max(...coords.map(p=>p.x));
+        const minY = Math.min(...coords.map(p=>p.y));
+        const maxY = Math.max(...coords.map(p=>p.y));
+        
+        const w = maxX - minX;
+        const h = maxY - minY;
+        const availW = canvas.width - 100;
+        const availH = canvas.height - 100;
+        const scale = Math.min(availW / w, availH / h);
+        
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        const figCx = (minX + maxX) / 2;
+        const figCy = (minY + maxY) / 2;
 
-        // 計算目前 AB 的方向向量角度
-        const currentAngleAB = Math.atan2(pB.y - pA.y, pB.x - pA.x);
+        // 更新全域點位 (套用縮放與平移)
+        points[0].x = cx + (newA.x - figCx) * scale;
+        points[0].y = cy + (newA.y - figCy) * scale;
         
-        // 更新 B 點：沿著目前 AB 方向延伸 c 長度
-        // 注意：輸入單位要轉回像素單位
-        const pixelC = c * SCALE_FACTOR;
-        pB.x = pA.x + pixelC * Math.cos(currentAngleAB);
-        pB.y = pA.y + pixelC * Math.sin(currentAngleAB);
+        points[1].x = cx + (newB.x - figCx) * scale;
+        points[1].y = cy + (newB.y - figCy) * scale;
+        
+        points[2].x = cx + (newC.x - figCx) * scale;
+        points[2].y = cy + (newC.y - figCy) * scale;
 
-        // 更新 C 點：
-        // 我們需要知道目前 C 是在 AB 的順時針還是逆時針側，以保持形狀翻轉的一致性
-        // 使用叉積 (Cross Product) 判斷方向
-        // Vector AB = (Bx-Ax, By-Ay), Vector AC = (Cx-Ax, Cy-Ay)
-        // Cross = (Bx-Ax)*(Cy-Ay) - (By-Ay)*(Cx-Ax)
-        const crossProduct = (pB.x - pA.x)*(pC.y - pA.y) - (pB.y - pA.y)*(pC.x - pA.x);
-        
-        // 決定 C 的旋轉方向 (+angA 或 -angA)
-        // 如果 crossProduct > 0，C 在 AB 順時針(視座標系而定)
-        // 簡單來說，我們讓新角度相對於 AB 的偏轉方向與原本一致
-        let direction = crossProduct >= 0 ? 1 : -1;
-        
-        const pixelB = b * SCALE_FACTOR; // AC長度
-        const newAngleAC = currentAngleAB + (direction * angA);
-        
-        pC.x = pA.x + pixelB * Math.cos(newAngleAC);
-        pC.y = pA.y + pixelB * Math.sin(newAngleAC);
-
-        // 3. 重繪
         draw();
         speak("變形完成！");
     }
