@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>三角形探險家 5.0 (幾何大師版)</title>
+    <style>
+        :root {
+            --primary: #8e44ad;
+            --secondary: #9b59b6;
+            --bg-color: #f3e5f5;
+            --dark: #2c3e50;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #c0392b;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--dark);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            touch-action: none; /* 防止手機滑動頁面，專注於畫布 */
+            overflow-x: hidden;
+        }
+
+        h1 { color: var(--primary); margin: 5px 0; text-align: center; font-size: 1.6rem; }
+
+        /* --- 頂部資訊列 --- */
+        .status-bar {
+            display: flex; justify-content: space-between; width: 100%; max-width: 600px;
+            background: white; padding: 10px; border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 10px;
+            align-items: center;
+        }
+        .user-info { font-weight: bold; font-size: 1.1rem; cursor: pointer; color: var(--primary); }
+        .currency { font-size: 1rem; display: flex; gap: 10px; }
+
+        /* --- 畫布區域 --- */
+        .canvas-container {
+            position: relative;
+            margin-bottom: 10px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            background: white;
+            cursor: crosshair;
+            overflow: hidden;
+        }
+        canvas { display: block; touch-action: none; }
+
+        /* --- 資訊面板 --- */
+        .info-panel {
+            width: 100%; max-width: 600px;
+            background: white; padding: 15px; border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            margin-bottom: 15px; text-align: center;
+        }
+        .triangle-type {
+            font-size: 1.5rem; font-weight: bold; color: var(--primary); margin-bottom: 5px;
+            min-height: 1.5em;
+        }
+        .stats-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+            font-size: 1rem; text-align: left;
+        }
+        .stat-item { background: #f9f9f9; padding: 8px; border-radius: 8px; border-left: 4px solid #ccc;}
+        .stat-angle { border-color: #e67e22; }
+        .stat-side { border-color: #2980b9; }
+
+        /* --- 控制按鈕區 --- */
+        .controls {
+            display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+            width: 100%; max-width: 600px; margin-bottom: 20px;
+        }
+        button {
+            border: none; border-radius: 25px; padding: 10px 20px;
+            font-size: 1rem; font-weight: bold; cursor: pointer;
+            color: white; transition: 0.2s; box-shadow: 0 3px 0 rgba(0,0,0,0.1);
+        }
+        button:active { transform: translateY(2px); box-shadow: none; }
+        
+        .btn-teach { background-color: var(--success); }
+        .btn-quiz { background-color: var(--warning); }
+        .btn-build { background-color: var(--danger); }
+        .btn-shop { background-color: #3498db; width: 100%; max-width: 600px; margin-top: 10px;}
+        .btn-action { background-color: var(--primary); display: none; margin-top: 10px; width: 100%; animation: pulse 1s infinite;}
+
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+
+        /* --- 模式提示 --- */
+        .mode-badge {
+            background: var(--dark); color: white; padding: 4px 12px;
+            border-radius: 15px; font-size: 0.9rem; position: absolute;
+            top: 10px; left: 10px; pointer-events: none; opacity: 0.8;
+        }
+
+        /* --- 商店與彈窗 --- */
+        .overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center;
+        }
+        .modal {
+            background: white; padding: 25px; border-radius: 15px; width: 90%; max-width: 400px;
+            text-align: center; position: relative; animation: popIn 0.3s;
+        }
+        @keyframes popIn { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
+        
+        .close-btn {
+            position: absolute; top: 10px; right: 10px; background: #ccc;
+            width: 30px; height: 30px; border-radius: 50%; border: none;
+            font-weight: bold; color: white; cursor: pointer;
+        }
+
+        /* 動畫特效 */
+        #particle-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999; }
+        .particle { position: absolute; font-size: 1.5rem; animation: fall 2s linear forwards; }
+        @keyframes fall { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(100vh); } }
+
+        /* 結果提示 */
+        .quiz-feedback { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 4rem; font-weight: bold; text-shadow: 0 0 10px white;
+            display: none; pointer-events: none; z-index: 10;
+        }
+        .correct-txt { color: var(--success); }
+        .wrong-txt { color: var(--danger); }
+
+    </style>
+</head>
+<body>
+
+    <div id="particle-container"></div>
+
+    <div class="status-bar">
+        <div class="user-info" onclick="changeName()">🎓 <span id="u-name">學員</span></div>
+        <div class="currency">
+            <span>👑 <span id="u-crowns">0</span></span>
+            <span>💎 <span id="u-gems">0</span></span>
+        </div>
+    </div>
+
+    <h1>📐 三角形探險家</h1>
+
+    <div class="canvas-container">
+        <div id="mode-label" class="mode-badge">教學模式</div>
+        <div id="feedback-text" class="quiz-feedback">O</div>
+        <canvas id="geoCanvas" width="600" height="400"></canvas>
+    </div>
+
+    <div class="info-panel">
+        <div id="tri-type-display" class="triangle-type">任意三角形</div>
+        <div class="stats-grid">
+            <div class="stat-item stat-side">
+                <strong>邊長 (公分)</strong><br>
+                <span style="color:#e74c3c">a</span> = <span id="val-a">0</span><br>
+                <span style="color:#27ae60">b</span> = <span id="val-b">0</span><br>
+                <span style="color:#2980b9">c</span> = <span id="val-c">0</span>
+            </div>
+            <div class="stat-item stat-angle">
+                <strong>角度 (度)</strong><br>
+                ∠A = <span id="deg-A">0</span>°<br>
+                ∠B = <span id="deg-B">0</span>°<br>
+                ∠C = <span id="deg-C">0</span>°
+            </div>
+        </div>
+        <div id="quiz-question" style="display:none; margin-top:10px; font-weight:bold; font-size:1.2rem; color:#d35400;">
+            題目：請做出一個直角三角形
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-teach" onclick="setMode('teach')">📖 自由探索</button>
+        <button class="btn-quiz" onclick="setMode('quiz_select')">❓ 屬性測驗</button>
+        <button class="btn-build" onclick="setMode('quiz_build')">🔨 建構挑戰</button>
+    </div>
+    
+    <div style="width: 100%; max-width: 600px; text-align: center;">
+        <button id="btn-submit" class="btn-action" onclick="checkAnswer()">✅ 送出答案</button>
+        <button class="btn-shop" onclick="openShop()">🎁 獎勵商店</button>
+    </div>
+
+    <div id="shop-modal" class="overlay">
+        <div class="modal">
+            <button class="close-btn" onclick="closeShop()">×</button>
+            <h2>🎁 獎勵兌換</h2>
+            <p>你有 💎 <span id="shop-gems">0</span> | 👑 <span id="shop-crowns">0</span></p>
+            <input type="text" id="gift-name" placeholder="獎品名稱 (如: 看卡通)" style="padding:10px; width:80%; margin-bottom:10px;">
+            <div style="display:flex; justify-content:center; gap:5px; margin-bottom:15px;">
+                <input type="number" id="gift-cost" placeholder="花費" style="padding:10px; width:60px;">
+                <select id="gift-currency" style="padding:10px;">
+                    <option value="gems">💎</option>
+                    <option value="crowns">👑</option>
+                </select>
+            </div>
+            <button class="btn-shop" onclick="buyItem()">確認兌換</button>
+            <div id="shop-log" style="text-align:left; margin-top:15px; font-size:0.9rem; max-height:100px; overflow-y:auto; border-top:1px solid #eee; padding-top:5px;"></div>
+        </div>
+    </div>
+
+<script>
+    // --- 核心變數 ---
+    const canvas = document.getElementById('geoCanvas');
+    const ctx = canvas.getContext('2d');
+    let points = [
+        {x: 300, y: 100, label: 'A', color: '#e74c3c'},
+        {x: 100, y: 300, label: 'B', color: '#27ae60'},
+        {x: 500, y: 300, label: 'C', color: '#2980b9'}
+    ];
+    let dragIdx = -1;
+    let currentMode = 'teach'; // teach, quiz_select, quiz_build
+    let currentTarget = null; // 當前題目目標
+    
+    // 用戶資料
+    let user = { name: "小小幾何學家", gems: 0, crowns: 0, log: [] };
+    const STORAGE_KEY = "tri_explorer_v5";
+
+    // --- 初始化 ---
+    function init() {
+        resizeCanvas();
+        loadUser();
+        updateUI();
+        draw();
+        
+        // 事件監聽
+        canvas.addEventListener('mousedown', onDown);
+        canvas.addEventListener('mousemove', onMove);
+        canvas.addEventListener('mouseup', onUp);
+        canvas.addEventListener('touchstart', onDown, {passive: false});
+        canvas.addEventListener('touchmove', onMove, {passive: false});
+        canvas.addEventListener('touchend', onUp);
+        window.addEventListener('resize', resizeCanvas);
+    }
+
+    function resizeCanvas() {
+        // 響應式畫布
+        let container = document.querySelector('.canvas-container');
+        canvas.width = container.clientWidth;
+        canvas.height = Math.min(400, window.innerHeight * 0.5);
+        // 確保點不跑出去
+        points.forEach(p => {
+            p.x = Math.min(Math.max(p.x, 20), canvas.width - 20);
+            p.y = Math.min(Math.max(p.y, 20), canvas.height - 20);
+        });
+        draw();
+    }
+
+    // --- 繪圖邏輯 ---
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // 1. 畫網格背景 (讓它看起來像作業簿)
+        drawGrid();
+
+        // 2. 畫三角形
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        ctx.lineTo(points[1].x, points[1].y);
+        ctx.lineTo(points[2].x, points[2].y);
+        ctx.closePath();
+        
+        // 填充顏色
+        ctx.fillStyle = 'rgba(142, 68, 173, 0.1)';
+        ctx.fill();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#34495e';
+        ctx.stroke();
+
+        // 3. 計算數據
+        let sides = getSides(); // [a, b, c] 對應 BC, AC, AB
+        let angles = getAngles(sides); // [A, B, C]
+
+        // 4. 畫角標示與頂點
+        drawAngleArcs(angles);
+        points.forEach((p, i) => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.fill();
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // 文字標籤
+            ctx.fillStyle = '#2c3e50';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText(p.label, p.x - 5, p.y - 15);
+        });
+
+        // 5. 更新數據面板
+        updateStats(sides, angles);
+    }
+
+    function drawGrid() {
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.lineWidth = 1;
+        const step = 40;
+        for(let x=0; x<canvas.width; x+=step) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
+        for(let y=0; y<canvas.height; y+=step) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
+    }
+
+    function drawAngleArcs(angles) {
+        // 簡單畫弧線，稍微複雜的數學
+        // 這裡簡化處理：只在頂點畫個小圈圈表示
+    }
+
+    // --- 數學計算 ---
+    function dist(p1, p2) {
+        return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+    }
+
+    function getSides() {
+        // a對A(p0) -> BC(p1,p2)
+        // b對B(p1) -> AC(p0,p2)
+        // c對C(p2) -> AB(p0,p1)
+        // 單位換算：像素 / 40 = 公分 (假設)
+        let scale = 40;
+        let a = dist(points[1], points[2]) / scale;
+        let b = dist(points[0], points[2]) / scale;
+        let c = dist(points[0], points[1]) / scale;
+        return [a, b, c];
+    }
+
+    function getAngles(sides) {
+        let a = sides[0], b = sides[1], c = sides[2];
+        // 餘弦定理
+        let A = Math.acos((b*b + c*c - a*a) / (2*b*c)) * (180 / Math.PI);
+        let B = Math.acos((a*a + c*c - b*b) / (2*a*c)) * (180 / Math.PI);
+        let C = 180 - A - B;
+        return [A, B, C];
+    }
+
+    function analyzeTriangle(sides, angles) {
+        let [a, b, c] = sides;
+        let [A, B, C] = angles;
+        let maxAngle = Math.max(A, B, C);
+        let labels = [];
+
+        // 角的性質
+        if (Math.abs(maxAngle - 90) < 2) labels.push("直角");
+        else if (maxAngle > 90) labels.push("鈍角");
+        else labels.push("銳角");
+
+        // 邊的性質
+        // 容許誤差 0.1
+        let isEquilateral = (Math.abs(a-b)<0.1 && Math.abs(b-c)<0.1);
+        let isIsosceles = (Math.abs(a-b)<0.1 || Math.abs(b-c)<0.1 || Math.abs(a-c)<0.1);
+
+        if (isEquilateral) labels.push("正");
+        else if (isIsosceles) labels.push("等腰");
+        
+        return labels.join(" ") + "三角形";
+    }
+
+    function updateStats(sides, angles) {
+        // 數值顯示
+        document.getElementById('val-a').innerText = sides[0].toFixed(1);
+        document.getElementById('val-b').innerText = sides[1].toFixed(1);
+        document.getElementById('val-c').innerText = sides[2].toFixed(1);
+        
+        document.getElementById('deg-A').innerText = Math.round(angles[0]);
+        document.getElementById('deg-B').innerText = Math.round(angles[1]);
+        document.getElementById('deg-C').innerText = Math.round(angles[2]);
+
+        // 類型判斷
+        let typeText = analyzeTriangle(sides, angles);
+        
+        if (currentMode === 'teach') {
+            document.getElementById('tri-type-display').innerText = typeText;
+            document.getElementById('tri-type-display').style.color = '#8e44ad';
+        } else if (currentMode === 'quiz_build') {
+            document.getElementById('tri-type-display').innerText = "建構中..."; 
+            document.getElementById('tri-type-display').style.color = '#95a5a6';
+        } else {
+            document.getElementById('tri-type-display').innerText = "??? 三角形";
+        }
+    }
+
+    // --- 拖曳互動 ---
+    function getPointerPos(e) {
+        let rect = canvas.getBoundingClientRect();
+        let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    function onDown(e) {
+        if(e.type === 'touchstart') e.preventDefault();
+        let pos = getPointerPos(e);
+        // 找最近的點
+        points.forEach((p, i) => {
+            if (dist(pos, p) < 30) dragIdx = i;
+        });
+    }
+
+    function onMove(e) {
+        if(e.type === 'touchmove') e.preventDefault();
+        if (dragIdx !== -1) {
+            let pos = getPointerPos(e);
+            // 邊界限制
+            pos.x = Math.max(10, Math.min(canvas.width - 10, pos.x));
+            pos.y = Math.max(10, Math.min(canvas.height - 10, pos.y));
+            
+            points[dragIdx].x = pos.x;
+            points[dragIdx].y = pos.y;
+            draw();
+        }
+    }
+
+    function onUp(e) {
+        dragIdx = -1;
+    }
+
+    // --- 模式切換邏輯 ---
+    function setMode(mode) {
+        currentMode = mode;
+        let label = document.getElementById('mode-label');
+        let qBox = document.getElementById('quiz-question');
+        let subBtn = document.getElementById('btn-submit');
+        
+        // 重置
+        qBox.style.display = 'none';
+        subBtn.style.display = 'none';
+        
+        if (mode === 'teach') {
+            label.innerText = "教學模式";
+            label.style.background = "#2c3e50";
+            speak("進入自由探索模式，試著拉動頂點看看！");
+        } else if (mode === 'quiz_select') {
+            label.innerText = "屬性測驗";
+            label.style.background = "#f39c12";
+            startQuizSelect();
+        } else if (mode === 'quiz_build') {
+            label.innerText = "建構挑戰";
+            label.style.background = "#c0392b";
+            startQuizBuild();
+        }
+        draw();
+    }
+
+    // --- 測驗邏輯 ---
+    function startQuizSelect() {
+        // 生成一個隨機三角形
+        randomizeTriangle();
+        draw();
+        let qBox = document.getElementById('quiz-question');
+        qBox.style.display = 'block';
+        
+        // 隨機出題
+        let types = ["銳角", "直角", "鈍角", "等腰"];
+        let target = types[Math.floor(Math.random() * types.length)];
+        currentTarget = { type: 'select', target: target };
+        
+        qBox.innerHTML = `題目：這是一個 <strong>${target}三角形</strong> 嗎？`;
+        
+        // 這裡簡化：選擇題模式我們改成「判斷題」，顯示按鈕
+        let subBtn = document.getElementById('btn-submit');
+        subBtn.innerText = "🤔 點此查看答案";
+        subBtn.style.display = 'inline-block';
+        subBtn.onclick = checkAnswerSelect;
+        
+        speak(`題目：這是一個${target}三角形嗎？請仔細觀察。`);
+    }
+
+    function checkAnswerSelect() {
+        let sides = getSides();
+        let angles = getAngles(sides);
+        let typeStr = analyzeTriangle(sides, angles);
+        let isCorrect = typeStr.includes(currentTarget.target);
+        
+        let feedback = document.getElementById('quiz-question');
+        if (isCorrect) {
+            feedback.innerHTML += `<br><span style="color:green">⭕ 是的！這是 ${typeStr}</span>`;
+            addReward(1);
+            showFeedback(true);
+        } else {
+            feedback.innerHTML += `<br><span style="color:red">❌ 不是喔，這是 ${typeStr}</span>`;
+            showFeedback(false);
+        }
+        
+        // 下一題按鈕
+        let subBtn = document.getElementById('btn-submit');
+        subBtn.innerText = "➡ 下一題";
+        subBtn.onclick = startQuizSelect;
+    }
+
+    function startQuizBuild() {
+        let qBox = document.getElementById('quiz-question');
+        qBox.style.display = 'block';
+        let subBtn = document.getElementById('btn-submit');
+        subBtn.style.display = 'inline-block';
+        subBtn.innerText = "✅ 我做好了！";
+        subBtn.onclick = checkAnswerBuild;
+
+        let missions = ["直角", "鈍角", "等腰", "正", "等腰直角"];
+        let target = missions[Math.floor(Math.random() * missions.length)];
+        currentTarget = { type: 'build', target: target };
+        
+        qBox.innerHTML = `任務：請拉動頂點，做出一個 <strong>${target}三角形</strong>`;
+        speak(`任務開始：請做出一個${target}三角形`);
+    }
+
+    function checkAnswerBuild() {
+        let sides = getSides();
+        let angles = getAngles(sides);
+        let typeStr = analyzeTriangle(sides, angles);
+        let target = currentTarget.target;
+        let isCorrect = false;
+
+        // 寬鬆判定
+        if (target === "等腰直角") {
+            isCorrect = typeStr.includes("等腰") && typeStr.includes("直角");
+        } else {
+            isCorrect = typeStr.includes(target);
+        }
+
+        if (isCorrect) {
+            alert(`太棒了！你成功做出了 ${typeStr}！獲得 3 顆寶石💎`);
+            addReward(3);
+            showFeedback(true);
+            triggerParticles();
+            setTimeout(startQuizBuild, 1500); // 自動下一題
+        } else {
+            alert(`還差一點點喔！目前是：${typeStr}。\n請再試試看！`);
+            showFeedback(false);
+        }
+    }
+
+    function randomizeTriangle() {
+        points[0].x = 100 + Math.random() * 400;
+        points[0].y = 50 + Math.random() * 100;
+        points[1].x = 50 + Math.random() * 200;
+        points[1].y = 250 + Math.random() * 100;
+        points[2].x = 350 + Math.random() * 200;
+        points[2].y = 250 + Math.random() * 100;
+    }
+
+    // --- 獎勵與使用者 ---
+    function addReward(gems) {
+        user.gems += gems;
+        if (user.gems >= 100) {
+            user.gems -= 100;
+            user.crowns += 1;
+            alert("恭喜升級！獲得 1 頂皇冠 👑");
+        }
+        saveUser();
+        updateUI();
+    }
+
+    function updateUI() {
+        document.getElementById('u-name').innerText = user.name;
+        document.getElementById('u-gems').innerText = user.gems;
+        document.getElementById('u-crowns').innerText = user.crowns;
+        if(document.getElementById('shop-gems')) {
+            document.getElementById('shop-gems').innerText = user.gems;
+            document.getElementById('shop-crowns').innerText = user.crowns;
+        }
+    }
+
+    function loadUser() {
+        let data = localStorage.getItem(STORAGE_KEY);
+        if (data) user = JSON.parse(data);
+    }
+
+    function saveUser() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+    }
+
+    function changeName() {
+        let n = prompt("請輸入你的名字：", user.name);
+        if (n) { user.name = n; saveUser(); updateUI(); }
+    }
+
+    // --- 商店功能 ---
+    function openShop() {
+        document.getElementById('shop-modal').style.display = 'flex';
+        renderShopLog();
+        updateUI();
+    }
+    function closeShop() { document.getElementById('shop-modal').style.display = 'none'; }
+    
+    function buyItem() {
+        let name = document.getElementById('gift-name').value;
+        let cost = parseInt(document.getElementById('gift-cost').value);
+        let type = document.getElementById('gift-currency').value;
+        
+        if(!name || !cost) return alert("請輸入完整資訊");
+        
+        let costGems = (type === 'crowns') ? cost * 100 : cost;
+        let totalGems = user.gems + (user.crowns * 100); // 簡化邏輯：或是分開扣
+        
+        // 這裡採用分開扣款邏輯
+        if (type === 'gems') {
+            if(user.gems >= cost) {
+                user.gems -= cost;
+                successBuy(name, cost, '💎');
+            } else alert("寶石不足！");
+        } else {
+            if(user.crowns >= cost) {
+                user.crowns -= cost;
+                successBuy(name, cost, '👑');
+            } else alert("皇冠不足！");
+        }
+    }
+
+    function successBuy(item, cost, icon) {
+        user.log.unshift(`兌換 ${item} (-${cost}${icon}) - ${new Date().toLocaleTimeString()}`);
+        saveUser();
+        updateUI();
+        renderShopLog();
+        alert("兌換成功！");
+    }
+
+    function renderShopLog() {
+        let div = document.getElementById('shop-log');
+        div.innerHTML = user.log.map(l => `<div>${l}</div>`).join('');
+    }
+
+    // --- 特效與語音 ---
+    function speak(txt) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            let u = new SpeechSynthesisUtterance(txt);
+            u.lang = 'zh-TW';
+            window.speechSynthesis.speak(u);
+        }
+    }
+
+    function showFeedback(isCorrect) {
+        let el = document.getElementById('feedback-text');
+        el.innerText = isCorrect ? "O" : "X";
+        el.className = "quiz-feedback " + (isCorrect ? "correct-txt" : "wrong-txt");
+        el.style.display = "block";
+        setTimeout(() => el.style.display = "none", 1000);
+    }
+
+    function triggerParticles() {
+        const container = document.getElementById('particle-container');
+        for(let i=0; i<20; i++) {
+            let p = document.createElement('div');
+            p.innerText = Math.random() > 0.5 ? '💎' : '✨';
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + 'vw';
+            p.style.animationDuration = (1 + Math.random()) + 's';
+            container.appendChild(p);
+        }
+        setTimeout(() => container.innerHTML = '', 2000);
+    }
+
+    // 啟動
+    init();
+
+</script>
+</body>
+</html>
