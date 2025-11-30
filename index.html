@@ -20,7 +20,7 @@
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 20px;
             width: 100%;
-            max-width: 800px; /* 稍微加寬以容納更多選項 */
+            max-width: 800px;
         }
         .menu-item {
             background: white;
@@ -43,12 +43,13 @@
         /* --- 科目樣式 --- */
         .math-addsub { border-bottom: 5px solid #e67e22; } /* 加減法：橘色 */
         .math { border-bottom: 5px solid #FF6B6B; }        /* 原本的乘法：紅色 */
-        .math-99 { border-bottom: 5px solid #8e44ad; }    /* 新增的99乘法：紫色 */
-        .math-div { border-bottom: 5px solid #2980b9; }   /* 除法：藍色 */
-        .math-mix { border-bottom: 5px solid #27ae60; }   /* 四則運算：綠色 */
+        .math-99 { border-bottom: 5px solid #8e44ad; }     /* 99乘法：紫色 */
+        .math-div { border-bottom: 5px solid #2980b9; }    /* 除法：藍色 */
+        .math-mix { border-bottom: 5px solid #27ae60; }    /* 四則運算：綠色 */
+        .math-geo { border-bottom: 5px solid #e84393; }    /* 新增：幾何三角形：粉色 */
         
-        .eng { border-bottom: 5px solid #4ECDC4; }        /* 英文單字：藍綠色 */
-        .eng-adv { border-bottom: 5px solid #4834d4; }    /* 英文句子：深藍紫色 */
+        .eng { border-bottom: 5px solid #4ECDC4; }         /* 英文單字：藍綠色 */
+        .eng-adv { border-bottom: 5px solid #4834d4; }     /* 英文句子：深藍紫色 */
     </style>
 </head>
 <body>
@@ -80,6 +81,11 @@
         <a href="four_arithmetic.html" class="menu-item math-mix">
             <span class="icon" style="color: #27ae60;">🧮</span>
             <span class="title">四則運算闖關</span>
+        </a>
+
+        <a href="triangle_practice.html" class="menu-item math-geo">
+            <span class="icon" style="color: #e84393;">📐</span>
+            <span class="title">三角形探險家</span>
         </a>
 
         <a href="phonics_test.html" class="menu-item eng">
