@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>三角形探險家 v1.9 (底邊校正版)</title>
+    <title>三角形探險家 v2.0 (觸控完美版)</title>
     <style>
         :root {
             --primary: #8e44ad;
@@ -25,7 +25,8 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            touch-action: none;
+            /* 修正關鍵：改為 pan-y 允許垂直捲動，移除 none */
+            touch-action: pan-y; 
             overflow-x: hidden;
             overflow-y: auto;
         }
@@ -53,9 +54,11 @@
             cursor: crosshair;
             overflow: hidden;
             flex-shrink: 0;
+            /* 重要：只有畫布區域禁止瀏覽器預設行為(捲動)，以利拖曳 */
+            touch-action: none; 
         }
         
-        canvas { display: block; touch-action: none; }
+        canvas { display: block; }
         
         .canvas-tip {
             position: absolute; bottom: 5px; left: 0; width: 100%;
@@ -290,7 +293,7 @@
         <button class="btn-shop" onclick="openShop()">🎁 獎勵商店</button>
     </div>
 
-    <div class="version-tag">Version 1.9 (底邊校正版)</div>
+    <div class="version-tag">Version 2.0 (觸控完美版)</div>
 
     <div id="shop-modal" class="overlay">
         <div class="modal">
@@ -350,7 +353,7 @@
         settings: { rewardSelect: 1, rewardBuild: 3 }
     };
     
-    const STORAGE_KEY = "tri_explorer_v1.9";
+    const STORAGE_KEY = "tri_explorer_v2.0";
     const SCALE_FACTOR = 40; // 40px = 1 unit
 
     function init() {
@@ -439,7 +442,7 @@
         return [A, B, C];
     }
 
-    // --- 新增：水平校正功能 (修復版) ---
+    // --- 水平校正功能 ---
     function alignTriangle() {
         const targetSide = document.getElementById('rotate-target').value;
         let p1, p2, p3; // p1-p2 為底邊, p3 為頂點
@@ -448,7 +451,6 @@
         else if (targetSide === 'BC') { p1 = points[1]; p2 = points[2]; p3 = points[0]; }
         else { p1 = points[0]; p2 = points[2]; p3 = points[1]; } // AC
 
-        // 1. 旋轉使底邊水平
         const currentAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
         const rotAngle = -currentAngle;
 
@@ -462,20 +464,19 @@
             p.y = cy + dx * Math.sin(rotAngle) + dy * Math.cos(rotAngle);
         });
 
-        // 2. 檢查頂點是否在底邊下方 (Y軸向下，下方代表 Y 值較大)
-        // 我們希望頂點在「上方」(Y值較小)，這樣底邊才會在最下面
-        // 因為旋轉後 p1.y 約等於 p2.y，我們比較 p3.y 與 p1.y 即可
+        // 翻轉校正：確保頂點在底邊上方 (Y值較小)
+        // 旋轉後 p1.y 約等於 p2.y
+        // 如果 p3.y > p1.y，代表頂點在底邊下面，需要翻轉
         if (p3.y > p1.y) {
-            // 翻轉整個三角形 (繞中心旋轉 180度)
             points.forEach(p => {
                 const dx = p.x - cx;
                 const dy = p.y - cy;
-                p.x = cx - dx; // cos(180) = -1
-                p.y = cy - dy; // sin(180) = 0
+                p.x = cx - dx; 
+                p.y = cy - dy; 
             });
         }
 
-        // 3. 置中
+        // 置中
         const minX = Math.min(...points.map(p=>p.x));
         const maxX = Math.max(...points.map(p=>p.x));
         const minY = Math.min(...points.map(p=>p.y));
