@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>三角形探險家 v1.7 (捲動修復版)</title>
+    <title>三角形探險家 v1.8 (水平校正版)</title>
     <style>
         :root {
             --primary: #8e44ad;
@@ -25,9 +25,9 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            /* 修正：移除 touch-action: none 以允許頁面捲動 */
+            touch-action: none;
             overflow-x: hidden;
-            overflow-y: auto; /* 確保垂直方向可以捲動 */
+            overflow-y: auto;
         }
 
         h1 { color: var(--primary); margin: 5px 0; text-align: center; font-size: 1.6rem; }
@@ -38,7 +38,7 @@
             background: white; padding: 10px; border-radius: 12px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 10px;
             align-items: center;
-            flex-shrink: 0; /* 防止被壓縮 */
+            flex-shrink: 0;
         }
         .user-info { font-weight: bold; font-size: 1.1rem; cursor: pointer; color: var(--primary); }
         .currency { font-size: 1rem; display: flex; gap: 10px; }
@@ -52,10 +52,9 @@
             background: white;
             cursor: crosshair;
             overflow: hidden;
-            flex-shrink: 0; /* 防止被壓縮 */
+            flex-shrink: 0;
         }
         
-        /* 畫布本身禁止瀏覽器預設觸控行為（如捲動），以確保拖曳順暢 */
         canvas { display: block; touch-action: none; }
         
         .canvas-tip {
@@ -64,13 +63,23 @@
             pointer-events: none; user-select: none; background: rgba(255,255,255,0.6); padding: 2px 0;
         }
 
+        /* 旋轉控制區 (新功能) */
+        .rotate-controls {
+            width: 100%; max-width: 600px;
+            display: flex; gap: 5px; justify-content: center; align-items: center;
+            margin-bottom: 10px; background: #fff; padding: 8px; border-radius: 25px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .rotate-select { padding: 5px; border-radius: 5px; border: 1px solid #ccc; font-size: 0.9rem; }
+        .btn-rotate { background-color: #34495e; padding: 5px 15px; font-size: 0.9rem; border-radius: 15px; }
+
         /* 手動輸入面板 */
         .manual-panel {
             width: 100%; max-width: 600px;
             background: #fff; border: 2px solid #3498db;
             padding: 15px; border-radius: 12px; margin-bottom: 15px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            box-sizing: border-box; /* 確保 padding 不撐破寬度 */
+            box-sizing: border-box;
         }
         
         .input-header { 
@@ -145,7 +154,6 @@
         @keyframes popIn { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
         .close-btn { position: absolute; top: 10px; right: 10px; background: #ccc; width: 30px; height: 30px; border-radius: 50%; border: none; font-weight: bold; color: white; cursor: pointer; }
 
-        /* 設定彈窗內的樣式 */
         .settings-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; }
         .settings-row input { width: 60px; padding: 5px; text-align: center; border: 1px solid #ccc; border-radius: 5px; }
 
@@ -180,6 +188,16 @@
         <div class="canvas-tip">💡 提示：拖曳頂點可改變形狀，拖曳空白處可移動整個三角形。</div>
     </div>
 
+    <div class="rotate-controls">
+        <span>🔄 轉正三角形：</span>
+        <select id="rotate-target" class="rotate-select">
+            <option value="AB">讓 AB 邊 水平</option>
+            <option value="BC">讓 BC 邊 水平</option>
+            <option value="AC">讓 AC 邊 水平</option>
+        </select>
+        <button class="btn-rotate" onclick="alignTriangle()">執行</button>
+    </div>
+
     <div id="manual-panel" class="manual-panel">
         <div class="input-header">
             <span>🛠️ 參數調整模式：</span>
@@ -192,9 +210,9 @@
         
         <div id="panel-sas" style="display:block;">
             <select id="sas-target" class="target-select" onchange="syncInputsWithCanvas()">
-                <option value="A">鎖定頂點 A (改變 ∠A, 邊b, 邊c)</option>
-                <option value="B">鎖定頂點 B (改變 ∠B, 邊a, 邊c)</option>
-                <option value="C">鎖定頂點 C (改變 ∠C, 邊a, 邊b)</option>
+                <option value="A">鎖定頂點 A (改變 ∠A, 邊AC, 邊AB)</option>
+                <option value="B">鎖定頂點 B (改變 ∠B, 邊BC, 邊AB)</option>
+                <option value="C">鎖定頂點 C (改變 ∠C, 邊BC, 邊AC)</option>
             </select>
             <div class="input-row">
                 <div class="input-item">
@@ -214,9 +232,9 @@
 
         <div id="panel-asa" style="display:none;">
             <select id="asa-target" class="target-select" onchange="syncInputsWithCanvas()">
-                <option value="a">鎖定底邊 a (BC中心不變)</option>
-                <option value="b">鎖定底邊 b (AC中心不變)</option>
-                <option value="c">鎖定底邊 c (AB中心不變)</option>
+                <option value="a">鎖定底邊 BC (BC中心不變)</option>
+                <option value="b">鎖定底邊 AC (AC中心不變)</option>
+                <option value="c">鎖定底邊 AB (AB中心不變)</option>
             </select>
             <div class="input-row">
                 <div class="input-item">
@@ -237,9 +255,9 @@
         <div id="panel-sss" style="display:none;">
             <div style="text-align:center; margin-bottom:5px; font-weight:bold; color:#555;">輸入三邊長 (鎖定幾何中心)</div>
             <div class="input-row">
-                <div class="input-item"><label style="color:#e74c3c">邊 a</label><input type="number" id="in-sss-a" step="0.1"></div>
-                <div class="input-item"><label style="color:#27ae60">邊 b</label><input type="number" id="in-sss-b" step="0.1"></div>
-                <div class="input-item"><label style="color:#2980b9">邊 c</label><input type="number" id="in-sss-c" step="0.1"></div>
+                <div class="input-item"><label style="color:#e74c3c">邊 BC (a)</label><input type="number" id="in-sss-a" step="0.1"></div>
+                <div class="input-item"><label style="color:#27ae60">邊 AC (b)</label><input type="number" id="in-sss-b" step="0.1"></div>
+                <div class="input-item"><label style="color:#2980b9">邊 AB (c)</label><input type="number" id="in-sss-c" step="0.1"></div>
             </div>
         </div>
 
@@ -250,6 +268,11 @@
         <div id="tri-type-display" class="triangle-type">任意三角形</div>
         <div id="angle-info" style="font-size:1.1rem; color:#555; margin-top:5px; font-weight:bold;">
             ∠A: 0° | ∠B: 0° | ∠C: 0°
+        </div>
+        <div class="stats-grid" style="margin-top:10px; font-size:0.9rem;">
+             <span style="color:#e74c3c">BC = <span id="info-len-a">0</span></span>
+             <span style="color:#27ae60">AC = <span id="info-len-b">0</span></span>
+             <span style="color:#2980b9">AB = <span id="info-len-c">0</span></span>
         </div>
         <div id="quiz-question" style="display:none; margin-top:10px; font-weight:bold; font-size:1.2rem; color:#d35400;"></div>
     </div>
@@ -266,7 +289,7 @@
         <button class="btn-shop" onclick="openShop()">🎁 獎勵商店</button>
     </div>
 
-    <div class="version-tag">Version 1.7 (捲動修復版)</div>
+    <div class="version-tag">Version 1.8 (水平校正版)</div>
 
     <div id="shop-modal" class="overlay">
         <div class="modal">
@@ -326,7 +349,7 @@
         settings: { rewardSelect: 1, rewardBuild: 3 }
     };
     
-    const STORAGE_KEY = "tri_explorer_v1.7";
+    const STORAGE_KEY = "tri_explorer_v1.8";
     const SCALE_FACTOR = 40; // 40px = 1 unit
 
     function init() {
@@ -415,10 +438,58 @@
         return [A, B, C];
     }
 
+    // --- 新增：水平校正功能 ---
+    function alignTriangle() {
+        const targetSide = document.getElementById('rotate-target').value;
+        let p1, p2; // p1->p2 定義邊向量
+
+        if (targetSide === 'AB') { p1 = points[0]; p2 = points[1]; }
+        else if (targetSide === 'BC') { p1 = points[1]; p2 = points[2]; }
+        else { p1 = points[0]; p2 = points[2]; } // AC
+
+        // 計算目前該邊的角度
+        const currentAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+        
+        // 我們要把這個邊轉成水平 (角度為 0 或 180)
+        // 這裡設定旋轉角度為 -currentAngle
+        const rotAngle = -currentAngle;
+
+        // 計算旋轉中心 (幾何中心)
+        const cx = (points[0].x + points[1].x + points[2].x) / 3;
+        const cy = (points[0].y + points[1].y + points[2].y) / 3;
+
+        // 旋轉所有點
+        points.forEach(p => {
+            const dx = p.x - cx;
+            const dy = p.y - cy;
+            p.x = cx + dx * Math.cos(rotAngle) - dy * Math.sin(rotAngle);
+            p.y = cy + dx * Math.sin(rotAngle) + dy * Math.cos(rotAngle);
+        });
+
+        // 旋轉後置中
+        const minX = Math.min(...points.map(p=>p.x));
+        const maxX = Math.max(...points.map(p=>p.x));
+        const minY = Math.min(...points.map(p=>p.y));
+        const maxY = Math.max(...points.map(p=>p.y));
+        
+        const figCx = (minX + maxX) / 2;
+        const figCy = (minY + maxY) / 2;
+        const canvasCx = canvas.width / 2;
+        const canvasCy = canvas.height / 2;
+
+        points.forEach(p => {
+            p.x += (canvasCx - figCx);
+            p.y += (canvasCy - figCy);
+        });
+
+        draw();
+        speak(`已將 ${targetSide} 邊轉為水平`);
+    }
+
     function syncInputsWithCanvas(sides, angles) {
         if(!sides) sides = getSides();
         if(!angles) angles = getAngles(sides);
-        const [a, b, c] = sides;
+        const [a, b, c] = sides; // a=BC, b=AC, c=AB
         const [A, B, C] = angles;
 
         const mode = document.getElementById('inputModeSelect').value;
@@ -426,25 +497,25 @@
         if (mode === 'sas') {
             const target = document.getElementById('sas-target').value;
             if (target === 'A') {
-                setSasLabels('邊 c (AB)', '夾角 A', '邊 b (AC)');
+                setSasLabels('邊 AB', '夾角 A', '邊 AC');
                 setSasValues(c, A, b);
             } else if (target === 'B') {
-                setSasLabels('邊 c (AB)', '夾角 B', '邊 a (BC)');
+                setSasLabels('邊 AB', '夾角 B', '邊 BC');
                 setSasValues(c, B, a);
             } else { 
-                setSasLabels('邊 b (AC)', '夾角 C', '邊 a (BC)');
+                setSasLabels('邊 AC', '夾角 C', '邊 BC');
                 setSasValues(b, C, a);
             }
         } else if (mode === 'asa') {
             const target = document.getElementById('asa-target').value;
             if (target === 'a') {
-                setAsaLabels('左角 B', '底邊 a (BC)', '右角 C');
+                setAsaLabels('左角 B', '底邊 BC', '右角 C');
                 setAsaValues(B, a, C);
             } else if (target === 'b') {
-                setAsaLabels('左角 A', '底邊 b (AC)', '右角 C');
+                setAsaLabels('左角 A', '底邊 AC', '右角 C');
                 setAsaValues(A, b, C);
             } else { 
-                setAsaLabels('左角 A', '底邊 c (AB)', '右角 B');
+                setAsaLabels('左角 A', '底邊 AB', '右角 B');
                 setAsaValues(A, c, B);
             }
         } else { // SSS
@@ -488,6 +559,10 @@
         }
         document.getElementById('angle-info').innerText = 
             `∠A: ${Math.round(angles[0])}° | ∠B: ${Math.round(angles[1])}° | ∠C: ${Math.round(angles[2])}°`;
+        
+        document.getElementById('info-len-a').innerText = sides[0].toFixed(1);
+        document.getElementById('info-len-b').innerText = sides[1].toFixed(1);
+        document.getElementById('info-len-c').innerText = sides[2].toFixed(1);
     }
 
     function analyzeTriangle(sides, angles) {
@@ -547,7 +622,6 @@
 
             const angRad = angDeg * (Math.PI / 180);
             const newAngle2 = currentAngle1 + (direction * angRad);
-            
             const len2 = s2 * SCALE_FACTOR;
             points[idxP2].x = anchor.x + len2 * Math.cos(newAngle2);
             points[idxP2].y = anchor.y + len2 * Math.sin(newAngle2);
@@ -561,10 +635,9 @@
             if (ang1Deg + ang2Deg >= 180) return alert(`角度和 (${ang1Deg+ang2Deg}°) 必須小於 180°`);
 
             let idxL, idxR, idxTop;
-            
-            if (target === 'a') { idxL=1; idxR=2; idxTop=0; } 
-            else if (target === 'b') { idxL=0; idxR=2; idxTop=1; } 
-            else { idxL=0; idxR=1; idxTop=2; } 
+            if (target === 'a') { idxL=1; idxR=2; idxTop=0; } // BC
+            else if (target === 'b') { idxL=0; idxR=2; idxTop=1; } // AC
+            else { idxL=0; idxR=1; idxTop=2; } // AB
 
             const PL = points[idxL];
             const PR = points[idxR];
@@ -574,10 +647,8 @@
             const baseAngle = Math.atan2(PR.y - PL.y, PR.x - PL.x); 
 
             const halfLen = (sideLen * SCALE_FACTOR) / 2;
-            
             points[idxL].x = midX - halfLen * Math.cos(baseAngle);
             points[idxL].y = midY - halfLen * Math.sin(baseAngle);
-            
             points[idxR].x = midX + halfLen * Math.cos(baseAngle);
             points[idxR].y = midY + halfLen * Math.sin(baseAngle);
 
@@ -593,7 +664,6 @@
             const direction = cross >= 0 ? 1 : -1;
 
             const newAngleTop = baseAngle + (direction * ang1Rad);
-
             points[idxTop].x = points[idxL].x + lenL_Top * Math.cos(newAngleTop);
             points[idxTop].y = points[idxL].y + lenL_Top * Math.sin(newAngleTop);
 
@@ -628,7 +698,6 @@
 
             const lenb = b * SCALE_FACTOR;
             const newAngleAC = angleAB + (direction * angA);
-
             points[idxC].x = points[idxA].x + lenb * Math.cos(newAngleAC);
             points[idxC].y = points[idxA].y + lenb * Math.sin(newAngleAC);
         }
