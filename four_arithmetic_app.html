@@ -31,7 +31,8 @@
             overflow-x: hidden;
         }
 
-        h1 { color: var(--primary); margin: 10px 0; text-align: center; font-size: 1.8rem;}
+        h1 { color: var(--primary); margin: 5px 0 0 0; text-align: center; font-size: 1.8rem;}
+        .app-version { font-size: 0.8rem; color: #7f8c8d; margin-bottom: 15px; }
 
         /* --- 學員名牌 & 獎勵 --- */
         .user-profile {
@@ -102,10 +103,30 @@
         .teach-gem-tag { color: #27ae60; font-weight: bold; background: #d5f5e3; padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; margin-left: 5px;}
 
         /* --- 編輯器相關 --- */
+        .editor-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .editor-layout { grid-template-columns: 1fr; }
+        }
+
         .editor-input-area {
             display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;
             background: #f4f6f7; padding: 15px; border-radius: 8px;
         }
+        .pool-area {
+            background: #fff8e1; padding: 15px; border-radius: 8px; border: 2px solid #f39c12;
+            max-height: 600px; display: flex; flex-direction: column;
+        }
+        .pool-list { overflow-y: auto; flex: 1; }
+        .pool-item {
+            background: white; border-bottom: 1px solid #ddd; padding: 8px; margin-bottom: 5px; cursor: pointer;
+            border-radius: 4px; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center;
+        }
+        .pool-item:hover { background: #fdf2e9; }
+
         .editor-label { font-weight: bold; color: #555; margin-bottom: 2px; }
         .editor-textarea { 
             width: 100%; padding: 8px; border: 1px solid #bdc3c7; border-radius: 5px; 
@@ -251,6 +272,7 @@
 
     <div id="page-home" class="container active">
         <h1>➗ 四則運算應用題練習</h1>
+        <div class="app-version">v4.0 (總題庫優化版)</div>
         
         <div class="user-profile" onclick="changeName()">
             <div>🎓 <span id="display-name">設定學員姓名</span> ✎</div>
@@ -265,9 +287,10 @@
         <div id="tab-quiz">
             <button class="btn-accent btn-block" style="margin-bottom:15px; box-shadow:0 4px #d35400;" onclick="showPage('page-shop')">🎁 獎勵兌換商店</button>
             <div id="lists-container"></div>
-            <button class="btn-secondary btn-block" onclick="createNewList()">+ 手動建立新題庫</button>
-            <button class="btn-info btn-block" onclick="document.getElementById('import-json-questions').click()">📥 匯入 JSON 題庫 (AI生成)</button>
-            <input type="file" id="import-json-questions" style="display:none" accept=".json" onchange="handleImportQuestions(this)">
+            <button class="btn-secondary btn-block" onclick="createNewList()">+ 手動建立新測驗卷</button>
+            
+            <button class="btn-info btn-block" onclick="document.getElementById('import-json-pool').click()">📥 匯入題目到總題庫 (AI JSON)</button>
+            <input type="file" id="import-json-pool" style="display:none" accept=".json" onchange="handleImportToPool(this)">
 
             <div style="margin-top:15px; border-top:1px dashed #ccc; padding-top:10px; display:flex; gap:5px;">
                 <button class="btn-gray" style="flex:1" onclick="exportData()">匯出備份</button>
@@ -275,8 +298,6 @@
                 <input type="file" id="import-file" style="display:none" accept=".json" onchange="handleImport(this)">
             </div>
         </div>
-        
-        <div style="text-align:center; color:#95a5a6; margin-top:20px; font-size:0.9rem;">four_arithmetic_app.html v3.0</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -304,8 +325,8 @@
         <button class="btn-gray btn-block" onclick="showPage('page-home')">返回首頁</button>
     </div>
 
-    <div id="page-editor" class="container">
-        <h2>✏️ 編輯應用題庫</h2>
+    <div id="page-editor" class="container" style="max-width: 1000px;">
+        <h2>✏️ 編輯測驗卷</h2>
         <div style="background:#eee; padding:10px; border-radius:8px; margin-bottom:15px;">
             名稱: <input type="text" id="list-name" style="padding:5px; width:70%; margin-bottom:5px;">
             <div style="display:flex; gap:10px; font-size:0.9rem;">
@@ -315,48 +336,60 @@
             </div>
         </div>
 
-        <div class="editor-input-area">
-            <div class="editor-label">1. 題目敘述:</div>
-            <textarea id="editor-text" class="editor-textarea" placeholder="例如: 一盒巧克力有24顆..."></textarea>
-            
-            <div class="editor-label">2. 解圖思路:</div>
-            <input type="text" id="editor-logic" class="exchange-input" placeholder="例如: 先算出巧克力總數，再進行平分。">
+        <div class="editor-layout">
+            <div class="editor-input-area">
+                <h3 style="margin:0; color:#2c3e50;">🖐️ 手動出題</h3>
+                <div class="editor-label">1. 題目敘述:</div>
+                <textarea id="editor-text" class="editor-textarea" placeholder="例如: 一盒巧克力有24顆..."></textarea>
+                
+                <div class="editor-label">2. 解圖思路:</div>
+                <input type="text" id="editor-logic" class="exchange-input" placeholder="例如: 先算出巧克力總數，再進行平分。">
 
-            <div class="editor-label">3. 運算算式 (輸入多步驟，用逗號分隔):</div>
-            <input type="text" id="editor-formula-steps" class="exchange-input" placeholder="例如: 24*3, (24*3)/8 (用逗號分開每一步)" >
+                <div class="editor-label">3. 完整算式 (驗證用):</div>
+                <input type="text" id="editor-formula" class="exchange-input" placeholder="例如: (24*3)/8" readonly onclick="this.focus()">
+                
+                <div class="keypad">
+                    <button onclick="keyPad('(')">(</button>
+                    <button onclick="keyPad(')')">)</button>
+                    <button onclick="keyPad('AC')" class="btn-danger">C</button>
+                    <button onclick="keyPad('DEL')">←</button>
+                    <button onclick="keyPad('7')">7</button>
+                    <button onclick="keyPad('8')">8</button>
+                    <button onclick="keyPad('9')">9</button>
+                    <button onclick="keyPad('/')" class="op-key">÷</button>
+                    <button onclick="keyPad('4')">4</button>
+                    <button onclick="keyPad('5')">5</button>
+                    <button onclick="keyPad('6')">6</button>
+                    <button onclick="keyPad('*')" class="op-key">×</button>
+                    <button onclick="keyPad('1')">1</button>
+                    <button onclick="keyPad('2')">2</button>
+                    <button onclick="keyPad('3')">3</button>
+                    <button onclick="keyPad('-')" class="op-key">-</button>
+                    <button onclick="keyPad('0')">0</button>
+                    <button onclick="keyPad('.')">.</button>
+                    <button onclick="addCurrentToList()" class="btn-success" style="grid-column: span 1;">ADD</button>
+                    <button onclick="keyPad('+')" class="op-key">+</button>
+                </div>
+            </div>
 
-            <div class="editor-label">4. 最終算式 (由下方按鍵輸入驗證):</div>
-            <input type="text" id="editor-formula" class="exchange-input" placeholder="例如: (24*3)/8" readonly onclick="this.focus()">
-            
-            <div class="keypad">
-                <button onclick="keyPad('(')">(</button>
-                <button onclick="keyPad(')')">)</button>
-                <button onclick="keyPad('AC')" class="btn-danger">C</button>
-                <button onclick="keyPad('DEL')">←</button>
-                <button onclick="keyPad('7')">7</button>
-                <button onclick="keyPad('8')">8</button>
-                <button onclick="keyPad('9')">9</button>
-                <button onclick="keyPad('/')" class="op-key">÷</button>
-                <button onclick="keyPad('4')">4</button>
-                <button onclick="keyPad('5')">5</button>
-                <button onclick="keyPad('6')">6</button>
-                <button onclick="keyPad('*')" class="op-key">×</button>
-                <button onclick="keyPad('1')">1</button>
-                <button onclick="keyPad('2')">2</button>
-                <button onclick="keyPad('3')">3</button>
-                <button onclick="keyPad('-')" class="op-key">-</button>
-                <button onclick="keyPad('0')">0</button>
-                <button onclick="keyPad('.')">.</button>
-                <button onclick="addCurrentToList()" class="btn-success" style="grid-column: span 1;">ADD</button>
-                <button onclick="keyPad('+')" class="op-key">+</button>
+            <div class="pool-area">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h3 style="margin:0; color:#d35400;">📚 總題庫 (Master Pool)</h3>
+                    <span style="font-size:0.8rem; color:#666;" id="pool-count">0題</span>
+                </div>
+                <div style="margin-bottom:5px; font-size:0.9rem; color:#777;">點擊下方題目加入左側測驗卷:</div>
+                <div id="pool-list-container" class="pool-list">
+                    </div>
+                <button class="btn-danger btn-block" style="margin-top:5px; font-size:0.8rem;" onclick="clearPool()">🗑️ 清空總題庫</button>
             </div>
         </div>
 
+        <div style="margin-top:10px; font-weight:bold;">已加入本卷的題目:</div>
         <div style="max-height: 250px; overflow-y: auto; border:1px solid #ddd; padding:5px; border-radius:5px;" id="editor-rows"></div>
         
         <div style="margin-top:15px; display:flex; gap:10px;">
             <button class="btn-gray" style="flex:1" onclick="showPage('page-home')">取消</button>
-            <button class="btn-primary" style="flex:1" onclick="saveList()">儲存</button>
+            <button class="btn-primary" style="flex:1" onclick="saveList()">儲存測驗卷</button>
         </div>
     </div>
 
@@ -366,9 +399,10 @@
             <h3>🛠️ 教學輔助設定</h3>
             <label><input type="checkbox" id="opt-voice" checked> 🔊 語音提示</label>
             <label><input type="checkbox" id="opt-text" checked> 🔤 文字提示</label>
+            <label><input type="checkbox" id="opt-allow-help" checked> 💡 允許求助按鈕</label>
         </div>
         <div style="text-align: center;">
-            <button class="btn-success btn-block" onclick="startQuiz('teach')">📖 教學模式 (逐步引導)</button>
+            <button class="btn-success btn-block" onclick="startQuiz('teach')">📖 教學模式 (完整列式引導)</button>
             <button class="btn-danger btn-block" onclick="startQuiz('test')">📝 測驗模式 (直接計算)</button>
             <button class="btn-gray" onclick="showPage('page-home')" style="margin-top:20px;">返回</button>
         </div>
@@ -446,25 +480,27 @@
 
 <script>
     /* --- 全域變數與初始化 --- */
+    const APP_VERSION = "v4.0";
     let studentName = "小小學員";
     let totalGems = 0; 
     let allLists = [];
+    let poolData = []; // 總題庫
     let exchangeLog = [];
 
     // 遊戲狀態
     let currentList = null;
     let quizData = []; 
-    // Data Structure: { qStr: "10-2*3", text: "...", logic: "...", formula_steps: ["10-6", "4"], ans: 4, currentExp: "10-6", history: ["10-2*3", "10-6", "4"], userAns: null }
+    // Data Structure: { qStr: "10-2*3", text: "...", logic: "...", formula: "10-2*3", ans: 4, currentExp: "10-6", history: [], isDone: false, userAns: null }
     let currentQIdx = 0;
     let currentMode = '';
-    let currentFormulaPhase = 0; // 0: 列式階段, 1: 計算階段
-    let currentFormulaStepIdx = 0; // 追蹤目前要列第幾個算式
+    let currentFormulaPhase = 0; // 0: 列式階段 (一次列完), 1: 計算階段 (逐步計算)
     let editingId = null;
     let timerInt, startTime;
     let currentStepInfo = null; // 教學模式當前步驟資訊
 
     // LocalStorage Keys
-    const SK_LISTS = 'fa_app_lists_v2'; // 更新版本號以免衝突
+    const SK_LISTS = 'fa_app_lists_v2'; 
+    const SK_POOL = 'fa_app_pool_v1';   // 總題庫
     const SK_USER = 'fa_app_user_v1';
     const SK_GEMS = 'fa_app_gems_v1';
     const SK_LOG = 'fa_app_log_v1';
@@ -474,14 +510,14 @@
         updateProfile(); 
         renderLists();
         renderExchangeLog();
-        initQuizKeypad(); // 初始化測驗頁面的鍵盤
+        initQuizKeypad(); 
     };
 
     function loadData() {
         if(localStorage.getItem(SK_LISTS)) {
             allLists = JSON.parse(localStorage.getItem(SK_LISTS));
         } else {
-            // 預設應用題庫
+            // 預設題庫 (Lists)
             allLists = [
                 {
                     name: "基礎應用題 (範例)", 
@@ -490,26 +526,33 @@
                         {
                             text: "一盒巧克力有24顆。小明有3盒，他把所有的巧克力平分給8位朋友，每位朋友可以分到多少顆巧克力？",
                             logic: "先算出巧克力總數(乘法)，再進行平分(除法)。需要用括號確保先計算總數。",
-                            formula_steps: ["24*3", "(24*3)/8"],
                             formula: "(24*3)/8"
-                        },
-                        {
-                            text: "遊樂園門票一張200元，小華買了4張，付了1000元，請問應該找回多少元？",
-                            logic: "先算出4張門票的總價，再用1000元去減。",
-                            formula_steps: ["200*4", "1000-(200*4)"],
-                            formula: "1000-(200*4)"
                         }
                     ]
                 }
             ];
             saveData();
         }
+
+        // 載入總題庫
+        if(localStorage.getItem(SK_POOL)) {
+            poolData = JSON.parse(localStorage.getItem(SK_POOL));
+        } else {
+            // 預設總題庫有些題目
+            poolData = [
+                { text: "遊樂園門票一張200元，小華買了4張，付了1000元，請問應該找回多少元？", logic: "先算總價，再相減。", formula: "1000-(200*4)" },
+                { text: "蘋果一顆15元，橘子一顆10元，媽媽買了5顆蘋果和3顆橘子，共多少錢？", logic: "分別算出總價再相加。", formula: "(15*5)+(10*3)" }
+            ];
+            savePool();
+        }
+
         if(localStorage.getItem(SK_USER)) studentName = localStorage.getItem(SK_USER);
         if(localStorage.getItem(SK_GEMS)) totalGems = parseInt(localStorage.getItem(SK_GEMS)) || 0;
         if(localStorage.getItem(SK_LOG)) exchangeLog = JSON.parse(localStorage.getItem(SK_LOG));
     }
 
     function saveData() { localStorage.setItem(SK_LISTS, JSON.stringify(allLists)); }
+    function savePool() { localStorage.setItem(SK_POOL, JSON.stringify(poolData)); }
     
     function saveUser() { 
         localStorage.setItem(SK_USER, studentName); 
@@ -583,16 +626,16 @@
 
     function createNewList() {
         editingId = null;
-        document.getElementById('list-name').value = "新題庫";
+        document.getElementById('list-name').value = "新測驗卷";
         document.getElementById('editor-rows').innerHTML = '';
         clearEditorInputs();
+        renderPoolInEditor();
         showPage('page-editor');
     }
 
     function clearEditorInputs() {
         document.getElementById('editor-text').value = '';
         document.getElementById('editor-logic').value = '';
-        document.getElementById('editor-formula-steps').value = '';
         document.getElementById('editor-formula').value = '';
     }
 
@@ -604,6 +647,7 @@
         document.getElementById('list-pass-score').value = l.passScore;
         const box = document.getElementById('editor-rows'); box.innerHTML = '';
         l.qs.forEach(q => addEqRow(q));
+        renderPoolInEditor();
         showPage('page-editor');
     }
 
@@ -620,7 +664,6 @@
         target.focus();
     }
     
-    // 初始化測驗頁面專用的鍵盤 (包含數字與符號)
     function initQuizKeypad() {
         const k = document.getElementById('quiz-keypad');
         const chars = ['(', ')', 'AC', 'DEL', '7', '8', '9', '/', '4', '5', '6', '*', '1', '2', '3', '-', '0', '.', 'Enter', '+'];
@@ -640,21 +683,12 @@
         let text = document.getElementById('editor-text').value.trim();
         let logic = document.getElementById('editor-logic').value.trim();
         let formula = document.getElementById('editor-formula').value.trim();
-        let stepsStr = document.getElementById('editor-formula-steps').value.trim();
         
-        if(!text || !formula) return alert("請輸入題目敘述與最終算式");
+        if(!text || !formula) return alert("請輸入題目敘述與完整算式");
         
-        let formula_steps = [];
-        if(stepsStr) {
-            formula_steps = stepsStr.split(/,|，|\n/).map(s => s.trim()).filter(s => s);
-        } else {
-            // 如果沒填步驟，預設就是最終算式
-            formula_steps = [formula];
-        }
-
         try {
             eval(formula); // 檢查算式是否合法
-            addEqRow({text, logic, formula_steps, formula});
+            addEqRow({text, logic, formula});
             clearEditorInputs();
         } catch(e) {
             alert("算式格式錯誤，請檢查！");
@@ -663,14 +697,12 @@
 
     function addEqRow(qObj) {
         const div = document.createElement('div'); div.className = 'eq-row';
-        const stepsDisplay = qObj.formula_steps.join(' ➡ ');
         div.innerHTML = `
             <div class="eq-row-header">
                 <span class="eq-text">${qObj.formula}</span>
                 <button class="btn-danger" onclick="this.closest('.eq-row').remove()">×</button>
             </div>
             <div class="eq-desc">題目: ${qObj.text}</div>
-            <div class="eq-desc" style="color:#2980b9;">步驟: ${stepsDisplay}</div>
             <input type="hidden" class="data-obj" value='${JSON.stringify(qObj).replace(/'/g, "&#39;")}'>
         `;
         document.getElementById('editor-rows').appendChild(div);
@@ -697,12 +729,45 @@
     
     function delList(i) { if(confirm("確定刪除?")) { allLists.splice(i,1); saveData(); renderLists(); } }
 
+    /* --- 總題庫 (Master Pool) 邏輯 --- */
+    function renderPoolInEditor() {
+        const container = document.getElementById('pool-list-container');
+        container.innerHTML = '';
+        document.getElementById('pool-count').innerText = `${poolData.length} 題`;
+        
+        poolData.forEach((q, idx) => {
+            const div = document.createElement('div');
+            div.className = 'pool-item';
+            div.innerHTML = `
+                <div style="flex:1; overflow:hidden;">
+                    <div style="font-weight:bold; font-size:0.8rem; color:#d35400;">${q.formula}</div>
+                    <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${q.text}</div>
+                </div>
+                <button class="btn-success" onclick="addFromPool(${idx})">➕</button>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function addFromPool(idx) {
+        const q = poolData[idx];
+        addEqRow(q); // 直接加入左側列表
+    }
+
+    function clearPool() {
+        if(confirm("確定要清空總題庫嗎？")) {
+            poolData = [];
+            savePool();
+            renderPoolInEditor();
+        }
+    }
+
     /* --- 匯入匯出 (備份) --- */
     function exportData() {
-        const d = { version: "3.0", lists: allLists, user: studentName, gems: totalGems, log: exchangeLog };
+        const d = { version: "4.0", lists: allLists, pool: poolData, user: studentName, gems: totalGems, log: exchangeLog };
         const blob = new Blob([JSON.stringify(d)], {type: "application/json"});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-        a.download = "four_arithmetic_app_backup.json"; a.click();
+        a.download = "four_arithmetic_full_backup.json"; a.click();
     }
     function handleImport(inp) {
         const f = inp.files[0]; if(!f) return;
@@ -711,20 +776,21 @@
             try {
                 const d = JSON.parse(e.target.result);
                 if(d.lists) allLists = allLists.concat(d.lists);
+                if(d.pool) poolData = poolData.concat(d.pool); // 匯入 pool
                 if(d.user && confirm(`發現使用者 ${d.user} (寶石:${d.gems})，要覆蓋嗎？`)) {
                     studentName = d.user; 
                     totalGems = d.gems; 
                     if(d.log) exchangeLog = d.log;
                     saveUser(); 
                 }
-                saveData(); renderLists(); alert("匯入完成");
+                saveData(); savePool(); renderLists(); alert("匯入完成");
             } catch(e) { alert("檔案錯誤"); }
         };
         r.readAsText(f);
     }
 
-    /* --- 匯入題目 (JSON) --- */
-    function handleImportQuestions(inp) {
+    /* --- 匯入題目到總題庫 (JSON) --- */
+    function handleImportToPool(inp) {
         const f = inp.files[0]; if(!f) return;
         const r = new FileReader();
         r.onload = (e) => {
@@ -732,29 +798,24 @@
                 const questions = JSON.parse(e.target.result);
                 if(!Array.isArray(questions)) return alert("格式錯誤：必須是 Array");
                 
-                // 建立一個新題庫來放這些題目
-                const newList = {
-                    name: "匯入的 AI 題庫 " + new Date().toLocaleDateString(),
-                    gems: 10, teachGems: 5, passScore: 100,
-                    qs: questions.map(q => ({
-                        text: q.text,
-                        logic: q.logic,
-                        formula_steps: q.formula_steps || [q.formula],
-                        formula: q.formula
-                    }))
-                };
-                allLists.push(newList);
-                saveData();
-                renderLists();
-                alert(`成功匯入 ${questions.length} 題！`);
+                // 格式清洗，保留核心欄位
+                const newQs = questions.map(q => ({
+                    text: q.text,
+                    logic: q.logic,
+                    formula: q.formula
+                }));
+
+                poolData = poolData.concat(newQs);
+                savePool();
+                renderLists(); // 雖不影響 list 顯示，但刷新畫面
+                alert(`成功匯入 ${newQs.length} 題到總題庫！請進入編輯模式查看。`);
             } catch(e) {
                 alert("JSON 格式錯誤，請檢查檔案內容。");
             }
         };
         r.readAsText(f);
-        inp.value = ''; // Reset
+        inp.value = ''; 
     }
-
 
     /* --- 測驗邏輯 --- */
     function prepareQuiz(i) { currentList = allLists[i]; showPage('page-mode'); }
@@ -766,24 +827,25 @@
         quizData = currentList.qs.map(q => {
             try {
                 let qStr = q.formula; 
-                let fSteps = q.formula_steps || [q.formula];
-                
                 return { 
                     qStr: qStr, 
                     text: q.text,
                     logic: q.logic,
-                    formula_steps: fSteps,
                     ans: eval(qStr), 
                     currentExp: qStr, 
                     history: [qStr], 
                     isDone: false, 
                     userAns: null,
-                    formula_input_done: (mode === 'test') // 測驗模式不需要列式引導
+                    formula_input_done: (mode === 'test') // 測驗模式不需要列式
                 };
             } catch(e) { return null; }
         }).filter(x => x!==null);
 
         if(quizData.length === 0) return alert("無有效題目");
+
+        // 求助按鈕設定
+        const allowHelp = document.getElementById('opt-allow-help').checked;
+        document.getElementById('btn-help').style.display = allowHelp ? 'inline-block' : 'none';
 
         startTime = Date.now();
         clearInterval(timerInt); timerInt = setInterval(updateTimer, 1000);
@@ -828,6 +890,10 @@
         document.getElementById('step-input').value = '';
         document.getElementById('step-input').className = 'game-input';
 
+        // 求助按鈕的可見性 (再次確認設定)
+        const allowHelp = document.getElementById('opt-allow-help').checked;
+        document.getElementById('btn-help').style.display = allowHelp ? 'inline-block' : 'none';
+
         if(currentMode === 'test') {
             // --- 測驗模式 ---
             document.getElementById('quiz-keypad').style.display = 'none'; // 隱藏鍵盤
@@ -857,10 +923,9 @@
             document.getElementById('quiz-keypad').style.display = 'grid'; // 顯示鍵盤供輸入算式
 
             if(!d.formula_input_done) {
-                // 階段一：列式引導
+                // 階段一：列式引導 (改為一次輸入完整算式)
                 currentFormulaPhase = 0;
-                currentFormulaStepIdx = 0;
-                renderFormulaStep();
+                renderFormulaPhase();
             } else {
                 // 階段二：計算引導
                 currentFormulaPhase = 1;
@@ -882,36 +947,20 @@
         }
     }
 
-    /* --- 教學模式 - 階段一：列式引導 --- */
-    function renderFormulaStep() {
-        const d = quizData[currentQIdx];
-        const stepFormula = d.formula_steps[currentFormulaStepIdx];
-        
+    /* --- 教學模式 - 階段一：完整列式引導 --- */
+    function renderFormulaPhase() {
         document.getElementById('step-input-container').style.display = 'flex';
-        document.getElementById('input-prompt-text').innerText = `請列出第 ${currentFormulaStepIdx+1} 步算式：`;
+        document.getElementById('input-prompt-text').innerText = `請列出完整算式：`;
         document.getElementById('target-highlight-text').innerText = "";
         document.getElementById('step-input').type = "text"; // 允許輸入符號
         document.getElementById('step-input').value = "";
-        document.getElementById('step-input').placeholder = "例如: 24*3";
+        document.getElementById('step-input').placeholder = "例如: (24*3)/8";
         document.getElementById('step-input').focus();
         
-        let msg = `請列出第 ${currentFormulaStepIdx+1} 步算式`;
-        if(currentFormulaStepIdx > 0) msg += " (請利用前面的結果)";
-        speak(msg);
-
-        // 顯示已經完成的列式
-        const historyContainer = document.getElementById('history-container');
-        historyContainer.innerHTML = '';
-        for(let i=0; i<currentFormulaStepIdx; i++) {
-             const div = document.createElement('div');
-             div.className = 'calc-row';
-             div.style.color = '#2980b9';
-             div.innerText = d.formula_steps[i];
-             historyContainer.appendChild(div);
-        }
+        speak("請根據題目，列出完整的算式");
     }
 
-    /* --- 教學模式 - 階段二：計算引導 (原本的邏輯) --- */
+    /* --- 教學模式 - 階段二：計算引導 --- */
     function renderCalculationStep() {
         const d = quizData[currentQIdx];
         const currentExpState = d.history[d.history.length - 1];
@@ -981,29 +1030,19 @@
 
         // 判斷目前是「列式階段」還是「計算階段」
         if(currentFormulaPhase === 0) {
-            // --- 檢查列式 ---
+            // --- 檢查完整列式 ---
             let userFormula = inp.value.replace(/\s/g, ''); // 去除空白
-            let correctFormula = d.formula_steps[currentFormulaStepIdx].replace(/\s/g, '');
+            let correctFormula = d.qStr.replace(/\s/g, '');
             
-            // 簡單的字串比對 (未來可改進為更聰明的數學等價比對)
             if(userFormula === correctFormula) {
                 inp.classList.add('correct');
                 speak("列式正確");
-                currentFormulaStepIdx++;
+                d.formula_input_done = true;
                 
-                // 如果所有步驟都列完了，進入計算階段
-                if(currentFormulaStepIdx >= d.formula_steps.length) {
-                    d.formula_input_done = true;
-                    setTimeout(() => {
-                        inp.classList.remove('correct');
-                        loadQuestion(); // 重新載入會自動進入 Phase 1
-                    }, 800);
-                } else {
-                    setTimeout(() => {
-                        inp.classList.remove('correct');
-                        renderFormulaStep(); // 下一個步驟
-                    }, 800);
-                }
+                setTimeout(() => {
+                    inp.classList.remove('correct');
+                    loadQuestion(); // 進入 Phase 1 (計算)
+                }, 800);
             } else {
                 inp.classList.add('wrong');
                 speak("列式錯誤，請再檢查一下");
@@ -1011,7 +1050,7 @@
             }
 
         } else {
-            // --- 檢查計算數值 (原本邏輯) ---
+            // --- 檢查計算數值 (計算階段) ---
             const userVal = parseFloat(inp.value);
             if(Math.abs(userVal - currentStepInfo.val) < 0.0001) {
                 inp.classList.add('correct');
@@ -1107,7 +1146,7 @@
             if(currentFormulaPhase === 0) {
                  // 列式階段的提示
                  const d = quizData[currentQIdx];
-                 h.innerHTML = `提示：這一步的算式是 <strong>${d.formula_steps[currentFormulaStepIdx]}</strong>`;
+                 h.innerHTML = `提示：這題的算式應該是 <strong>${d.qStr}</strong>`;
                  h.style.display = 'block';
             } else if(currentStepInfo) {
                  // 計算階段的提示
