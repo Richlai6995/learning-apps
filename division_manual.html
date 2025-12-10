@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>除法闖關王 5.0 (教學優化版)</title>
+    <title>除法闖關王 5.1 (遮住法估商版)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -142,7 +142,6 @@
         }
         .stats-badge { background: #fff; padding: 5px 12px; border-radius: 20px; font-size: 1rem; }
 
-        /* Tabs (已移除 Rank，保留樣式以防未來擴充) */
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; background: #f0f3f4; padding: 5px; border-radius: 30px; }
         .tab { flex: 1; text-align: center; padding: 10px 20px; cursor: pointer; color: #7f8c8d; font-weight: bold; border-radius: 25px; }
         .tab.active { color: white; background-color: var(--primary); }
@@ -243,7 +242,7 @@
 
         <div class="tabs">
             <div class="tab active" style="width:100%; border-radius:25px;">選擇題庫</div>
-            </div>
+        </div>
 
         <div id="tab-quiz">
             <button class="btn-accent btn-block" style="margin-bottom:15px; box-shadow:0 4px #d35400;" onclick="showPage('page-shop')">🎁 獎勵兌換商店</button>
@@ -256,7 +255,7 @@
             </div>
         </div>
 
-        <div class="version-tag">版本：v5.0 (教學優化版)</div>
+        <div class="version-tag">版本：v5.1 (遮住法估商版)</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -424,7 +423,7 @@
     // --- 初始化與資料讀寫 ---
     window.onload = function() {
         if(localStorage.getItem(STORAGE_KEY_LISTS)) allLists = JSON.parse(localStorage.getItem(STORAGE_KEY_LISTS));
-        else { allLists = [{name: "範例：基本練習", gems: 5, teachGems: 2, passScore: 100, qs: [{a:963, b:36}, {a:2458, b:854}]}]; saveData(); }
+        else { allLists = [{name: "範例：估算練習", gems: 5, teachGems: 2, passScore: 100, qs: [{a:9564, b:24}, {a:2584, b:348}]}]; saveData(); }
         
         if(localStorage.getItem(STORAGE_KEY_USER)) studentName = localStorage.getItem(STORAGE_KEY_USER);
         if(localStorage.getItem(STORAGE_KEY_GEMS)) totalGems = parseInt(localStorage.getItem(STORAGE_KEY_GEMS)) || 0;
@@ -581,7 +580,7 @@
         const now = new Date();
         const dateStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}`;
         const exportObj = {
-            version: "5.0",
+            version: "5.1",
             student: { name: studentName, totalGems: totalGems },
             lists: allLists,
             exchangeLog: exchangeLog
@@ -647,7 +646,7 @@
         if(mode === 'teach') {
             quizSettings.voice = document.getElementById('opt-voice').checked;
             quizSettings.text = document.getElementById('opt-text').checked;
-            quizSettings.allowHelp = document.getElementById('opt-help').checked; // 設定求救按鈕
+            quizSettings.allowHelp = document.getElementById('opt-help').checked; 
         }
 
         quizData = currentList.qs.map(q => ({
@@ -733,23 +732,75 @@
         }
     }
 
-    // --- 優化後的除法步驟產生邏輯 ---
+    // --- 產生遮住法提示的輔助函式 ---
+    function getCoverMethodHint(currentVal, divisor, realQuo) {
+        const dStr = divisor.toString();
+        const vStr = currentVal.toString();
+        
+        // 取得遮住後的「頭」
+        const dHead = parseInt(dStr[0]);
+        // 判斷被除數要看幾位：如果被除數位數 > 除數位數，則看前兩位，否則看一位
+        let vHeadStr = (vStr.length > dStr.length) ? vStr.substring(0, 2) : vStr[0];
+        let vHead = parseInt(vHeadStr);
+        
+        // 遮住部分的文字描述
+        const dCovered = dStr.substring(1);
+        const vCovered = vStr.substring(vHeadStr.length);
+        
+        // 估商
+        let guess = Math.floor(vHead / dHead);
+        if (guess > 9) guess = 9;
+        if (guess < 1) guess = 1; // 避免為0
+
+        let hint = "";
+        
+        // 只有在長度足夠遮的時候才顯示遮住法文字，否則簡單顯示
+        if (dStr.length > 1) {
+            hint += `<b>遮住法：</b>${divisor}遮${dCovered}看<b style='color:red'>${dHead}</b>，`;
+            hint += `${currentVal}遮${vCovered}看<b style='color:red'>${vHead}</b>。<br>`;
+        } else {
+            hint += `看 ${currentVal} ÷ ${divisor}。<br>`;
+        }
+        
+        hint += `想：${vHead} ÷ ${dHead} = ? (先猜 ${guess})<br>`;
+
+        // 模擬試商調整
+        let prod = divisor * guess;
+        if (prod > currentVal) {
+            // 第一次猜太大
+            hint += `試商：${divisor} × ${guess} = ${prod} (太大了！)<br>`;
+            let newGuess = guess - 1;
+            // 簡單展示調整一次
+            if (newGuess === realQuo) {
+                hint += `調整：改試 <b style='color:var(--primary)'>${newGuess}</b>。`;
+            } else {
+                hint += `調整：試試看更小的數...`;
+            }
+        } else if (guess === realQuo) {
+            // 猜對了
+            hint += `試商：${divisor} × ${guess} = ${prod} (剛好或小於被除數)。`;
+        } else {
+            // 猜太小 (較少見，但邏輯上可能發生)
+            hint += `試商：${divisor} × ${guess} = ${prod} (餘數太大)，試試 <b style='color:var(--primary)'>${realQuo}</b>。`;
+        }
+        
+        return hint;
+    }
+
+    // --- 除法步驟產生邏輯 (整合遮住法) ---
     function generateDivSteps(dividend, divisor) {
         let dStr = dividend.toString();
         let steps = [];
         let row = 1;
-        let offset = 6 - dStr.length; // 保持原本的視覺偏移量
+        let offset = 6 - dStr.length; 
         
-        // 1. 初始化試商範圍
         let divisorLen = divisor.toString().length;
-        let dIndex = divisorLen - 1; // 指向目前 working string 的最後一位在 dStr 中的索引
+        let dIndex = divisorLen - 1; 
         let workingStr = dStr.substring(0, divisorLen);
         let currentVal = parseInt(workingStr);
         let firstStep = true;
 
-        // 邏輯修正：如果第一次抓取的數值比除數小，且還有下一位，則自動多抓一位
-        // 例如 2458 / 854 => 抓 245 < 854 => 改抓 2458
-        // 這樣第一步就是 2458 / 854 = 2，而不是先商0
+        // 如果不夠除，自動多抓一位 (例如 258 < 348，改抓 2584)
         if (currentVal < divisor && dIndex < dStr.length - 1) {
             dIndex++;
             workingStr += dStr[dIndex];
@@ -760,30 +811,20 @@
             let quo = Math.floor(currentVal / divisor);
             let prod = quo * divisor;
             let rem = currentVal - prod;
-            let col = offset + dIndex; // 這裡的col對應到商的位置 (對齊 dividend 的當前位)
+            let col = offset + dIndex; 
 
-            // 產生提示文字
-            let hintText = `看 ${currentVal} ÷ ${divisor}，商多少？`;
-            let estHint = "";
-            if(divisor >= 10 && currentVal >= 10) {
-                let d_round = Math.round(divisor / 10);
-                if(d_round === 0) d_round = 1;
-                let w_round = Math.round(currentVal / 10);
-                estHint = `提示：${currentVal}估${w_round*10}，${divisor}估${d_round*10}。${d_round}的幾倍接近${w_round}？`;
-                hintText = estHint; 
-            }
+            // 使用新邏輯生成遮住法提示
+            let hintText = getCoverMethodHint(currentVal, divisor, quo);
 
-            // 步驟1: 商
             steps.push({ 
                 type: 'quo', r: 0, c: col, ans: quo, 
                 hint: hintText,
                 currVal: currentVal,
                 workingStrLen: workingStr.length,
                 dividendEndIdx: col,
-                highlightRow: row // 高亮當前計算的數字所在行
+                highlightRow: row 
             });
 
-            // 步驟2: 乘積
             steps.push({ 
                 type: 'prod', r: row+1, c: col, ans: prod, 
                 hint: `${quo} × ${divisor} = ?`, align:'right', quoVal: quo 
@@ -791,31 +832,25 @@
 
             row += 2;
 
-            // 步驟3: 餘數
             steps.push({ 
                 type: 'rem', r: row, c: col, ans: rem, 
                 hint: `${currentVal} - ${prod} = ?`, align:'right', working: currentVal, prod: prod 
             });
 
-            // 檢查是否還有下一位
             if(dIndex < dStr.length - 1) {
                 dIndex++;
                 let nextDigit = dStr[dIndex];
 
-                // 步驟4: 降位
                 steps.push({ 
                     type: 'drop', r: row, c: offset+dIndex, 
                     ans: nextDigit, hint: `把 ${nextDigit} 降下來` 
                 });
 
-                // 更新下一輪的數值
                 workingStr = rem.toString() + nextDigit;
                 currentVal = parseInt(workingStr);
                 
-                // 下一輪的 highlightRow 應該停留在降位後的這一行 (row)
-                // 但迴圈開頭 row 變數還沒加，所以這裡不用變，等到 loop 回去使用 row
             } else {
-                break; // 結束
+                break; 
             }
             
             firstStep = false;
@@ -829,7 +864,6 @@
         const msg = document.getElementById('teach-msg');
         document.getElementById('help-content').style.display = 'none';
         
-        // 判斷是否顯示求救按鈕
         const btnHelp = document.getElementById('btn-help-trigger');
         if(quizSettings.allowHelp) {
             btnHelp.style.display = 'inline-block';
@@ -892,7 +926,7 @@
 
         let cur = q.steps[q.stepIdx];
 
-        if(quizSettings.text) msg.innerText = cur.hint;
+        if(quizSettings.text) msg.innerHTML = cur.hint; // 改為 innerHTML 以支援粗體
         else msg.innerText = "請計算並填入答案...";
         
         speak(cur.hint);
@@ -1021,7 +1055,6 @@
             let oldBtn = msg.querySelector('button'); 
             if(oldBtn) oldBtn.remove();
             
-            // 如果允許求救，這裡只顯示錯誤訊息；若不允許，也只能顯示錯誤訊息，不會彈出 help-box
             msg.innerText = errorMsg; 
             const okBtn = document.createElement('button'); okBtn.className='btn-warning'; okBtn.innerText='OK';
             okBtn.onclick = () => checkTeachAnswerMulti(step, q);
@@ -1034,7 +1067,7 @@
     }
 
     function toggleHelp() {
-        if (!quizSettings.allowHelp) return; // 雙重防護
+        if (!quizSettings.allowHelp) return; 
 
         const helpBox = document.getElementById('help-content');
         if(helpBox.style.display === 'block') {
@@ -1049,7 +1082,7 @@
         if(step.type === 'quo') {
             const target = step.currVal;
             const ans = parseInt(step.ans);
-            html += `<strong>🔍 正在思考：${divisor} 乘多少最接近 ${target} 且不超過它？</strong><br>`;
+            html += `<strong>🔍 答案提示：</strong><br>`;
             html += `<div class="help-table">`;
             
             let start = Math.max(1, ans - 1);
