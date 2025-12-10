@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>除法闖關王 5.2 (遮住法引導版)</title>
+    <title>除法闖關王 5.3 (遮住法視覺強化版)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -15,9 +15,6 @@
             --warning: #f39c12;
             --help: #8e44ad;
             
-            --hint-high: #27ae60;
-            --hint-low: #2980b9;
-
             --cell-size: 42px; 
             --font-base: 1.1rem;
         }
@@ -189,8 +186,12 @@
         .dividend-cell { border-top: 3px solid #333; margin-top: -3px; }
         .subtraction-line { border-bottom: 3px solid #333 !important; }
         
-        .hl-high { color: var(--hint-high); font-weight: 900; transform: scale(1.2); transition: 0.3s; }
-        .hl-low { color: var(--hint-low); font-weight: 900; transform: scale(1.2); transition: 0.3s; }
+        /* 新增/修改的視覺強調樣式 */
+        .txt-highlight { color: var(--danger); font-weight: 900; } /* 紅色強調 (看的部分) */
+        .txt-faded { color: #bdc3c7; } /* 淡灰色 (遮住的部分) */
+        
+        .grid-cell.txt-highlight { color: var(--danger); font-weight: 900; transform: scale(1.1); transition: 0.3s;}
+        .grid-cell.txt-faded { color: #bdc3c7; transition: 0.3s; }
 
         .game-input { 
             width: 36px; height: 36px; font-size: 1.3rem; text-align: center; 
@@ -255,7 +256,7 @@
             </div>
         </div>
 
-        <div class="version-tag">版本：v5.2 (遮住法引導版)</div>
+        <div class="version-tag">版本：v5.3 (遮住法視覺強化版)</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -580,7 +581,7 @@
         const now = new Date();
         const dateStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}`;
         const exportObj = {
-            version: "5.2",
+            version: "5.3",
             student: { name: studentName, totalGems: totalGems },
             lists: allLists,
             exchangeLog: exchangeLog
@@ -732,7 +733,7 @@
         }
     }
 
-    // --- 產生遮住法提示的輔助函式 (僅提供思考方向，不給答案) ---
+    // --- 產生遮住法提示的輔助函式 (視覺強化版) ---
     function getCoverMethodHint(currentVal, divisor, realQuo) {
         const dStr = divisor.toString();
         const vStr = currentVal.toString();
@@ -751,8 +752,9 @@
         
         // 只有在長度足夠遮的時候才顯示遮住法文字，否則簡單顯示
         if (dStr.length > 1) {
-            hint += `<b>遮住法：</b>${divisor}遮${dCovered}看<b style='color:red'>${dHead}</b>，`;
-            hint += `${currentVal}遮${vCovered}看<b style='color:red'>${vHead}</b>。<br>`;
+            // 使用新的 class 進行視覺強化
+            hint += `<b>遮住法：</b><span class='txt-highlight'>${dHead}</span><span class='txt-faded'>${dCovered}</span> 看 <span class='txt-highlight'>${dHead}</span>，`;
+            hint += `<span class='txt-highlight'>${vHeadStr}</span><span class='txt-faded'>${vCovered}</span> 看 <span class='txt-highlight'>${vHead}</span>。<br>`;
         } else {
             hint += `看 ${currentVal} ÷ ${divisor}。<br>`;
         }
@@ -884,8 +886,9 @@
             fillCell(s.r, s.c, s.ans, s.type);
         }
 
-        document.querySelectorAll('.hl-high, .hl-low').forEach(el => {
-            el.classList.remove('hl-high', 'hl-low');
+        // 清除舊的強調樣式
+        document.querySelectorAll('.txt-highlight, .txt-faded').forEach(el => {
+            el.classList.remove('txt-highlight', 'txt-faded');
         });
 
         if(q.stepIdx >= q.steps.length) {
@@ -913,19 +916,31 @@
             const currentRow = cur.highlightRow; 
 
             if(bStr.length >= 2 && wLen >= 2) {
+                // 1. 處理左側除數的顯示
                 for(let i=0; i<bStr.length; i++) {
                     const dEl = document.getElementById(`div-digit-${i}`);
                     if(dEl) {
-                        if(i === bStr.length - 1) dEl.classList.add('hl-low');
-                        else dEl.classList.add('hl-high');
+                        if(i === 0) { // 頭
+                            dEl.classList.add('txt-highlight');
+                        } else { // 被遮住的尾
+                            dEl.classList.add('txt-faded');
+                        }
                     }
                 }
+
+                // 2. 處理網格中被除數的顯示
+                // 判斷被除數的頭是幾位
+                let vHeadLen = (wLen > bStr.length) ? 2 : 1;
+
                 const startCol = cur.dividendEndIdx - wLen + 1;
                 for(let i=0; i<wLen; i++) {
                     const cell = document.getElementById(`c-${currentRow}-${startCol + i}`);
                     if(cell) {
-                        if(i === wLen - 1) cell.classList.add('hl-low');
-                        else cell.classList.add('hl-high');
+                        if(i < vHeadLen) { // 頭
+                            cell.classList.add('txt-highlight');
+                        } else { // 被遮住的尾
+                            cell.classList.add('txt-faded');
+                        }
                     }
                 }
             }
