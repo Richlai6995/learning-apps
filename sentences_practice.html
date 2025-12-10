@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sentence Builder 句子闖關王 v3.1 (多句對話版)</title>
+    <title>Sentence Builder 句子闖關王 v3.2 (流暢對話版)</title>
     <style>
         :root {
             --primary: #4834d4;
@@ -11,11 +11,11 @@
             --dark: #130f40;
             --light: #fdfdfd;
             --accent: #f9ca24;
-            --success: #6ab04c;
+            --success: #2ed573;
             --danger: #eb4d4b;
-            --link: #22a6b3;
-            --user-bg: #e056fd15;
-            --rank-1: #FFD700;
+            --bg-chat: #f1f2f6;
+            --user-bubble: #dff9fb;
+            --teacher-bubble: #ffffff;
         }
 
         body {
@@ -58,150 +58,93 @@
         .btn-accent { background-color: #f0932b; }
         .btn-gray { background-color: #95a5a6; }
         .btn-danger { background-color: var(--danger); }
-        .btn-link { background-color: var(--link); }
-        .btn-gold { background-color: #f1c40f; color: #333; }
-        .btn-outline { background: transparent; border: 1px solid #999; color: #666; padding: 5px 10px; font-size: 0.85rem;}
+        .btn-link { background-color: #22a6b3; }
         .btn-block { width: 100%; margin: 5px 0; padding: 12px; font-size: 1.1rem; }
         .btn-hint { background-color: #2ed573; color: white; } 
-
-        /* --- 學員名牌 --- */
-        .user-profile {
-            background-color: var(--user-bg);
-            border: 2px dashed var(--secondary);
-            border-radius: 10px;
-            padding: 10px 15px;
-            margin-bottom: 15px;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; flex-wrap: wrap; gap: 10px;
-        }
-        .user-name { font-size: 1.2rem; font-weight: bold; color: var(--primary); margin-right: 5px;}
-        .stats-badge {
-            background: #fff; padding: 3px 8px; border-radius: 12px; font-size: 0.95rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 3px;
-        }
 
         /* --- 列表項目 --- */
         .list-item {
             background: #f8f9fa; border: 1px solid #e9ecef; padding: 12px; margin-bottom: 10px;
             border-radius: 8px; display: flex; align-items: center; gap: 10px;
         }
-        .list-checkbox { width: 24px; height: 24px; cursor: pointer; flex-shrink: 0; }
-        .list-content-wrapper { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-        .list-header { display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap;}
-        .list-actions { display: flex; gap: 5px; justify-content: flex-end; width: 100%; flex-wrap: wrap; }
-        .gem-tag { color: #2980b9; font-weight: bold; background: #d6eaf8; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; margin-left: 5px;}
-        .score-tag { color: #d35400; font-weight: bold; background: #fdebd0; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; margin-left: 5px;}
+        .list-header { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        
+        /* --- 測驗區 (聊天室風格) --- */
+        .quiz-header { display: flex; justify-content: space-between; font-weight: bold; color: #7f8c8d; margin-bottom: 10px; background: #f1f2f6; padding: 10px; border-radius: 8px; }
+        .q-image-box { height: 120px; display: flex; justify-content: center; align-items: center; margin-bottom: 5px; overflow: hidden;}
+        .q-image-box img { max-height: 100%; max-width: 100%; border-radius: 8px; object-fit: contain; }
+        .q-image-box span { font-size: 4rem; }
 
-        /* --- 英雄榜 --- */
-        .rank-list { margin-top: 10px; }
-        .rank-item { display: flex; align-items: center; padding: 10px; margin-bottom: 8px; background: #fff; border-radius: 8px; border: 1px solid #eee; }
-        .rank-num { font-size: 1.5rem; font-weight: 900; width: 40px; text-align: center; margin-right: 10px; color: #7f8c8d; }
-        .rank-item.rank-1 { background: linear-gradient(to right, #fff, #fff9c4); border: 2px solid var(--rank-1); }
-        .rank-item.rank-1 .rank-num { color: #d4ac0d; font-size: 2rem; }
-
-        /* --- 歷史紀錄 --- */
-        .history-item {
-            background: #e8f0fe; border-left: 5px solid var(--primary); padding: 12px; margin-bottom: 10px; border-radius: 4px;
-            display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
+        /* 對話歷史容器 */
+        .dialogue-box {
+            background: var(--bg-chat);
+            border-radius: 12px;
+            padding: 15px;
+            height: 250px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            border: 1px solid #e1e1e1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
-        .history-info { display: flex; flex-direction: column; gap: 4px; }
-        .history-title { font-weight: bold; color: #34495e; font-size: 0.9rem; }
-        .delete-history-btn { background: transparent; color: #bdc3c7; border: 1px solid #bdc3c7; width: 32px; height: 32px; border-radius: 50%; padding: 0; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
+        
+        /* 對話氣泡 */
+        .chat-bubble {
+            max-width: 85%;
+            padding: 10px 14px;
+            border-radius: 15px;
+            font-size: 1rem;
+            line-height: 1.4;
+            position: relative;
+            word-wrap: break-word;
+            animation: popIn 0.3s ease-out;
+        }
+        
+        @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 
-        /* --- 匯出匯入 --- */
-        .data-controls { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 2px dashed #eee; }
-        .data-btn-row { display: flex; gap: 10px; }
+        /* 使用者 (右側) */
+        .chat-bubble.user {
+            align-self: flex-end;
+            background-color: var(--user-bubble);
+            color: #333;
+            border-bottom-right-radius: 2px;
+            border: 1px solid #c7ecee;
+        }
+        .chat-bubble.user.correct { background-color: #d1fae5; border-color: #a7f3d0; color: #065f46; }
+        .chat-bubble.user.wrong { background-color: #fee2e2; border-color: #fecaca; color: #991b1b; text-decoration: line-through; opacity: 0.8;}
+
+        /* 老師/系統修正 (左側) */
+        .chat-bubble.teacher {
+            align-self: flex-start;
+            background-color: var(--teacher-bubble);
+            color: #444;
+            border-bottom-left-radius: 2px;
+            border: 1px solid #ddd;
+            font-weight: bold;
+        }
+        .chat-bubble.teacher::before { content: "✅ "; }
+
+        .input-wrapper { margin-bottom: 10px; position: relative; }
+        .sentence-input {
+            width: 100%; font-size: 1.2rem; padding: 12px; border: 2px solid #ccc;
+            border-radius: 25px; font-family: 'Segoe UI', sans-serif; box-sizing: border-box;
+            outline: none; transition: border-color 0.3s; text-align: left; padding-left: 20px;
+        }
+        .sentence-input:focus { border-color: var(--primary); box-shadow: 0 0 5px rgba(72, 52, 212, 0.2); }
+
+        .progress-indicator { text-align:center; font-size:0.8rem; color:#999; margin-bottom: 5px;}
 
         /* --- 編輯區 --- */
         .edit-row { display: flex; gap: 5px; margin-bottom: 10px; align-items: flex-start; background: #fff; padding: 8px; border: 1px solid #eee; border-radius: 8px; }
-        /* 修改：使用 textarea 支援多行輸入 */
         .edit-row textarea { 
             padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; 
             font-family: inherit; font-size: 1rem; resize: vertical; min-height: 40px;
         }
         .thumb-preview { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; background: #eee; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
         .file-input { display: none; }
-        
-        /* --- 測驗區 --- */
-        .quiz-header { display: flex; justify-content: space-between; font-weight: bold; color: #7f8c8d; margin-bottom: 15px; background: #f1f2f6; padding: 10px; border-radius: 8px; }
-        .timer-badge { background: var(--dark); color: #fff; padding: 2px 8px; border-radius: 4px; font-family: monospace; }
-        .q-image-box { height: 160px; display: flex; justify-content: center; align-items: center; margin-bottom: 10px; overflow: hidden;}
-        .q-image-box img { max-height: 100%; max-width: 100%; border-radius: 8px; object-fit: contain; }
-        .q-image-box span { font-size: 5rem; }
-        
-        .sub-progress-indicator {
-            text-align: center; font-size: 0.85rem; color: var(--primary); 
-            background: #e056fd15; padding: 2px 8px; border-radius: 10px; margin-bottom: 5px; display: inline-block;
-        }
 
-        .input-wrapper { margin-bottom: 20px; position: relative; }
-        .sentence-input {
-            width: 100%; font-size: 1.4rem; padding: 15px; border: 3px solid #ccc;
-            border-radius: 12px; font-family: 'Segoe UI', sans-serif; box-sizing: border-box;
-            outline: none; transition: border-color 0.3s; text-align: center;
-        }
-        .sentence-input:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(72, 52, 212, 0.2); }
-        .sentence-input.correct { border-color: var(--success); background-color: #e3f9e5; }
-        .sentence-input.wrong { border-color: var(--danger); background-color: #ffeaea; }
-
-        .feedback-area {
-            display: none; background: #f1f2f6; padding: 15px; border-radius: 10px;
-            margin-bottom: 20px; text-align: left; border-left: 5px solid var(--danger);
-        }
-        .fb-label { font-size: 0.85rem; color: #7f8c8d; margin-bottom: 3px; font-weight: bold; }
-        .fb-text-wrong { color: var(--danger); font-size: 1.1rem; text-decoration: line-through; margin-bottom: 8px; }
-        .fb-text-correct { color: var(--success); font-size: 1.2rem; font-weight: bold; }
-        
-        /* 階段性成功提示 */
-        .step-success {
-            position: absolute; top: -30px; left: 0; width: 100%; text-align: center;
-            color: var(--success); font-weight: bold; font-size: 1rem;
-            animation: popUp 0.5s ease-out; opacity: 0;
-        }
-        @keyframes popUp { 0% { opacity: 0; transform: translateY(10px); } 50% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-20px); } }
-
-        .result-card { text-align: center; padding: 10px; }
-        .final-score { font-size: 4rem; color: var(--primary); margin: 5px 0; font-weight: bold; }
-        
-        .tabs { display: flex; margin-bottom: 15px; border-bottom: 2px solid #eee; }
-        .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #999; font-weight: bold; }
-        .tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
-
-        .version-tag { margin-top: 30px; color: #ccc; font-size: 0.8rem; text-align: center; }
-
-        /* --- 獎勵兌換區 --- */
-        .shop-balance {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white; padding: 20px; border-radius: 15px; text-align: center;
-            margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-        .shop-balance h3 { color: white; margin: 0 0 10px 0; font-weight: normal; font-size: 1rem; opacity: 0.9; }
-        .balance-row { display: flex; justify-content: center; gap: 20px; font-size: 1.5rem; font-weight: bold; }
-        
-        .exchange-form { background: #f8f9fa; padding: 15px; border-radius: 12px; border: 1px solid #eee; }
-        .exchange-row { display: flex; gap: 10px; margin-bottom: 15px; }
-        .exchange-input { flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1.1rem; text-align: center; }
-        .exchange-select { padding: 5px; border: 2px solid #ddd; border-radius: 8px; font-size: 1.1rem; background: white; }
-        
-        .log-list { max-height: 200px; overflow-y: auto; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px; font-size: 0.9rem; color: #666; }
-        .log-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; }
-
-        /* --- 獲獎動畫與特效 --- */
-        .reward-popup {
-            background: #fff8e1; border: 3px solid #f1c40f; padding: 15px;
-            border-radius: 15px; margin-top: 20px; font-weight: bold; color: #d35400;
-            font-size: 1.3rem; text-align: center;
-            box-shadow: 0 5px 15px rgba(241, 196, 15, 0.4);
-            animation: bounceIn 0.8s;
-        }
-        @keyframes bounceIn {
-            0% { transform: scale(0.3); opacity: 0; }
-            50% { transform: scale(1.05); opacity: 1; }
-            70% { transform: scale(0.9); }
-            100% { transform: scale(1); }
-        }
-
-        /* 粒子動畫 */
+        /* --- 粒子動畫 (獎勵) --- */
         #particle-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 9999; overflow: hidden; display: none;
@@ -215,6 +158,11 @@
             100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
         }
 
+        /* 其他輔助樣式 */
+        .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #999; font-weight: bold; border-bottom: 2px solid #eee;}
+        .tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+        .tabs { display: flex; margin-bottom: 15px; }
+
     </style>
 </head>
 <body>
@@ -222,761 +170,640 @@
     <div id="particle-container"></div>
 
     <div id="page-home" class="container active">
-        <h1>📝 句子聽寫闖關王</h1>
+        <h1>💬 句子對話闖關 v3.2</h1>
         
-        <div class="user-profile" onclick="changeStudentName()">
-            <div>🎓 <span id="display-student-name" class="user-name">設定學員姓名</span> ✎</div>
-            <div class="stats-badge">👑 <span id="stat-crowns">0</span></div>
-            <div class="stats-badge">💎 <span id="stat-gems">0</span></div>
+        <div style="background:#e056fd15; border:2px dashed #686de0; border-radius:10px; padding:10px; margin-bottom:15px; text-align:center;">
+            <div style="font-size:1.2rem; font-weight:bold; color:#4834d4;">
+                <span id="display-student-name">學員</span>
+                <button class="btn-outline" style="padding:2px 6px; font-size:0.8rem;" onclick="changeStudentName()">✎</button>
+            </div>
+            <div style="margin-top:5px;">
+                👑 <span id="stat-crowns">0</span> &nbsp;|&nbsp; 💎 <span id="stat-gems">0</span>
+            </div>
         </div>
 
         <div class="tabs">
-            <div class="tab active" onclick="switchTab('quiz')">選擇題庫</div>
+            <div class="tab active" onclick="switchTab('quiz')">題庫選擇</div>
             <div class="tab" onclick="switchTab('history')">練習紀錄</div>
         </div>
 
         <div id="tab-quiz-content">
-            <button class="btn-accent btn-block" style="margin-bottom:15px; box-shadow:0 4px #d35400;" onclick="showPage('page-shop')">🎁 獎勵兌換商店</button>
+            <button class="btn-accent btn-block" style="margin-bottom:10px;" onclick="showPage('page-shop')">🎁 獎勵兌換</button>
             <div id="lists-container"></div>
-            <button class="btn-secondary btn-block" onclick="createNewList()">+ 新增自訂句子題庫</button>
+            <button class="btn-secondary btn-block" onclick="createNewList()">+ 新增自訂題庫</button>
             
-            <div class="data-controls">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-weight:bold; color:#555;">資料管理</span>
-                    <button class="btn-outline" onclick="toggleSelectAll()">全選 / 取消</button>
-                </div>
-                <div class="data-btn-row">
-                    <button class="btn-link" style="flex:1" onclick="exportSelectedData()">📤 匯出備份 (含寶石)</button>
-                    <button class="btn-link" style="flex:1" onclick="triggerImport()">📥 匯入備份</button>
-                </div>
+            <div style="margin-top:20px; border-top:1px dashed #ccc; padding-top:10px;">
+                <button class="btn-link" style="width:100%" onclick="exportSelectedData()">📤 備份資料</button>
                 <input type="file" id="import-file" class="file-input" accept=".json" onchange="handleImportData(this)">
+                <button class="btn-link" style="width:100%; margin-top:5px;" onclick="document.getElementById('import-file').click()">📥 匯入資料</button>
             </div>
         </div>
 
         <div id="tab-history-content" style="display:none;">
             <div id="history-container"></div>
-            <button class="btn-gray btn-block" onclick="clearAllHistory()">清空所有紀錄</button>
+            <button class="btn-gray btn-block" onclick="clearAllHistory()">清空紀錄</button>
         </div>
-
-        <div class="version-tag">版本：v3.1 (多句對話版)</div>
-    </div>
-
-    <div id="page-shop" class="container">
-        <h2>🎁 獎勵兌換商店</h2>
-        
-        <div class="shop-balance">
-            <h3>目前持有</h3>
-            <div class="balance-row">
-                <span>👑 <span id="shop-crowns">0</span></span>
-                <span>💎 <span id="shop-gems">0</span></span>
-            </div>
-        </div>
-
-        <div class="exchange-form">
-            <div style="text-align:center; margin-bottom:10px; color:#555; font-weight:bold;">我要兌換...</div>
-            <div class="exchange-row">
-                <input type="text" id="gift-name" class="exchange-input" placeholder="輸入獎品名稱 (如: 看電視10分鐘)">
-            </div>
-            
-            <div style="text-align:center; margin-bottom:10px; color:#555; font-weight:bold;">需要花費</div>
-            <div class="exchange-row">
-                <input type="number" id="gift-cost" class="exchange-input" placeholder="數量" min="1">
-                <select id="gift-currency" class="exchange-select">
-                    <option value="gems">💎 寶石</option>
-                    <option value="crowns">👑 皇冠</option>
-                </select>
-            </div>
-
-            <button class="btn-primary btn-block" onclick="processExchange()">確認兌換</button>
-        </div>
-
-        <div style="margin-top:20px;">
-            <h4>📜 兌換紀錄</h4>
-            <div id="exchange-log" class="log-list"></div>
-        </div>
-
-        <button class="btn-gray btn-block" style="margin-top:20px;" onclick="showPage('page-home')">返回首頁</button>
-    </div>
-
-    <div id="page-editor" class="container">
-        <h2>✏️ 編輯句子題庫</h2>
-        <div style="margin-bottom:15px; background:#f9f9f9; padding:10px; border-radius:8px;">
-            <div style="margin-bottom:10px;">
-                <label>題庫名稱：</label>
-                <input type="text" id="list-name-input" style="padding:5px; width:70%;">
-            </div>
-            <div style="display:flex; gap:10px;">
-                <div>💎 獎勵寶石: <input type="number" id="list-gems" placeholder="5" style="padding:5px; width:60px;" value="5"></div>
-                <div>🎯 獲獎分數: <input type="number" id="list-pass-score" placeholder="100" style="padding:5px; width:60px;" value="100"></div>
-            </div>
-        </div>
-        <div style="background:#e8f0fe; padding:8px; font-size:0.9rem; border-radius:5px; margin-bottom:10px; color:#2c3e50;">
-            💡 <strong>小技巧：</strong>若要建立問答或對話練習，請在文字框中<b>換行輸入</b>。<br>
-            例如：<br>
-            第一行：What's your name?<br>
-            第二行：My name is Bob.
-        </div>
-        <div id="editor-rows"></div>
-        <button class="btn-gray" onclick="addEditRow()">+ 增加題目</button>
-        <hr>
-        <div style="display:flex; gap:10px;">
-            <button class="btn-gray" style="flex:1" onclick="showPage('page-home')">取消</button>
-            <button class="btn-primary" style="flex:1" onclick="saveList()">儲存</button>
-        </div>
+        <div style="text-align:center; color:#ccc; margin-top:20px; font-size:0.8rem;">版本 v3.2 (流暢對話版)</div>
     </div>
 
     <div id="page-quiz" class="container">
         <div class="quiz-header">
             <span id="q-progress">題號: 1/5</span>
-            <span id="q-timer" class="timer-badge">00:00</span>
+            <span id="q-timer">00:00</span>
             <span id="q-score">得分: 0</span>
         </div>
-        <div class="question-area">
-            <div id="q-image-box" class="q-image-box"></div>
-            
-            <div style="text-align:center;">
-                <span id="sub-progress-indicator" class="sub-progress-indicator" style="display:none;">句子 1/2</span>
+        
+        <div class="q-image-box" id="q-image-box"></div>
+        
+        <div id="dialogue-box" class="dialogue-box">
             </div>
 
-            <button class="btn-accent" onclick="playTargetAudio()">🔊 播放發音</button>
-        </div>
-        
-        <div style="text-align:center; color:#7f8c8d; font-size:0.9rem; margin-bottom:5px;">請在下方輸入聽到的句子</div>
-        
+        <div class="progress-indicator" id="sub-progress-indicator">等待開始...</div>
+
         <div class="input-wrapper">
-            <div id="step-success-msg" class="step-success">✅ 正確！Next...</div>
-            <input type="text" id="user-input" class="sentence-input" placeholder="在此輸入句子..." autocomplete="off" spellcheck="false">
+            <input type="text" id="user-input" class="sentence-input" placeholder="請輸入聽到的句子..." autocomplete="off" spellcheck="false">
         </div>
 
-        <div id="feedback-area" class="feedback-area">
-            <div class="fb-label">您的答案：</div>
-            <div id="fb-user-ans" class="fb-text-wrong"></div>
-            <div class="fb-label">正確答案：</div>
-            <div id="fb-correct-ans" class="fb-text-correct"></div>
+        <div style="display: flex; gap: 5px; margin-bottom:10px;">
+            <button class="btn-secondary" style="flex:1" onclick="playTargetAudio()">🔊 重聽</button>
+            <button class="btn-hint" style="flex:1" onclick="provideHint()">💡 提示</button>
         </div>
 
-        <div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
-            <button class="btn-hint" onclick="provideHint()">💡 提示 (下個字)</button>
-            <button class="btn-secondary" onclick="speakUserSpelling()">👂 朗讀我的輸入</button>
-        </div>
+        <button id="btn-submit" class="btn-primary btn-block" onclick="checkAnswer()">送出 (Enter)</button>
+        <button id="btn-next-q" class="btn-success btn-block" style="display:none;" onclick="finishCurrentQuestionAndNext()">下一題 ➔</button>
+        <button class="btn-gray btn-block" onclick="quitQuiz()">退出練習</button>
+    </div>
 
-        <button id="btn-submit" class="btn-primary btn-block" style="margin-top: 20px;" onclick="checkAnswer()">送出答案 (Check)</button>
-        <button id="btn-next" class="btn-success btn-block" style="margin-top: 20px; display:none;" onclick="nextQuestion()">下一題 ➔</button>
-        
-        <button class="btn-gray btn-block" style="margin-top:10px;" onclick="quitQuiz()">退出練習</button>
+    <div id="page-editor" class="container">
+        <h2>✏️ 編輯題庫</h2>
+        <div style="margin-bottom:10px;">
+            <input type="text" id="list-name-input" placeholder="題庫名稱" style="padding:8px; width:100%; box-sizing:border-box; margin-bottom:5px;">
+            <div style="display:flex; gap:10px;">
+                <input type="number" id="list-gems" placeholder="寶石" style="padding:5px; width:60px;" value="5">
+                <input type="number" id="list-pass-score" placeholder="及格分" style="padding:5px; width:60px;" value="100">
+            </div>
+        </div>
+        <div style="background:#e8f0fe; padding:8px; font-size:0.9rem; margin-bottom:10px; color:#2c3e50; border-radius:5px;">
+            💡 <strong>多句模式：</strong>請在輸入框中<b>換行</b>，每一行代表一句話。<br>
+            測驗時將會依序出現，形成對話。
+        </div>
+        <div id="editor-rows"></div>
+        <button class="btn-gray" onclick="addEditRow()">+ 增加題目</button>
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <button class="btn-gray" style="flex:1" onclick="showPage('page-home')">取消</button>
+            <button class="btn-primary" style="flex:1" onclick="saveList()">儲存</button>
+        </div>
     </div>
 
     <div id="page-result" class="container">
-        <div class="result-card">
+        <div style="text-align:center;">
             <h2>🎉 練習完成！</h2>
-            <div class="final-score" id="final-score">100</div>
-            <div class="final-accuracy" id="final-accuracy">正確: 5/5</div>
-            <div class="final-time" id="final-time">耗時: 01:23</div>
+            <div style="font-size:4rem; color:var(--primary); font-weight:bold;" id="final-score">100</div>
+            <div id="final-stats"></div>
+            <div id="reward-area" style="margin:15px 0;"></div>
             
-            <div id="reward-area"></div>
-            
-            <div style="max-height: 300px; overflow-y: auto; border: 1px solid #eee; margin-top:15px; border-radius:8px;">
-                <table class="detail-table" id="detail-table" style="width:100%; text-align:left; border-collapse:collapse;">
-                    <thead style="background:#f1f1f1;"><tr><th style="padding:8px;">結果</th><th style="padding:8px;">題目詳情</th></tr></thead>
+            <div style="max-height: 250px; overflow-y: auto; border: 1px solid #eee; text-align:left; font-size:0.9rem;">
+                <table style="width:100%; border-collapse:collapse;">
                     <tbody id="detail-tbody"></tbody>
                 </table>
             </div>
-
-            <button class="btn-primary btn-block" style="margin-top:20px;" onclick="showPage('page-home')">回到首頁</button>
+            <button class="btn-primary btn-block" style="margin-top:15px;" onclick="showPage('page-home')">回到首頁</button>
         </div>
     </div>
 
-    <div id="page-leaderboard" class="container">
-        <h2 id="lb-title">🏆 英雄榜</h2>
-        <p style="text-align:center; color:#666;">依分數與時間排序</p>
-        <div id="lb-container" class="rank-list"></div>
-        <button class="btn-primary btn-block" onclick="showPage('page-home')">關閉榜單</button>
+    <div id="page-shop" class="container">
+        <h2>🎁 獎勵商店</h2>
+        <div style="background:linear-gradient(135deg, #667eea, #764ba2); color:white; padding:15px; border-radius:10px; text-align:center; margin-bottom:15px;">
+            持有: 👑 <span id="shop-crowns">0</span> | 💎 <span id="shop-gems">0</span>
+        </div>
+        <input type="text" id="gift-name" class="sentence-input" placeholder="獎品名稱" style="margin-bottom:5px;">
+        <div style="display:flex; gap:5px; margin-bottom:10px;">
+            <input type="number" id="gift-cost" class="sentence-input" placeholder="花費" style="flex:1">
+            <select id="gift-currency" style="padding:5px; flex:1; border-radius:8px;">
+                <option value="gems">💎 寶石</option>
+                <option value="crowns">👑 皇冠</option>
+            </select>
+        </div>
+        <button class="btn-primary btn-block" onclick="processExchange()">兌換</button>
+        <div id="exchange-log" style="margin-top:15px; font-size:0.9rem; color:#666; max-height:150px; overflow-y:auto;"></div>
+        <button class="btn-gray btn-block" style="margin-top:10px;" onclick="showPage('page-home')">返回</button>
     </div>
 
 <script>
-    // --- 初始資料 ---
-    // 修改：words 資料結構現在支援 sentences 陣列
+    // --- 資料結構 ---
     const DEFAULT_LIST = {
-        id: 'default_sent',
-        name: '預設：基礎對話 (Demo)',
-        gems: 5,
-        passScore: 100,
+        id: 'default_conv',
+        name: '範例：日常對話',
+        gems: 10,
+        passScore: 80,
         words: [
-            {sentences: ['How are you?', 'I am fine, thank you.'], img: '👋'}, 
-            {sentences: ['What is your name?', 'My name is Alice.'], img: '❓'}
+            {sentences: ['Hello, how are you?', 'I am fine, thank you.'], img: '👋'}, 
+            {sentences: ['What time is it?', 'It is three o\'clock.'], img: '⏰'}
         ]
     };
 
-    const STORAGE_KEY_DATA = 'sentence_builder_data_v3'; 
-    const STORAGE_KEY_HISTORY = 'sentence_builder_history_v3';
-    const STORAGE_KEY_NAME = 'sentence_builder_student_name';
-    const STORAGE_KEY_GEMS = 'sentence_builder_gems';
-    const STORAGE_KEY_EXCHANGE_LOG = 'sentence_builder_exchange_log';
-
     let allLists = [];
+    let studentName = "學員";
+    let totalGems = 0;
     let historyLog = [];
     let exchangeLog = [];
-    let studentName = "認真的學員";
-    let totalGems = 0;
-    
-    // 測驗狀態
-    let currentQuizList = []; 
+
+    // 測驗變數
+    let currentQuizList = [];
     let currentListId = null;
-    let currentListName = "";
-    
-    let currentQIndex = 0; // 第幾題
-    let currentSubIndex = 0; // 該題的第幾句 (新增)
-    let currentTargetSentences = []; // 目前這題的所有句子 (新增)
-
+    let currentQIndex = 0; 
+    let currentSubIndex = 0; 
+    let currentTargetSentences = [];
     let score = 0;
-    let correctCount = 0;
-    let quizReport = []; 
-
-    let editingListId = null;
-    let timerInterval, startTime, pointsPerQuestion;
+    let timerInterval, startTime;
+    let quizReport = [];
 
     window.onload = function() {
         loadData();
         renderLists();
-        renderHistory();
-        renderExchangeLog();
-        updateProfileDisplay();
+        updateProfile();
+        
+        // 綁定 Enter 鍵
+        document.getElementById('user-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                // 如果按鈕是送出狀態
+                if(document.getElementById('btn-submit').style.display !== 'none'){
+                    checkAnswer();
+                } else {
+                    // 如果按鈕是下一題狀態 (最後一題結束時)
+                    finishCurrentQuestionAndNext();
+                }
+            }
+        });
     };
 
     function loadData() {
-        const storedLists = localStorage.getItem(STORAGE_KEY_DATA);
-        if (storedLists) { allLists = JSON.parse(storedLists); } 
-        else { allLists = [DEFAULT_LIST]; saveListData(); }
-        
-        const storedHistory = localStorage.getItem(STORAGE_KEY_HISTORY);
-        if (storedHistory) { historyLog = JSON.parse(storedHistory); }
-        
-        const storedName = localStorage.getItem(STORAGE_KEY_NAME);
-        if (storedName) studentName = storedName;
-
-        const storedGems = localStorage.getItem(STORAGE_KEY_GEMS);
-        if (storedGems) totalGems = parseInt(storedGems) || 0;
-
-        const storedExLog = localStorage.getItem(STORAGE_KEY_EXCHANGE_LOG);
-        if (storedExLog) exchangeLog = JSON.parse(storedExLog);
+        allLists = JSON.parse(localStorage.getItem('sb_lists_v32') || JSON.stringify([DEFAULT_LIST]));
+        studentName = localStorage.getItem('sb_name_v32') || "學員";
+        totalGems = parseInt(localStorage.getItem('sb_gems_v32') || 0);
+        historyLog = JSON.parse(localStorage.getItem('sb_hist_v32') || '[]');
+        exchangeLog = JSON.parse(localStorage.getItem('sb_ex_v32') || '[]');
     }
 
-    function saveListData() { localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(allLists)); }
-    function saveHistoryData() { localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(historyLog)); }
-    function saveStudentData() { 
-        localStorage.setItem(STORAGE_KEY_NAME, studentName); 
-        localStorage.setItem(STORAGE_KEY_GEMS, totalGems);
-        localStorage.setItem(STORAGE_KEY_EXCHANGE_LOG, JSON.stringify(exchangeLog));
-        updateProfileDisplay();
+    function saveData() {
+        localStorage.setItem('sb_lists_v32', JSON.stringify(allLists));
+        localStorage.setItem('sb_name_v32', studentName);
+        localStorage.setItem('sb_gems_v32', totalGems);
+        localStorage.setItem('sb_hist_v32', JSON.stringify(historyLog));
+        localStorage.setItem('sb_ex_v32', JSON.stringify(exchangeLog));
+        updateProfile();
+    }
+
+    function updateProfile() {
+        document.getElementById('display-student-name').innerText = studentName;
+        document.getElementById('stat-crowns').innerText = Math.floor(totalGems / 100);
+        document.getElementById('stat-gems').innerText = totalGems % 100;
+        if(document.getElementById('shop-crowns')) {
+            document.getElementById('shop-crowns').innerText = Math.floor(totalGems / 100);
+            document.getElementById('shop-gems').innerText = totalGems % 100;
+        }
     }
     
     function changeStudentName() {
-        const newName = prompt("請輸入學員名字：", studentName);
-        if (newName && newName.trim() !== "") {
-            studentName = newName.trim();
-            saveStudentData();
-        }
-    }
-    function updateProfileDisplay() { 
-        document.getElementById('display-student-name').innerText = studentName; 
-        let crowns = Math.floor(totalGems / 100);
-        let remainGems = totalGems % 100;
-        document.getElementById('stat-crowns').innerText = crowns;
-        document.getElementById('stat-gems').innerText = remainGems;
-        
-        // Shop Update
-        if(document.getElementById('shop-crowns')) {
-            document.getElementById('shop-crowns').innerText = crowns;
-            document.getElementById('shop-gems').innerText = remainGems;
-        }
+        let n = prompt("輸入姓名:", studentName);
+        if(n && n.trim()){ studentName = n.trim(); saveData(); }
     }
 
-    function showPage(pageId) {
-        document.querySelectorAll('.container').forEach(el => el.classList.remove('active'));
-        document.getElementById(pageId).classList.add('active');
-        if (pageId === 'page-home') { renderLists(); renderHistory(); updateProfileDisplay(); }
-        if (pageId === 'page-shop') { updateProfileDisplay(); renderExchangeLog(); }
+    function showPage(pid) {
+        document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
+        document.getElementById(pid).classList.add('active');
+        if(pid === 'page-home') { renderLists(); renderHistory(); }
+        if(pid === 'page-shop') { updateProfile(); renderExchangeLog(); }
     }
-
-    function switchTab(tabName) {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    
+    function switchTab(t) {
+        document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));
         event.target.classList.add('active');
-        document.getElementById('tab-quiz-content').style.display = tabName === 'quiz' ? 'block' : 'none';
-        document.getElementById('tab-history-content').style.display = tabName === 'history' ? 'block' : 'none';
+        document.getElementById('tab-quiz-content').style.display = t==='quiz'?'block':'none';
+        document.getElementById('tab-history-content').style.display = t==='history'?'block':'none';
     }
 
-    // --- 獎勵兌換邏輯 ---
-    function processExchange() {
-        const giftName = document.getElementById('gift-name').value.trim();
-        const costVal = parseInt(document.getElementById('gift-cost').value);
-        const currency = document.getElementById('gift-currency').value;
-
-        if (!giftName) { alert("請輸入獎品名稱"); return; }
-        if (isNaN(costVal) || costVal <= 0) { alert("請輸入有效的數量"); return; }
-
-        let costInGems = costVal;
-        if (currency === 'crowns') {
-            costInGems = costVal * 100;
-        }
-
-        if (totalGems >= costInGems) {
-            if(confirm(`確定要花費 ${costVal} ${currency === 'crowns' ? '皇冠' : '寶石'} 兌換「${giftName}」嗎？`)) {
-                totalGems -= costInGems;
-                
-                // 紀錄
-                const logItem = {
-                    date: new Date().toLocaleString(),
-                    item: giftName,
-                    cost: `${costVal} ${currency === 'crowns' ? '👑' : '💎'}`
-                };
-                exchangeLog.unshift(logItem);
-                
-                saveStudentData();
-                renderExchangeLog();
-                
-                // 清空輸入
-                document.getElementById('gift-name').value = '';
-                document.getElementById('gift-cost').value = '';
-                
-                triggerRewardAnimation(currency === 'crowns' ? 'crown' : 'gem');
-                speak(`兌換成功！享受你的獎勵吧！`, true, 'zh-TW');
-            }
-        } else {
-            alert("餘額不足喔！再多練習賺取寶石吧！");
-        }
-    }
-
-    function renderExchangeLog() {
-        const div = document.getElementById('exchange-log');
-        if(!div) return;
-        div.innerHTML = '';
-        exchangeLog.forEach(log => {
-            const row = document.createElement('div');
-            row.className = 'log-item';
-            row.innerHTML = `<span>📅 ${log.date} - 兌換 <strong>${log.item}</strong></span> <span>-${log.cost}</span>`;
-            div.appendChild(row);
-        });
-    }
-
-    // --- 列表與匯出 ---
-    function renderLists() {
-        const container = document.getElementById('lists-container');
-        container.innerHTML = '';
-        allLists.forEach((list, index) => {
-            let gemVal = list.gems ? list.gems : 5;
-            let passVal = list.passScore ? list.passScore : 100;
-
-            const div = document.createElement('div');
-            div.className = 'list-item';
-            div.innerHTML = `
-                <input type="checkbox" class="list-checkbox" data-index="${index}">
-                <div class="list-content-wrapper">
-                    <div class="list-header">
-                        <div>
-                            <strong>${list.name}</strong> <small>(${list.words.length}題)</small>
-                            <span class="gem-tag">💎 +${gemVal}</span>
-                            <span class="score-tag">🎯 ${passVal}分</span>
-                        </div>
-                    </div>
-                    <div class="list-actions">
-                        <button class="btn-gold" onclick="showLeaderboard('${list.id}', '${list.name}')">🏆 榜單</button>
-                        <button class="btn-primary" onclick="startQuizSetup(${index})">開始</button>
-                        <button class="btn-gray" onclick="editList(${index})">編輯</button>
-                        <button class="btn-danger" onclick="deleteList(${index})">刪</button>
-                    </div>
-                </div>
-            `;
-            container.appendChild(div);
-        });
-    }
-
-    function toggleSelectAll() {
-        const checkboxes = document.querySelectorAll('.list-checkbox');
-        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-        checkboxes.forEach(cb => cb.checked = !allChecked);
-    }
-
-    function exportSelectedData() {
-        const checkboxes = document.querySelectorAll('.list-checkbox:checked');
-        let listsToExport = [];
-        if (checkboxes.length === 0) { listsToExport = allLists; } 
-        else { checkboxes.forEach(cb => { listsToExport.push(allLists[parseInt(cb.dataset.index)]); }); }
-
-        const exportObj = {
-            version: "3.1",
-            student: { name: studentName, totalGems: totalGems },
-            lists: listsToExport
-        };
-
-        const blob = new Blob([JSON.stringify(exportObj)], {type: "application/json"});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-        a.download = `sentence_backup_${new Date().toISOString().slice(0,10)}.json`;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    }
-
-    function triggerImport() { document.getElementById('import-file').click(); }
-    function handleImportData(input) {
-        const file = input.files[0]; if(!file) return;
-        const r = new FileReader();
-        r.onload = (e) => {
-            try {
-                const data = JSON.parse(e.target.result);
-                if(Array.isArray(data)) {
-                    allLists = allLists.concat(data);
-                    alert(`匯入 ${data.length} 個題庫 (舊格式)`);
-                } else if (data.lists) {
-                    allLists = allLists.concat(data.lists);
-                    if(data.student) {
-                        if(confirm(`匯入資料包含學員：${data.student.name} (寶石:${data.student.totalGems})。\n要覆蓋目前的進度嗎？`)) {
-                            studentName = data.student.name;
-                            totalGems = data.student.totalGems;
-                            saveStudentData();
-                        }
-                    }
-                    alert(`匯入成功！`);
-                }
-                saveListData(); renderLists();
-            } catch(err) { alert("檔案格式錯誤"); }
-            input.value='';
-        };
-        r.readAsText(file);
-    }
-
-    // --- 測驗邏輯 ---
-    function startQuizSetup(index) {
-        const list = allLists[index];
-        currentListId = list.id; 
-        currentListName = list.name;
+    // --- 測驗核心邏輯 (Chat Flow) ---
+    function startQuizSetup(idx) {
+        const list = allLists[idx];
+        currentListId = list.id;
         
-        let shuffled = [...list.words].sort(() => 0.5 - Math.random());
-        const maxQ = Math.min(10, shuffled.length); 
-        currentQuizList = shuffled.slice(0, maxQ);
-        pointsPerQuestion = Math.round(100 / currentQuizList.length);
+        let shuffled = [...list.words].sort(()=>0.5-Math.random());
+        currentQuizList = shuffled.slice(0, 10); // 最多10題
         
-        currentQIndex = 0; score = 0; correctCount = 0; quizReport = [];
-        
+        currentQIndex = 0;
+        score = 0;
+        quizReport = [];
         startTime = Date.now();
-        clearInterval(timerInterval); timerInterval = setInterval(updateTimer, 1000);
-        
-        speak(`歡迎${studentName}！請準備輸入句子。`, true, 'zh-TW');
-        loadQuestion(true);
+        timerInterval = setInterval(()=>{
+            let s = Math.floor((Date.now()-startTime)/1000);
+            document.getElementById('q-timer').innerText = new Date(s*1000).toISOString().substr(14,5);
+        }, 1000);
+
         showPage('page-quiz');
+        loadQuestion(true);
     }
 
-    function loadQuestion(isFirstQuestion = false) {
-        const qData = currentQuizList[currentQIndex];
-        
-        // 核心修改：取得句子陣列 (相容舊版 word 欄位)
-        if (qData.sentences && qData.sentences.length > 0) {
-            currentTargetSentences = qData.sentences;
-        } else {
-            currentTargetSentences = [qData.word];
-        }
-        currentSubIndex = 0; // 重置子句索引
+    function loadQuestion(first) {
+        let q = currentQuizList[currentQIndex];
+        currentTargetSentences = q.sentences || [q.word];
+        currentSubIndex = 0;
         
         document.getElementById('q-progress').innerText = `題號: ${currentQIndex+1}/${currentQuizList.length}`;
         document.getElementById('q-score').innerText = `得分: ${score}`;
-        document.getElementById('feedback-area').style.display = 'none';
+        
+        // 圖片
+        const ib = document.getElementById('q-image-box');
+        ib.innerHTML = (q.img && q.img.length>10) ? `<img src="${q.img}">` : `<span>${q.img}</span>`;
+        
+        // 重置對話框與輸入區
+        document.getElementById('dialogue-box').innerHTML = ''; 
+        document.getElementById('user-input').disabled = false;
+        document.getElementById('user-input').focus();
         document.getElementById('btn-submit').style.display = 'block';
-        document.getElementById('btn-next').style.display = 'none';
-        
-        const imgBox = document.getElementById('q-image-box');
-        if(qData.img.length > 10) imgBox.innerHTML=`<img src="${qData.img}">`; else imgBox.innerHTML=`<span>${qData.img}</span>`;
-        
-        // 初始化第一個句子介面
-        setupSubQuestionInterface(isFirstQuestion);
+        document.getElementById('btn-next-q').style.display = 'none';
+
+        updateSubInterface(first);
     }
 
-    function setupSubQuestionInterface(isFirstQuestion) {
-        // UI 更新
-        const indicator = document.getElementById('sub-progress-indicator');
-        if (currentTargetSentences.length > 1) {
-            indicator.style.display = 'inline-block';
-            indicator.innerText = `對話 ${currentSubIndex + 1} / ${currentTargetSentences.length}`;
+    function updateSubInterface(first) {
+        // 更新進度提示
+        document.getElementById('sub-progress-indicator').innerText = 
+            `正在輸入第 ${currentSubIndex + 1} 句，共 ${currentTargetSentences.length} 句`;
+        
+        document.getElementById('user-input').value = '';
+        document.getElementById('user-input').focus();
+        
+        // 自動播放該句語音
+        setTimeout(() => playTargetAudio(), first ? 1500 : 800);
+    }
+
+    function playTargetAudio() {
+        if(currentSubIndex < currentTargetSentences.length) {
+            speak(currentTargetSentences[currentSubIndex], 'en-US');
+        }
+    }
+
+    // 核心優化：檢查答案並推進，不卡關
+    function checkAnswer() {
+        const inputEl = document.getElementById('user-input');
+        const val = inputEl.value.trim();
+        if(!val) return; // 空白不送出
+
+        const target = currentTargetSentences[currentSubIndex].trim();
+        const isCorrect = val.toLowerCase().replace(/[.,?!]/g,'') === target.toLowerCase().replace(/[.,?!]/g,'');
+        
+        // 1. 顯示使用者氣泡
+        addBubble(val, 'user', isCorrect ? 'correct' : 'wrong');
+
+        // 2. 如果錯誤，顯示正確答案 (老師氣泡)
+        if (!isCorrect) {
+            addBubble(target, 'teacher');
+            speak("Correct answer is " + target, 'en-US', 1.2); // 快速唸出正確答案
         } else {
-            indicator.style.display = 'none';
+            score += Math.round(100 / (currentQuizList.length * currentTargetSentences.length)); // 簡單計分
+            speak("Correct!", 'en-US', 1.5);
         }
 
-        const inputEl = document.getElementById('user-input');
-        inputEl.value = '';
-        inputEl.className = 'sentence-input'; 
-        inputEl.disabled = false;
-        inputEl.focus();
+        // 紀錄報表 (詳細到每一句)
+        quizReport.push({
+            q: target,
+            u: val,
+            res: isCorrect
+        });
 
-        const delay = isFirstQuestion ? 2000 : 500;
-        setTimeout(() => playTargetAudio(), delay);
+        // 3. 推進下一句 (不管對錯都繼續!)
+        currentSubIndex++;
+
+        // 4. 判斷該題是否結束
+        if(currentSubIndex < currentTargetSentences.length) {
+            // 還有下一句 -> 繼續
+            updateSubInterface(false);
+        } else {
+            // 該題結束
+            inputEl.disabled = true;
+            document.getElementById('btn-submit').style.display = 'none';
+            document.getElementById('btn-next-q').style.display = 'block';
+            document.getElementById('sub-progress-indicator').innerText = "✅ 本題對話結束";
+            
+            // 如果這不是最後一題，自動跳下一題 (可選，這裡設為手動按或自動延遲)
+            setTimeout(() => {
+                if(currentQIndex < currentQuizList.length - 1) {
+                    finishCurrentQuestionAndNext();
+                } else {
+                    // 最後一題，停在畫面上讓使用者看結果，按按鈕才結束
+                    document.getElementById('btn-next-q').innerText = "查看成績 🏁";
+                }
+            }, 1500);
+        }
+    }
+
+    function addBubble(text, type, status='') {
+        const box = document.getElementById('dialogue-box');
+        const div = document.createElement('div');
+        div.className = `chat-bubble ${type} ${status}`;
+        div.innerText = text;
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight; // 自動捲動到底部
+    }
+
+    function finishCurrentQuestionAndNext() {
+        if(currentQIndex < currentQuizList.length - 1) {
+            currentQIndex++;
+            loadQuestion(false);
+        } else {
+            finishQuiz();
+        }
     }
 
     function provideHint() {
-        const inputEl = document.getElementById('user-input');
-        const currentVal = inputEl.value;
-        const target = currentTargetSentences[currentSubIndex]; // 針對目前子句
-        
-        let matchIndex = 0;
-        while(matchIndex < currentVal.length && matchIndex < target.length) {
-            if(currentVal[matchIndex].toLowerCase() === target[matchIndex].toLowerCase()) { matchIndex++; } else { break; }
-        }
-        if (matchIndex < target.length) {
-            inputEl.value = target.substring(0, matchIndex + 1);
-            inputEl.focus();
+        const t = currentTargetSentences[currentSubIndex];
+        const inp = document.getElementById('user-input');
+        let now = inp.value;
+        if(t.toLowerCase().startsWith(now.toLowerCase())) {
+            inp.value = t.substring(0, now.length + 1);
         } else {
-            if (currentVal.length < target.length) inputEl.value = target.substring(0, matchIndex + 1);
+            inp.value = t.substring(0, 1);
         }
+        inp.focus();
     }
 
-    function checkAnswer() {
-        const inputEl = document.getElementById('user-input');
-        const userAns = inputEl.value.trim();
-        const correctAns = currentTargetSentences[currentSubIndex].trim(); // 針對目前子句
-        
-        // 寬容檢查 (忽略最後的標點符號差異，如果需要可移除)
-        const cleanUser = userAns.toLowerCase().replace(/[.,?!]$/, "");
-        const cleanTarget = correctAns.toLowerCase().replace(/[.,?!]$/, "");
-        const isCorrect = (cleanUser === cleanTarget) || (userAns.toLowerCase() === correctAns.toLowerCase());
-        
-        if(isCorrect) {
-            // 答對了目前的子句
-            inputEl.classList.add('correct');
-            
-            // 檢查是否還有下一個子句
-            if (currentSubIndex < currentTargetSentences.length - 1) {
-                // 還有下一句
-                speak("Correct!", true, 'en-US');
-                
-                // 顯示階段性成功動畫
-                const stepMsg = document.getElementById('step-success-msg');
-                stepMsg.style.display = 'block';
-                // 觸發重繪以重啟動畫
-                void stepMsg.offsetWidth; 
-                stepMsg.style.animation = 'none';
-                setTimeout(() => { stepMsg.style.animation = 'popUp 0.8s ease-out'; }, 10);
-
-                setTimeout(() => {
-                    inputEl.classList.remove('correct');
-                    currentSubIndex++; // 前進下一句
-                    setupSubQuestionInterface(false); // 載入下一句介面
-                }, 1000);
-            } else {
-                // 該題全部完成
-                finishCurrentQuestion(true, userAns, correctAns);
-            }
-        } else {
-            // 答錯
-            inputEl.classList.add('wrong');
-            document.getElementById('feedback-area').style.display = 'block';
-            document.getElementById('fb-user-ans').innerText = userAns || "(未輸入)";
-            document.getElementById('fb-correct-ans').innerText = correctAns;
-            
-            speak(`Oops. Listen to the correct answer.`, false, 'en-US');
-            setTimeout(() => playTargetAudio(), 1000); 
-            
-            document.getElementById('btn-submit').style.display = 'none';
-            document.getElementById('btn-next').style.display = 'block';
-            
-            // 記錄錯誤 (即便這題有多句，只要一句錯就算該題未完美)
-            // 這裡簡化邏輯：如果這題最後是按「下一題」跳過的，算錯
-            // 所以現在不加分，等待使用者按 Next
-            inputEl.disabled = true;
-        }
-    }
-
-    // 當題目完全完成（全對或放棄）時呼叫
-    function finishCurrentQuestion(isSuccess, lastUserAns, lastCorrectAns) {
-        const inputEl = document.getElementById('user-input');
-        inputEl.disabled = true;
-        
-        // 組合完整題目字串供報表使用
-        const fullQuestionText = currentTargetSentences.join(" | ");
-        
-        quizReport.push({ q: fullQuestionText, user: isSuccess ? "(全對)" : "錯誤", isCorrect: isSuccess });
-
-        if (isSuccess) {
-            score += pointsPerQuestion;
-            correctCount++;
-            if(currentQIndex === currentQuizList.length-1 && score >= 98) score = 100;
-            speak(`Excellent!`, true, 'en-US');
-            setTimeout(() => { alert("✅ 本題通關！"); nextQuestion(); }, 500);
-        }
-    }
-
-    function nextQuestion() {
-        // 如果是從錯誤狀態按下一題進來的，也要記錄
-        if (document.getElementById('btn-next').style.display === 'block') {
-             // 已經在 checkAnswer 處理過錯誤顯示，這裡補上報表紀錄(若尚未記錄)
-             const fullQuestionText = currentTargetSentences.join(" | ");
-             // 避免重複 push，檢查最後一筆
-             const lastRep = quizReport[quizReport.length-1];
-             if (!lastRep || lastRep.q !== fullQuestionText) {
-                 quizReport.push({ q: fullQuestionText, user: "(未完成)", isCorrect: false });
-             }
-        }
-
-        if(currentQIndex < currentQuizList.length-1) { currentQIndex++; loadQuestion(false); }
-        else finishQuiz();
-    }
-
+    // --- 結算與其他 ---
     function finishQuiz() {
         clearInterval(timerInterval);
         showPage('page-result');
-        const timeStr = document.getElementById('q-timer').innerText;
+        if(score > 100) score = 100;
         document.getElementById('final-score').innerText = score;
-        document.getElementById('final-accuracy').innerText = `正確: ${correctCount} / ${currentQuizList.length}`;
-        document.getElementById('final-time').innerText = `耗時: ${timeStr}`;
         
-        // --- 獎勵結算 ---
-        const rewardArea = document.getElementById('reward-area');
-        rewardArea.innerHTML = '';
+        let tStr = document.getElementById('q-timer').innerText;
+        document.getElementById('final-stats').innerText = `耗時: ${tStr}`;
         
-        const listCfg = allLists.find(l => l.id === currentListId) || DEFAULT_LIST;
-        let targetScore = listCfg.passScore || 100;
-        let gemsReward = listCfg.gems || 5;
-
-        if (score >= targetScore) {
-            let oldGems = totalGems;
-            let oldCrowns = Math.floor(oldGems / 100);
-            totalGems += gemsReward;
-            saveStudentData();
-            
-            let newCrowns = Math.floor(totalGems / 100);
-            let earnedCrowns = newCrowns - oldCrowns;
-
-            if (earnedCrowns > 0) {
-                triggerRewardAnimation('crown');
-                rewardArea.innerHTML = `
-                    <div class="reward-popup" style="border-color:#e67e22; color:#e67e22;">
-                        👑 恭喜升級！獲得 ${earnedCrowns} 頂皇冠！<br>
-                        (同時獲得 ${gemsReward} 顆寶石)
-                    </div>`;
-                speak(`太厲害了！分數達標！恭喜你獲得了 ${earnedCrowns} 頂皇冠！`, true, 'zh-TW');
-            } else {
-                triggerRewardAnimation('gem');
-                rewardArea.innerHTML = `
-                    <div class="reward-popup">
-                        🎉 恭喜達標！獲得 ${gemsReward} 顆寶石 💎<br>
-                        目前累積: ${totalGems} 顆
-                    </div>`;
-                speak(`太棒了！分數達標！你獲得了 ${gemsReward} 顆寶石！`, true, 'zh-TW');
-            }
+        // 獎勵計算
+        const list = allLists.find(l=>l.id===currentListId);
+        const pass = list.passScore || 80;
+        const div = document.getElementById('reward-area');
+        div.innerHTML = '';
+        
+        if(score >= pass) {
+            let earn = list.gems || 5;
+            totalGems += earn;
+            saveData();
+            div.innerHTML = `<div style="color:#e67e22; font-weight:bold; font-size:1.2rem;">🏆 恭喜通關！獲得 ${earn} 寶石</div>`;
+            triggerParticles();
         } else {
-            speak(`測驗結束，你得了${score}分。再接再厲！`, true, 'zh-TW');
+            div.innerHTML = `<div style="color:#7f8c8d;">未達及格分 (${pass})，再接再厲！</div>`;
         }
 
-        const tbody = document.getElementById('detail-tbody');
-        tbody.innerHTML = '';
-        quizReport.forEach(item => {
-            const tr = document.createElement('tr');
-            if(!item.isCorrect) tr.style.backgroundColor = '#fff0f0';
-            tr.innerHTML = `<td style="padding:8px; border-bottom:1px solid #eee;">${item.isCorrect ? '⭕' : '❌'}</td><td style="padding:8px; border-bottom:1px solid #eee;">${item.q}</td>`;
-            tbody.appendChild(tr);
+        // 詳情表格
+        const tb = document.getElementById('detail-tbody');
+        tb.innerHTML = '';
+        quizReport.forEach(r => {
+            let row = `<tr>
+                <td style="padding:5px; border-bottom:1px solid #eee; width:30px;">${r.res?'⭕':'❌'}</td>
+                <td style="padding:5px; border-bottom:1px solid #eee;">
+                    <div style="color:#555; font-size:0.85rem;">題目: ${r.q}</div>
+                    <div style="font-weight:bold; color:${r.res?'green':'red'}">回答: ${r.u}</div>
+                </td>
+            </tr>`;
+            tb.innerHTML += row;
         });
 
-        const record = { user:studentName, date:new Date().toLocaleString(), score:score, time:timeStr, listId:currentListId, listName:currentListName };
-        historyLog.unshift(record);
-        saveHistoryData();
+        // 紀錄歷史
+        historyLog.unshift({
+            title: list.name,
+            score: score,
+            date: new Date().toLocaleString(),
+            time: tStr
+        });
+        saveData();
     }
 
-    function triggerRewardAnimation(type) {
-        const container = document.getElementById('particle-container');
-        container.style.display = 'block';
-        container.innerHTML = ''; 
-        let symbol = type === 'crown' ? '👑' : '💎';
-        for (let i = 0; i < 30; i++) {
-            let p = document.createElement('div');
-            p.innerText = symbol;
-            p.className = 'particle';
-            p.style.left = Math.random() * 100 + 'vw';
-            p.style.animationDuration = (Math.random() * 2 + 1) + 's'; 
-            p.style.fontSize = (Math.random() * 2 + 1) + 'rem';
-            container.appendChild(p);
-        }
-        setTimeout(() => { container.style.display = 'none'; container.innerHTML = ''; }, 3000);
+    // --- 編輯器邏輯 ---
+    function createNewList() {
+        editingListId = null;
+        document.getElementById('list-name-input').value = "";
+        document.getElementById('editor-rows').innerHTML = "";
+        addEditRow(); addEditRow();
+        showPage('page-editor');
     }
-
-    function createNewList() { editingListId=null; document.getElementById('list-name-input').value="新對話練習"; document.getElementById('list-gems').value = 5; document.getElementById('list-pass-score').value = 100; document.getElementById('editor-rows').innerHTML=''; for(let i=0;i<2;i++)addEditRow(); showPage('page-editor'); }
     
-    // 修改：編輯時載入多行資料
-    function editList(index) { 
-        editingListId=index; const l=allLists[index]; 
-        document.getElementById('list-name-input').value=l.name; 
-        document.getElementById('list-gems').value=l.gems || 5; 
-        document.getElementById('list-pass-score').value=l.passScore || 100; 
-        document.getElementById('editor-rows').innerHTML=''; 
+    let editingListId = null;
+    function editList(idx) {
+        editingListId = idx;
+        const l = allLists[idx];
+        document.getElementById('list-name-input').value = l.name;
+        document.getElementById('list-gems').value = l.gems;
+        document.getElementById('list-pass-score').value = l.passScore;
+        const con = document.getElementById('editor-rows');
+        con.innerHTML = '';
         l.words.forEach(w => {
-            // 相容性處理：如果是舊的 word 字串，轉成陣列，如果是新的 sentences 陣列，轉成換行字串
-            let content = "";
-            if (w.sentences) {
-                content = w.sentences.join('\n');
-            } else {
-                content = w.word;
+            let txt = (w.sentences || [w.word]).join('\n');
+            addEditRow(txt, w.img);
+        });
+        showPage('page-editor');
+    }
+
+    function addEditRow(txt='', img='') {
+        const d = document.createElement('div');
+        d.className = 'edit-row';
+        let imgDisplay = img ? (img.length>10 ? `<img src="${img}" style="width:100%;height:100%;object-fit:cover;">` : img) : '📷';
+        
+        d.innerHTML = `
+            <div class="thumb-preview" onclick="this.nextElementSibling.click()">${imgDisplay}</div>
+            <input type="file" class="file-input" accept="image/*" onchange="handleFile(this)">
+            <input type="hidden" class="img-val" value="${img}">
+            <textarea class="txt-val" placeholder="輸入句子 (換行可建立多句對話)">${txt}</textarea>
+            <button class="btn-danger" onclick="this.parentElement.remove()">×</button>
+        `;
+        document.getElementById('editor-rows').appendChild(d);
+    }
+    
+    function handleFile(inp) {
+        if(inp.files && inp.files[0]){
+            let fr = new FileReader();
+            fr.onload = (e) => {
+                // 壓縮圖片
+                let img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    let cvs = document.createElement('canvas');
+                    let ctx = cvs.getContext('2d');
+                    let scale = 200/img.width;
+                    cvs.width = 200; cvs.height = img.height*scale;
+                    ctx.drawImage(img,0,0,cvs.width,cvs.height);
+                    let base64 = cvs.toDataURL('image/jpeg', 0.6);
+                    inp.previousElementSibling.innerHTML = `<img src="${base64}" style="width:100%;height:100%;object-fit:cover;">`;
+                    inp.nextElementSibling.value = base64;
+                }
+            };
+            fr.readAsDataURL(inp.files[0]);
+        }
+    }
+
+    function saveList() {
+        const name = document.getElementById('list-name-input').value;
+        if(!name) return alert('請輸入題庫名稱');
+        
+        const rows = document.querySelectorAll('.edit-row');
+        let words = [];
+        rows.forEach(r => {
+            let raw = r.querySelector('.txt-val').value;
+            let img = r.querySelector('.img-val').value;
+            let sents = raw.split('\n').map(s=>s.trim()).filter(s=>s);
+            if(sents.length > 0) {
+                words.push({ sentences: sents, img: img || '❓' });
             }
-            addEditRow(content, w.img);
-        }); 
-        showPage('page-editor'); 
+        });
+        
+        if(words.length === 0) return alert('請至少輸入一題');
+        
+        const newItem = {
+            id: editingListId!==null ? allLists[editingListId].id : Date.now().toString(),
+            name: name,
+            gems: parseInt(document.getElementById('list-gems').value),
+            passScore: parseInt(document.getElementById('list-pass-score').value),
+            words: words
+        };
+        
+        if(editingListId!==null) allLists[editingListId] = newItem;
+        else allLists.push(newItem);
+        
+        saveData();
+        showPage('page-home');
     }
 
-    // 修改：將 input 改為 textarea
-    function addEditRow(w='',i='') { 
-        const d=document.createElement('div'); d.className='edit-row'; 
-        let disp=i||'📷'; 
-        if(i&&i.length>10) disp=`<img src="${i}" style="width:100%;height:100%;object-fit:cover;">`; 
-        
-        d.innerHTML=`
-            <div class="thumb-preview" onclick="this.nextElementSibling.click()">${disp}</div>
-            <input type="file" class="file-input" accept="image/*" onchange="handleFileSelect(this)">
-            <input type="hidden" class="img-data" value="${i}">
-            <textarea class="word-input" placeholder="單一句子 或 多行(對話/問答)">${w}</textarea>
-            <button onclick="this.parentElement.remove()" class="btn-danger" style="padding:5px 10px;">×</button>
-        `; 
-        document.getElementById('editor-rows').appendChild(d); 
+    function renderLists() {
+        const c = document.getElementById('lists-container');
+        c.innerHTML = '';
+        allLists.forEach((l, i) => {
+            let div = document.createElement('div');
+            div.className = 'list-item';
+            div.innerHTML = `
+                <div style="flex:1">
+                    <div style="font-weight:bold; font-size:1.1rem;">${l.name}</div>
+                    <div style="font-size:0.85rem; color:#666;">
+                        題目: ${l.words.length} | 💎 ${l.gems} | 及格: ${l.passScore}
+                    </div>
+                </div>
+                <div>
+                    <button class="btn-primary" onclick="startQuizSetup(${i})">開始</button>
+                    <button class="btn-gray" onclick="editList(${i})">編輯</button>
+                    <button class="btn-danger" onclick="deleteList(${i})">刪</button>
+                </div>
+            `;
+            c.appendChild(div);
+        });
+    }
+    
+    function deleteList(i) {
+        if(confirm('確定刪除?')) { allLists.splice(i,1); saveData(); renderLists(); }
     }
 
-    function handleFileSelect(input) { if(input.files[0]){ const r=new FileReader(); r.onload=(e)=>{ const i=new Image(); i.src=e.target.result; i.onload=()=>{ const c=document.createElement('canvas'); const ctx=c.getContext('2d'); const s=300/i.width; c.width=300; c.height=i.height*s; ctx.drawImage(i,0,0,c.width,c.height); const d=c.toDataURL('image/jpeg',0.7); input.previousElementSibling.innerHTML=`<img src="${d}" style="width:100%;height:100%;object-fit:cover;">`; input.nextElementSibling.value=d; }; }; r.readAsDataURL(input.files[0]); } }
-    
-    // 修改：儲存時將多行文字切割為陣列
-    function saveList() { 
-        const n=document.getElementById('list-name-input').value; 
-        const g=parseInt(document.getElementById('list-gems').value) || 5; 
-        const p=parseInt(document.getElementById('list-pass-score').value) || 100; 
-        const rs=document.querySelectorAll('.edit-row'); 
-        const nws=[]; 
-        
-        rs.forEach(r=>{ 
-            const i=r.querySelector('.img-data').value; 
-            const rawVal=r.querySelector('.word-input').value;
-            // 根據換行符號切割，並移除空行
-            const sentences = rawVal.split('\n').map(s => s.trim()).filter(s => s !== "");
-            
-            if(sentences.length > 0) {
-                // 儲存為新的格式：sentences 陣列
-                nws.push({sentences: sentences, img:i||'❓'}); 
-            }
-        }); 
-        
-        if(nws.length<1) return alert("請輸入至少一個題目"); 
-        
-        const nd={id:editingListId!==null?allLists[editingListId].id:Date.now().toString(),name:n,gems:g,passScore:p,words:nws}; 
-        if(editingListId!==null) allLists[editingListId]=nd; else allLists.push(nd); 
-        saveListData(); showPage('page-home'); 
-    }
-
-    function deleteList(i) { if(confirm("確定刪除此題庫？")){allLists.splice(i,1);saveListData();renderLists();} }
-    function updateTimer() { const d=Math.floor((Date.now()-startTime)/1000); const m=Math.floor(d/60).toString().padStart(2,'0'); const s=(d%60).toString().padStart(2,'0'); document.getElementById('q-timer').innerText=`${m}:${s}`; }
-    
-    // 修改：播放目前子句的發音
-    function playTargetAudio() { 
-        const txt = currentTargetSentences[currentSubIndex];
-        speak(txt, false, 'en-US'); 
+    // --- 輔助功能 ---
+    function speak(txt, lang='en-US', rate=0.9) {
+        if('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            let u = new SpeechSynthesisUtterance(txt);
+            u.lang = lang; u.rate = rate;
+            window.speechSynthesis.speak(u);
+        }
     }
     
-    function speakUserSpelling() { const t=document.getElementById('user-input').value; if(t)speak(t,false,'en-US'); else speak("請先輸入句子",false,'zh-TW'); }
-    function speak(t,e,l) { if('speechSynthesis' in window){window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(t); u.lang=l; u.rate=0.9; if(e)u.pitch=1.2; window.speechSynthesis.speak(u);} }
-    function quitQuiz() { if(confirm("確定退出練習？")){clearInterval(timerInterval);showPage('page-home');} }
-    function renderHistory() { const c=document.getElementById('history-container'); c.innerHTML=''; if(historyLog.length===0){c.innerHTML='<p style="text-align:center;color:#999">無紀錄</p>';return;} historyLog.forEach((l,i)=>{const d=document.createElement('div'); d.className='history-item'; d.innerHTML=`<div class="history-info"><span class="history-title">📘 ${l.listName||'未知題庫'}</span><span class="history-user">👤 ${l.user}</span><span class="history-date">📅 ${l.date} | ⏱ ${l.time}</span></div><div style="text-align:right"><span class="history-score">${l.score} 分</span><button class="delete-history-btn" style="margin-top:5px;float:right" onclick="deleteHistoryItem(${i})">×</button></div>`; c.appendChild(d);}); }
-    function deleteHistoryItem(i) { if(confirm("刪除此紀錄？")){historyLog.splice(i,1);saveHistoryData();renderHistory();} }
-    function clearAllHistory() { if(confirm("清空所有紀錄？")){historyLog=[];saveHistoryData();renderHistory();} }
-    function showLeaderboard(listId, listName) { document.getElementById('lb-title').innerText = `🏆 ${listName} - 英雄榜`; const container = document.getElementById('lb-container'); container.innerHTML = ''; let listLogs = historyLog.filter(log => log.listId === listId); listLogs.sort((a, b) => { if (b.score !== a.score) return b.score - a.score; return a.time.localeCompare(b.time); }); if (listLogs.length === 0) { container.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">還沒有人挑戰過這個題庫，快來當第一名！</p>'; } else { listLogs.forEach((log, index) => { const rank = index + 1; let rankClass = ''; let rankDisplay = rank; if (rank === 1) { rankClass = 'rank-1'; rankDisplay = '🏆'; } else if (rank === 2) rankClass = 'rank-2'; else if (rank === 3) rankClass = 'rank-3'; const div = document.createElement('div'); div.className = `rank-item ${rankClass}`; div.innerHTML = `<div class="rank-num">${rankDisplay}</div><div class="rank-info"><span class="rank-user">${log.user}</span><span class="rank-detail">${log.date}</span></div><div class="rank-score">${log.score}分 <br><small style="color:#666;font-weight:normal">${log.time}</small></div>`; container.appendChild(div); }); } showPage('page-leaderboard'); }
+    function triggerParticles() {
+        const c = document.getElementById('particle-container');
+        c.style.display = 'block'; c.innerHTML = '';
+        for(let i=0; i<30; i++) {
+            let p = document.createElement('div');
+            p.innerText = Math.random()>0.5 ? '💎' : '👑';
+            p.className = 'particle';
+            p.style.left = Math.random()*100+'vw';
+            p.style.animationDuration = (1+Math.random()*2)+'s';
+            c.appendChild(p);
+        }
+        setTimeout(()=>{c.style.display='none'}, 3000);
+    }
+    
+    function renderHistory() {
+        const c = document.getElementById('history-container');
+        c.innerHTML = historyLog.map(h => 
+            `<div class="list-item" style="justify-content:space-between">
+                <div>
+                    <div style="font-weight:bold">${h.title}</div>
+                    <div style="font-size:0.8rem; color:#777">${h.date}</div>
+                </div>
+                <div style="text-align:right">
+                    <div style="font-size:1.2rem; font-weight:bold; color:var(--primary)">${h.score}分</div>
+                    <div style="font-size:0.8rem;">${h.time}</div>
+                </div>
+            </div>`
+        ).join('') || '<div style="text-align:center; padding:10px; color:#999">尚無紀錄</div>';
+    }
+    
+    function clearAllHistory() {
+        if(confirm('清空所有紀錄?')) { historyLog=[]; saveData(); renderHistory(); }
+    }
+    
+    function quitQuiz() {
+        clearInterval(timerInterval);
+        if(confirm('確定退出?')) showPage('page-home');
+        else timerInterval = setInterval(()=>{ /* resume timer */ }, 1000);
+    }
+    
+    // 匯出匯入
+    function exportSelectedData() {
+        const data = JSON.stringify({lists:allLists, student:{name:studentName, gems:totalGems}});
+        const blob = new Blob([data], {type:'application/json'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'sentence_backup.json';
+        a.click();
+    }
+    function handleImportData(inp) {
+        if(!inp.files[0]) return;
+        let fr = new FileReader();
+        fr.onload = (e) => {
+            try {
+                let d = JSON.parse(e.target.result);
+                if(d.lists) {
+                    allLists = d.lists;
+                    if(d.student && confirm('是否還原學員資料(姓名/寶石)?')) {
+                        studentName = d.student.name;
+                        totalGems = d.student.gems;
+                    }
+                    saveData(); renderLists(); alert('匯入成功');
+                }
+            } catch(e) { alert('格式錯誤'); }
+        };
+        fr.readAsText(inp.files[0]);
+    }
+    
+    // 商店邏輯
+    function processExchange() {
+        let name = document.getElementById('gift-name').value;
+        let cost = parseInt(document.getElementById('gift-cost').value);
+        let cur = document.getElementById('gift-currency').value;
+        let realCost = cur==='crowns' ? cost*100 : cost;
+        
+        if(!name || isNaN(cost)) return alert('請輸入完整資訊');
+        if(totalGems < realCost) return alert('餘額不足');
+        
+        if(confirm(`確認兌換 ${name}?`)) {
+            totalGems -= realCost;
+            exchangeLog.unshift({item:name, cost:`${cost} ${cur==='crowns'?'👑':'💎'}`, date:new Date().toLocaleString()});
+            saveData();
+            renderExchangeLog();
+            alert('兌換成功!');
+        }
+    }
+    
+    function renderExchangeLog() {
+        document.getElementById('exchange-log').innerHTML = exchangeLog.map(l => 
+            `<div style="border-bottom:1px solid #eee; padding:5px; display:flex; justify-content:space-between;">
+                <span>${l.item}</span> <span style="font-weight:bold;">-${l.cost}</span>
+             </div>`
+        ).join('');
+    }
 
 </script>
-
 </body>
 </html>
