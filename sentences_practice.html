@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sentence Builder 句子闖關王 v4.0 (AI 智慧辨識版)</title>
+    <title>Sentence Builder 句子闖關王 v4.2 (全功能旗艦版)</title>
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <style>
         :root {
@@ -15,6 +15,7 @@
             --success: #2ed573;
             --danger: #eb4d4b;
             --bg-page: #dff9fb;
+            --rank-1: #FFD700;
         }
 
         body {
@@ -59,7 +60,9 @@
         .btn-danger { background-color: var(--danger); }
         .btn-link { background-color: #22a6b3; }
         .btn-success { background-color: var(--success); }
-        .btn-magic { background: linear-gradient(45deg, #6c5ce7, #a29bfe); color: white; border: 1px solid #a29bfe; }
+        .btn-gold { background-color: #f1c40f; color: #333; }
+        .btn-magic { background: linear-gradient(45deg, #6c5ce7, #a29bfe); color: white; }
+        .btn-outline { background: transparent; border: 1px solid #999; color: #666; padding: 2px 6px; font-size: 0.8rem;}
         .btn-block { width: 100%; margin: 5px 0; padding: 12px; font-size: 1.1rem; }
         .btn-hint { background-color: #2ed573; color: white; } 
 
@@ -68,6 +71,13 @@
             background: #f8f9fa; border: 1px solid #e9ecef; padding: 12px; margin-bottom: 10px;
             border-radius: 8px; display: flex; align-items: center; gap: 10px;
         }
+
+        /* --- 英雄榜 --- */
+        .rank-list { margin-top: 10px; }
+        .rank-item { display: flex; align-items: center; padding: 10px; margin-bottom: 8px; background: #fff; border-radius: 8px; border: 1px solid #eee; }
+        .rank-num { font-size: 1.5rem; font-weight: 900; width: 40px; text-align: center; margin-right: 10px; color: #7f8c8d; }
+        .rank-item.rank-1 { background: linear-gradient(to right, #fff, #fff9c4); border: 2px solid var(--rank-1); }
+        .rank-item.rank-1 .rank-num { color: #d4ac0d; font-size: 2rem; }
         
         /* --- 測驗區 --- */
         .quiz-header { display: flex; justify-content: space-between; font-weight: bold; color: #7f8c8d; margin-bottom: 10px; background: #f1f2f6; padding: 10px; border-radius: 8px; }
@@ -138,7 +148,7 @@
         
         .edit-row textarea { 
             padding: 10px; border: 1px solid #ddd; border-radius: 4px; flex: 1; 
-            font-family: inherit; font-size: 1rem; resize: vertical; min-height: 60px;
+            font-family: inherit; font-size: 1rem; resize: vertical; min-height: 80px;
         }
         .thumb-preview { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; background: #eee; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
         .file-input { display: none; }
@@ -156,14 +166,16 @@
             padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; text-align: center;
         }
         
-        /* 辨識 Loading 遮罩 */
+        /* OCR 相關 */
         .ocr-loading {
             position: absolute; top:0; left:0; width:100%; height:100%; 
-            background: rgba(255,255,255,0.8); display:none; 
+            background: rgba(255,255,255,0.95); display:none; 
             justify-content: center; align-items: center; 
             color: var(--primary); font-weight: bold; z-index: 10;
+            flex-direction: column; font-size: 0.9rem;
             border-radius: 4px;
         }
+        .ocr-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 0.85rem; color: #555;}
 
         /* --- 粒子動畫 (獎勵) --- */
         #particle-container {
@@ -195,12 +207,12 @@
     </div>
 
     <div id="page-home" class="container active">
-        <h1>📝 句子闖關王 v4.0</h1>
+        <h1>📝 句子闖關王 v4.2</h1>
         
         <div style="background:#e056fd15; border:2px dashed #686de0; border-radius:10px; padding:10px; margin-bottom:15px; text-align:center;">
             <div style="font-size:1.2rem; font-weight:bold; color:#4834d4;">
                 <span id="display-student-name">學員</span>
-                <button class="btn-outline" style="padding:2px 6px; font-size:0.8rem;" onclick="changeStudentName()">✎</button>
+                <button class="btn-outline" onclick="changeStudentName()">✎</button>
             </div>
             <div style="margin-top:5px;">
                 👑 <span id="stat-crowns">0</span> &nbsp;|&nbsp; 💎 <span id="stat-gems">0</span>
@@ -228,7 +240,7 @@
             <div id="history-container"></div>
             <button class="btn-gray btn-block" onclick="clearAllHistory()">清空紀錄</button>
         </div>
-        <div style="text-align:center; color:#ccc; margin-top:20px; font-size:0.8rem;">版本 v4.0 (AI 智慧辨識版)</div>
+        <div style="text-align:center; color:#ccc; margin-top:20px; font-size:0.8rem;">版本 v4.2 (旗艦全功能版)</div>
     </div>
 
     <div id="page-quiz" class="container">
@@ -279,9 +291,11 @@
             </div>
         </div>
         
-        <div style="background:#e8f0fe; padding:8px; font-size:0.9rem; margin-bottom:10px; color:#2c3e50; border-radius:5px;">
-            💡 <strong>AI 智慧辨識：</strong>上傳課本圖片後，點選「✨ 辨識文字」，系統會自動抓取圖片中的英文填入下方！<br>
-            (請記得檢查並手動換行，一行一句)
+        <div style="background:#fff3cd; padding:10px; font-size:0.9rem; margin-bottom:15px; border-radius:5px; color:#856404;">
+            📸 <strong>AI 辨識提示：</strong><br>
+            1. 建議勾選「僅英文」以提高準確率。<br>
+            2. 系統會自動將圖片轉為「黑白」以去除課本背景。<br>
+            3. 請將課本放平，避免陰影。
         </div>
         
         <div id="editor-rows"></div>
@@ -306,6 +320,12 @@
             </div>
             <button class="btn-primary btn-block" style="margin-top:15px;" onclick="showPage('page-home')">回到首頁</button>
         </div>
+    </div>
+
+    <div id="page-leaderboard" class="container">
+        <h2 id="lb-title">🏆 英雄榜</h2>
+        <div id="lb-container" class="rank-list"></div>
+        <button class="btn-primary btn-block" onclick="showPage('page-home')">關閉榜單</button>
     </div>
 
     <div id="page-shop" class="container">
@@ -385,19 +405,19 @@
     }
 
     function loadData() {
-        allLists = JSON.parse(localStorage.getItem('sb_lists_v40') || JSON.stringify([DEFAULT_LIST]));
-        studentName = localStorage.getItem('sb_name_v40') || "學員";
-        totalGems = parseInt(localStorage.getItem('sb_gems_v40') || 0);
-        historyLog = JSON.parse(localStorage.getItem('sb_hist_v40') || '[]');
-        exchangeLog = JSON.parse(localStorage.getItem('sb_ex_v40') || '[]');
+        allLists = JSON.parse(localStorage.getItem('sb_lists_v42') || JSON.stringify([DEFAULT_LIST]));
+        studentName = localStorage.getItem('sb_name_v42') || "學員";
+        totalGems = parseInt(localStorage.getItem('sb_gems_v42') || 0);
+        historyLog = JSON.parse(localStorage.getItem('sb_hist_v42') || '[]');
+        exchangeLog = JSON.parse(localStorage.getItem('sb_ex_v42') || '[]');
     }
 
     function saveData() {
-        localStorage.setItem('sb_lists_v40', JSON.stringify(allLists));
-        localStorage.setItem('sb_name_v40', studentName);
-        localStorage.setItem('sb_gems_v40', totalGems);
-        localStorage.setItem('sb_hist_v40', JSON.stringify(historyLog));
-        localStorage.setItem('sb_ex_v40', JSON.stringify(exchangeLog));
+        localStorage.setItem('sb_lists_v42', JSON.stringify(allLists));
+        localStorage.setItem('sb_name_v42', studentName);
+        localStorage.setItem('sb_gems_v42', totalGems);
+        localStorage.setItem('sb_hist_v42', JSON.stringify(historyLog));
+        localStorage.setItem('sb_ex_v42', JSON.stringify(exchangeLog));
         updateProfile();
     }
 
@@ -619,8 +639,46 @@
             tb.innerHTML += row;
         });
 
-        historyLog.unshift({ title: list.name, score: score, date: new Date().toLocaleString(), time: tStr });
+        historyLog.unshift({ title: list.name, score: score, date: new Date().toLocaleString(), time: tStr, listId: currentListId, user: studentName });
         saveData();
+    }
+
+    // --- 英雄榜 ---
+    function showLeaderboard(listId, listName) {
+        document.getElementById('lb-title').innerText = `🏆 ${listName} - 英雄榜`;
+        const container = document.getElementById('lb-container');
+        container.innerHTML = '';
+        
+        let listLogs = historyLog.filter(log => log.listId === listId);
+        listLogs.sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            return a.time.localeCompare(b.time);
+        });
+        
+        if (listLogs.length === 0) {
+            container.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">尚無紀錄，快來挑戰！</p>';
+        } else {
+            listLogs.forEach((log, index) => {
+                const rank = index + 1;
+                let rankClass = '';
+                let rankDisplay = rank;
+                if (rank === 1) { rankClass = 'rank-1'; rankDisplay = '🏆'; }
+                
+                const div = document.createElement('div');
+                div.className = `rank-item ${rankClass}`;
+                div.innerHTML = `<div class="rank-num">${rankDisplay}</div>
+                    <div style="flex:1">
+                        <span style="font-weight:bold">${log.user}</span><br>
+                        <span style="font-size:0.8rem;color:#777">${log.date}</span>
+                    </div>
+                    <div style="text-align:right">
+                        <span style="font-size:1.2rem;font-weight:bold;color:#4834d4">${log.score}分</span><br>
+                        <span style="font-size:0.8rem;color:#666">${log.time}</span>
+                    </div>`;
+                container.appendChild(div);
+            });
+        }
+        showPage('page-leaderboard');
     }
 
     // --- 編輯器 ---
@@ -648,7 +706,7 @@
         showPage('page-editor');
     }
 
-    // 更新的 Add Edit Row (含 OCR)
+    // OCR 編輯列
     function addEditRow(txt='', img='') {
         const d = document.createElement('div');
         d.className = 'edit-row';
@@ -661,16 +719,20 @@
                 <input type="hidden" class="img-val" value="${img}">
                 
                 <div style="display:flex; flex-direction:column; flex:1;">
-                    <div style="text-align:right; margin-bottom:5px;">
-                        <button class="btn-magic" style="padding:4px 8px; font-size:0.8rem;" onclick="triggerOCR(this)">✨ 辨識文字</button>
-                        <button class="btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="this.closest('.edit-row').remove()">🗑️</button>
+                    <div class="ocr-controls">
+                        <label><input type="checkbox" class="ocr-eng-only" checked> 僅辨識英文 (準確度↑)</label>
+                        <button class="btn-magic" style="padding:2px 8px; font-size:0.8rem;" onclick="processOCR(this)">✨ AI 辨識</button>
                     </div>
                     <div style="position:relative;">
                         <textarea class="txt-val" placeholder="輸入句子 (換行可建立多句對話)">${txt}</textarea>
-                        <div class="ocr-loading">📸 辨識中...請稍候</div>
+                        <div class="ocr-loading">
+                            <div>🔄 正在強化影像...</div>
+                            <div style="font-size:0.8rem; color:#666; margin-top:5px;">去除背景/增強對比</div>
+                        </div>
                     </div>
                 </div>
             </div>
+            <button class="btn-danger" style="align-self:flex-end; padding:4px 10px; font-size:0.8rem;" onclick="this.parentElement.remove()">刪除此題</button>
         `;
         document.getElementById('editor-rows').appendChild(d);
     }
@@ -696,36 +758,56 @@
         }
     }
 
-    // --- OCR 邏輯 ---
-    function triggerOCR(btn) {
+    // --- OCR 核心 (強化版) ---
+    function processOCR(btn) {
         const row = btn.closest('.edit-row');
-        const imgVal = row.querySelector('.img-val').value;
-        const textArea = row.querySelector('.txt-val');
+        const imgSrc = row.querySelector('.img-val').value;
+        const txtArea = row.querySelector('.txt-val');
         const loading = row.querySelector('.ocr-loading');
+        const engOnly = row.querySelector('.ocr-eng-only').checked;
 
-        if (!imgVal || imgVal.length < 50) {
-            alert("請先上傳圖片再使用辨識功能");
-            return;
-        }
-
+        if(!imgSrc || imgSrc.length < 50) return alert('請先上傳圖片');
+        
         loading.style.display = 'flex';
+        loading.innerHTML = `<div>🔄 影像強化處理中...</div>`;
 
-        Tesseract.recognize(
-            imgVal,
-            'eng', // 英文模型，若要中文可改為 'chi_tra' (但會比較慢且檔案大)
-            { logger: m => console.log(m) }
-        ).then(({ data: { text } }) => {
-            // 簡單清理文字：去除空行
-            const cleanText = text.replace(/\n\s*\n/g, '\n').trim();
-            textArea.value = cleanText;
-            loading.style.display = 'none';
-        }).catch(err => {
-            alert("辨識失敗，請重試");
-            console.error(err);
-            loading.style.display = 'none';
+        preprocessImage(imgSrc, (processedDataUrl) => {
+            loading.innerHTML = `<div>✨ AI 文字辨識中...</div>`;
+            Tesseract.recognize(
+                processedDataUrl,
+                engOnly ? 'eng' : 'chi_tra+eng',
+                { logger: m => console.log(m) }
+            ).then(({ data: { text } }) => {
+                let clean = text.replace(/\|/g, 'I').replace(/\n\s*\n/g, '\n').trim();
+                txtArea.value = clean;
+                loading.style.display = 'none';
+            }).catch(err => {
+                alert('辨識失敗');
+                loading.style.display = 'none';
+            });
         });
     }
 
+    function preprocessImage(src, callback) {
+        const img = new Image();
+        img.src = src;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+                const val = gray > 160 ? 255 : 0; 
+                data[i] = data[i + 1] = data[i + 2] = val;
+            }
+            ctx.putImageData(imgData, 0, 0);
+            callback(canvas.toDataURL('image/jpeg'));
+        };
+    }
 
     function saveList() {
         const name = document.getElementById('list-name-input').value;
@@ -773,6 +855,7 @@
                     </div>
                 </div>
                 <div>
+                    <button class="btn-gold" onclick="showLeaderboard('${l.id}', '${l.name}')">榜單</button>
                     <button class="btn-primary" onclick="startQuizSetup(${i})">開始</button>
                     <button class="btn-gray" onclick="editList(${i})">編輯</button>
                     <button class="btn-danger" onclick="deleteList(${i})">刪</button>
