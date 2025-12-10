@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sentence Builder 句子闖關王 v3.0 (獎勵兌換版)</title>
+    <title>Sentence Builder 句子闖關王 v3.1 (多句對話版)</title>
     <style>
         :root {
             --primary: #4834d4;
@@ -113,9 +113,13 @@
         .data-btn-row { display: flex; gap: 10px; }
 
         /* --- 編輯區 --- */
-        .edit-row { display: flex; gap: 5px; margin-bottom: 10px; align-items: center; background: #fff; padding: 5px; border: 1px solid #eee; border-radius: 8px; }
-        .edit-row input[type="text"] { padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; }
-        .thumb-preview { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; background: #eee; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .edit-row { display: flex; gap: 5px; margin-bottom: 10px; align-items: flex-start; background: #fff; padding: 8px; border: 1px solid #eee; border-radius: 8px; }
+        /* 修改：使用 textarea 支援多行輸入 */
+        .edit-row textarea { 
+            padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; 
+            font-family: inherit; font-size: 1rem; resize: vertical; min-height: 40px;
+        }
+        .thumb-preview { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; background: #eee; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
         .file-input { display: none; }
         
         /* --- 測驗區 --- */
@@ -125,6 +129,11 @@
         .q-image-box img { max-height: 100%; max-width: 100%; border-radius: 8px; object-fit: contain; }
         .q-image-box span { font-size: 5rem; }
         
+        .sub-progress-indicator {
+            text-align: center; font-size: 0.85rem; color: var(--primary); 
+            background: #e056fd15; padding: 2px 8px; border-radius: 10px; margin-bottom: 5px; display: inline-block;
+        }
+
         .input-wrapper { margin-bottom: 20px; position: relative; }
         .sentence-input {
             width: 100%; font-size: 1.4rem; padding: 15px; border: 3px solid #ccc;
@@ -143,6 +152,14 @@
         .fb-text-wrong { color: var(--danger); font-size: 1.1rem; text-decoration: line-through; margin-bottom: 8px; }
         .fb-text-correct { color: var(--success); font-size: 1.2rem; font-weight: bold; }
         
+        /* 階段性成功提示 */
+        .step-success {
+            position: absolute; top: -30px; left: 0; width: 100%; text-align: center;
+            color: var(--success); font-weight: bold; font-size: 1rem;
+            animation: popUp 0.5s ease-out; opacity: 0;
+        }
+        @keyframes popUp { 0% { opacity: 0; transform: translateY(10px); } 50% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-20px); } }
+
         .result-card { text-align: center; padding: 10px; }
         .final-score { font-size: 4rem; color: var(--primary); margin: 5px 0; font-weight: bold; }
         
@@ -152,7 +169,7 @@
 
         .version-tag { margin-top: 30px; color: #ccc; font-size: 0.8rem; text-align: center; }
 
-        /* --- 獎勵兌換區 (新) --- */
+        /* --- 獎勵兌換區 --- */
         .shop-balance {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white; padding: 20px; border-radius: 15px; text-align: center;
@@ -241,7 +258,7 @@
             <button class="btn-gray btn-block" onclick="clearAllHistory()">清空所有紀錄</button>
         </div>
 
-        <div class="version-tag">版本：v3.0 (獎勵兌換版)</div>
+        <div class="version-tag">版本：v3.1 (多句對話版)</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -294,10 +311,13 @@
             </div>
         </div>
         <div style="background:#e8f0fe; padding:8px; font-size:0.9rem; border-radius:5px; margin-bottom:10px; color:#2c3e50;">
-            💡 建議輸入完整句子。可上傳圖片輔助。
+            💡 <strong>小技巧：</strong>若要建立問答或對話練習，請在文字框中<b>換行輸入</b>。<br>
+            例如：<br>
+            第一行：What's your name?<br>
+            第二行：My name is Bob.
         </div>
         <div id="editor-rows"></div>
-        <button class="btn-gray" onclick="addEditRow()">+ 增加句子</button>
+        <button class="btn-gray" onclick="addEditRow()">+ 增加題目</button>
         <hr>
         <div style="display:flex; gap:10px;">
             <button class="btn-gray" style="flex:1" onclick="showPage('page-home')">取消</button>
@@ -313,12 +333,18 @@
         </div>
         <div class="question-area">
             <div id="q-image-box" class="q-image-box"></div>
-            <button class="btn-accent" onclick="playTargetAudio()">🔊 播放整句發音</button>
+            
+            <div style="text-align:center;">
+                <span id="sub-progress-indicator" class="sub-progress-indicator" style="display:none;">句子 1/2</span>
+            </div>
+
+            <button class="btn-accent" onclick="playTargetAudio()">🔊 播放發音</button>
         </div>
         
         <div style="text-align:center; color:#7f8c8d; font-size:0.9rem; margin-bottom:5px;">請在下方輸入聽到的句子</div>
         
         <div class="input-wrapper">
+            <div id="step-success-msg" class="step-success">✅ 正確！Next...</div>
             <input type="text" id="user-input" class="sentence-input" placeholder="在此輸入句子..." autocomplete="off" spellcheck="false">
         </div>
 
@@ -350,8 +376,8 @@
             <div id="reward-area"></div>
             
             <div style="max-height: 300px; overflow-y: auto; border: 1px solid #eee; margin-top:15px; border-radius:8px;">
-                <table class="detail-table" id="detail-table">
-                    <thead><tr><th>題目</th><th>作答詳情</th></tr></thead>
+                <table class="detail-table" id="detail-table" style="width:100%; text-align:left; border-collapse:collapse;">
+                    <thead style="background:#f1f1f1;"><tr><th style="padding:8px;">結果</th><th style="padding:8px;">題目詳情</th></tr></thead>
                     <tbody id="detail-tbody"></tbody>
                 </table>
             </div>
@@ -369,15 +395,15 @@
 
 <script>
     // --- 初始資料 ---
+    // 修改：words 資料結構現在支援 sentences 陣列
     const DEFAULT_LIST = {
         id: 'default_sent',
-        name: '預設：基礎問候 (Demo)',
+        name: '預設：基礎對話 (Demo)',
         gems: 5,
         passScore: 100,
         words: [
-            {word: 'How are you?', img: '👋'}, 
-            {word: 'I am fine, thank you.', img: '😊'}, 
-            {word: 'What is your name?', img: '❓'}
+            {sentences: ['How are you?', 'I am fine, thank you.'], img: '👋'}, 
+            {sentences: ['What is your name?', 'My name is Alice.'], img: '❓'}
         ]
     };
 
@@ -397,10 +423,13 @@
     let currentQuizList = []; 
     let currentListId = null;
     let currentListName = "";
-    let currentQIndex = 0;
+    
+    let currentQIndex = 0; // 第幾題
+    let currentSubIndex = 0; // 該題的第幾句 (新增)
+    let currentTargetSentences = []; // 目前這題的所有句子 (新增)
+
     let score = 0;
     let correctCount = 0;
-    let currentTargetSentence = "";
     let quizReport = []; 
 
     let editingListId = null;
@@ -574,7 +603,7 @@
         else { checkboxes.forEach(cb => { listsToExport.push(allLists[parseInt(cb.dataset.index)]); }); }
 
         const exportObj = {
-            version: "3.0",
+            version: "3.1",
             student: { name: studentName, totalGems: totalGems },
             lists: listsToExport
         };
@@ -636,7 +665,14 @@
 
     function loadQuestion(isFirstQuestion = false) {
         const qData = currentQuizList[currentQIndex];
-        currentTargetSentence = qData.word; 
+        
+        // 核心修改：取得句子陣列 (相容舊版 word 欄位)
+        if (qData.sentences && qData.sentences.length > 0) {
+            currentTargetSentences = qData.sentences;
+        } else {
+            currentTargetSentences = [qData.word];
+        }
+        currentSubIndex = 0; // 重置子句索引
         
         document.getElementById('q-progress').innerText = `題號: ${currentQIndex+1}/${currentQuizList.length}`;
         document.getElementById('q-score').innerText = `得分: ${score}`;
@@ -644,15 +680,29 @@
         document.getElementById('btn-submit').style.display = 'block';
         document.getElementById('btn-next').style.display = 'none';
         
+        const imgBox = document.getElementById('q-image-box');
+        if(qData.img.length > 10) imgBox.innerHTML=`<img src="${qData.img}">`; else imgBox.innerHTML=`<span>${qData.img}</span>`;
+        
+        // 初始化第一個句子介面
+        setupSubQuestionInterface(isFirstQuestion);
+    }
+
+    function setupSubQuestionInterface(isFirstQuestion) {
+        // UI 更新
+        const indicator = document.getElementById('sub-progress-indicator');
+        if (currentTargetSentences.length > 1) {
+            indicator.style.display = 'inline-block';
+            indicator.innerText = `對話 ${currentSubIndex + 1} / ${currentTargetSentences.length}`;
+        } else {
+            indicator.style.display = 'none';
+        }
+
         const inputEl = document.getElementById('user-input');
         inputEl.value = '';
         inputEl.className = 'sentence-input'; 
         inputEl.disabled = false;
         inputEl.focus();
 
-        const imgBox = document.getElementById('q-image-box');
-        if(qData.img.length > 10) imgBox.innerHTML=`<img src="${qData.img}">`; else imgBox.innerHTML=`<span>${qData.img}</span>`;
-        
         const delay = isFirstQuestion ? 2000 : 500;
         setTimeout(() => playTargetAudio(), delay);
     }
@@ -660,7 +710,8 @@
     function provideHint() {
         const inputEl = document.getElementById('user-input');
         const currentVal = inputEl.value;
-        const target = currentTargetSentence;
+        const target = currentTargetSentences[currentSubIndex]; // 針對目前子句
+        
         let matchIndex = 0;
         while(matchIndex < currentVal.length && matchIndex < target.length) {
             if(currentVal[matchIndex].toLowerCase() === target[matchIndex].toLowerCase()) { matchIndex++; } else { break; }
@@ -676,22 +727,41 @@
     function checkAnswer() {
         const inputEl = document.getElementById('user-input');
         const userAns = inputEl.value.trim();
-        const correctAns = currentTargetSentence.trim();
-        const isCorrect = userAns.toLowerCase() === correctAns.toLowerCase();
+        const correctAns = currentTargetSentences[currentSubIndex].trim(); // 針對目前子句
         
-        inputEl.disabled = true;
-        quizReport.push({ q: correctAns, user: userAns, isCorrect: isCorrect });
-
+        // 寬容檢查 (忽略最後的標點符號差異，如果需要可移除)
+        const cleanUser = userAns.toLowerCase().replace(/[.,?!]$/, "");
+        const cleanTarget = correctAns.toLowerCase().replace(/[.,?!]$/, "");
+        const isCorrect = (cleanUser === cleanTarget) || (userAns.toLowerCase() === correctAns.toLowerCase());
+        
         if(isCorrect) {
-            score += pointsPerQuestion;
-            correctCount++;
-            if(currentQIndex === currentQuizList.length-1 && score >= 98) score = 100;
-            
+            // 答對了目前的子句
             inputEl.classList.add('correct');
-            speak(`Correct!`, true, 'en-US');
             
-            setTimeout(() => { alert("✅ 答對了！"); nextQuestion(); }, 500);
+            // 檢查是否還有下一個子句
+            if (currentSubIndex < currentTargetSentences.length - 1) {
+                // 還有下一句
+                speak("Correct!", true, 'en-US');
+                
+                // 顯示階段性成功動畫
+                const stepMsg = document.getElementById('step-success-msg');
+                stepMsg.style.display = 'block';
+                // 觸發重繪以重啟動畫
+                void stepMsg.offsetWidth; 
+                stepMsg.style.animation = 'none';
+                setTimeout(() => { stepMsg.style.animation = 'popUp 0.8s ease-out'; }, 10);
+
+                setTimeout(() => {
+                    inputEl.classList.remove('correct');
+                    currentSubIndex++; // 前進下一句
+                    setupSubQuestionInterface(false); // 載入下一句介面
+                }, 1000);
+            } else {
+                // 該題全部完成
+                finishCurrentQuestion(true, userAns, correctAns);
+            }
         } else {
+            // 答錯
             inputEl.classList.add('wrong');
             document.getElementById('feedback-area').style.display = 'block';
             document.getElementById('fb-user-ans').innerText = userAns || "(未輸入)";
@@ -702,10 +772,45 @@
             
             document.getElementById('btn-submit').style.display = 'none';
             document.getElementById('btn-next').style.display = 'block';
+            
+            // 記錄錯誤 (即便這題有多句，只要一句錯就算該題未完美)
+            // 這裡簡化邏輯：如果這題最後是按「下一題」跳過的，算錯
+            // 所以現在不加分，等待使用者按 Next
+            inputEl.disabled = true;
+        }
+    }
+
+    // 當題目完全完成（全對或放棄）時呼叫
+    function finishCurrentQuestion(isSuccess, lastUserAns, lastCorrectAns) {
+        const inputEl = document.getElementById('user-input');
+        inputEl.disabled = true;
+        
+        // 組合完整題目字串供報表使用
+        const fullQuestionText = currentTargetSentences.join(" | ");
+        
+        quizReport.push({ q: fullQuestionText, user: isSuccess ? "(全對)" : "錯誤", isCorrect: isSuccess });
+
+        if (isSuccess) {
+            score += pointsPerQuestion;
+            correctCount++;
+            if(currentQIndex === currentQuizList.length-1 && score >= 98) score = 100;
+            speak(`Excellent!`, true, 'en-US');
+            setTimeout(() => { alert("✅ 本題通關！"); nextQuestion(); }, 500);
         }
     }
 
     function nextQuestion() {
+        // 如果是從錯誤狀態按下一題進來的，也要記錄
+        if (document.getElementById('btn-next').style.display === 'block') {
+             // 已經在 checkAnswer 處理過錯誤顯示，這裡補上報表紀錄(若尚未記錄)
+             const fullQuestionText = currentTargetSentences.join(" | ");
+             // 避免重複 push，檢查最後一筆
+             const lastRep = quizReport[quizReport.length-1];
+             if (!lastRep || lastRep.q !== fullQuestionText) {
+                 quizReport.push({ q: fullQuestionText, user: "(未完成)", isCorrect: false });
+             }
+        }
+
         if(currentQIndex < currentQuizList.length-1) { currentQIndex++; loadQuestion(false); }
         else finishQuiz();
     }
@@ -760,8 +865,8 @@
         tbody.innerHTML = '';
         quizReport.forEach(item => {
             const tr = document.createElement('tr');
-            if(item.isCorrect) tr.className = 'dt-correct-row';
-            tr.innerHTML = `<td>${item.isCorrect ? '⭕' : '❌'}</td><td><span class="dt-q">${item.q}</span> <span class="dt-user">${item.user}</span><span class="dt-ans">${item.q}</span></td>`;
+            if(!item.isCorrect) tr.style.backgroundColor = '#fff0f0';
+            tr.innerHTML = `<td style="padding:8px; border-bottom:1px solid #eee;">${item.isCorrect ? '⭕' : '❌'}</td><td style="padding:8px; border-bottom:1px solid #eee;">${item.q}</td>`;
             tbody.appendChild(tr);
         });
 
@@ -787,14 +892,82 @@
         setTimeout(() => { container.style.display = 'none'; container.innerHTML = ''; }, 3000);
     }
 
-    function createNewList() { editingListId=null; document.getElementById('list-name-input').value="新句子練習"; document.getElementById('list-gems').value = 5; document.getElementById('list-pass-score').value = 100; document.getElementById('editor-rows').innerHTML=''; for(let i=0;i<3;i++)addEditRow(); showPage('page-editor'); }
-    function editList(index) { editingListId=index; const l=allLists[index]; document.getElementById('list-name-input').value=l.name; document.getElementById('list-gems').value=l.gems || 5; document.getElementById('list-pass-score').value=l.passScore || 100; document.getElementById('editor-rows').innerHTML=''; l.words.forEach(w=>addEditRow(w.word,w.img)); showPage('page-editor'); }
-    function addEditRow(w='',i='') { const d=document.createElement('div'); d.className='edit-row'; let disp=i||'📷'; if(i&&i.length>10) disp=`<img src="${i}" style="width:100%;height:100%;object-fit:cover;">`; d.innerHTML=`<div class="thumb-preview" onclick="this.nextElementSibling.click()">${disp}</div><input type="file" class="file-input" accept="image/*" onchange="handleFileSelect(this)"><input type="hidden" class="img-data" value="${i}"><input type="text" class="word-input" placeholder="輸入完整句子" value="${w}"><button onclick="this.parentElement.remove()" class="btn-danger" style="padding:5px 10px;">×</button>`; document.getElementById('editor-rows').appendChild(d); }
+    function createNewList() { editingListId=null; document.getElementById('list-name-input').value="新對話練習"; document.getElementById('list-gems').value = 5; document.getElementById('list-pass-score').value = 100; document.getElementById('editor-rows').innerHTML=''; for(let i=0;i<2;i++)addEditRow(); showPage('page-editor'); }
+    
+    // 修改：編輯時載入多行資料
+    function editList(index) { 
+        editingListId=index; const l=allLists[index]; 
+        document.getElementById('list-name-input').value=l.name; 
+        document.getElementById('list-gems').value=l.gems || 5; 
+        document.getElementById('list-pass-score').value=l.passScore || 100; 
+        document.getElementById('editor-rows').innerHTML=''; 
+        l.words.forEach(w => {
+            // 相容性處理：如果是舊的 word 字串，轉成陣列，如果是新的 sentences 陣列，轉成換行字串
+            let content = "";
+            if (w.sentences) {
+                content = w.sentences.join('\n');
+            } else {
+                content = w.word;
+            }
+            addEditRow(content, w.img);
+        }); 
+        showPage('page-editor'); 
+    }
+
+    // 修改：將 input 改為 textarea
+    function addEditRow(w='',i='') { 
+        const d=document.createElement('div'); d.className='edit-row'; 
+        let disp=i||'📷'; 
+        if(i&&i.length>10) disp=`<img src="${i}" style="width:100%;height:100%;object-fit:cover;">`; 
+        
+        d.innerHTML=`
+            <div class="thumb-preview" onclick="this.nextElementSibling.click()">${disp}</div>
+            <input type="file" class="file-input" accept="image/*" onchange="handleFileSelect(this)">
+            <input type="hidden" class="img-data" value="${i}">
+            <textarea class="word-input" placeholder="單一句子 或 多行(對話/問答)">${w}</textarea>
+            <button onclick="this.parentElement.remove()" class="btn-danger" style="padding:5px 10px;">×</button>
+        `; 
+        document.getElementById('editor-rows').appendChild(d); 
+    }
+
     function handleFileSelect(input) { if(input.files[0]){ const r=new FileReader(); r.onload=(e)=>{ const i=new Image(); i.src=e.target.result; i.onload=()=>{ const c=document.createElement('canvas'); const ctx=c.getContext('2d'); const s=300/i.width; c.width=300; c.height=i.height*s; ctx.drawImage(i,0,0,c.width,c.height); const d=c.toDataURL('image/jpeg',0.7); input.previousElementSibling.innerHTML=`<img src="${d}" style="width:100%;height:100%;object-fit:cover;">`; input.nextElementSibling.value=d; }; }; r.readAsDataURL(input.files[0]); } }
-    function saveList() { const n=document.getElementById('list-name-input').value; const g=parseInt(document.getElementById('list-gems').value) || 5; const p=parseInt(document.getElementById('list-pass-score').value) || 100; const rs=document.querySelectorAll('.edit-row'); const nws=[]; rs.forEach(r=>{ const i=r.querySelector('.img-data').value; const w=r.querySelector('.word-input').value.trim(); if(w) nws.push({word:w, img:i||'❓'}); }); if(nws.length<1) return alert("請輸入句子"); const nd={id:editingListId!==null?allLists[editingListId].id:Date.now().toString(),name:n,gems:g,passScore:p,words:nws}; if(editingListId!==null) allLists[editingListId]=nd; else allLists.push(nd); saveListData(); showPage('page-home'); }
+    
+    // 修改：儲存時將多行文字切割為陣列
+    function saveList() { 
+        const n=document.getElementById('list-name-input').value; 
+        const g=parseInt(document.getElementById('list-gems').value) || 5; 
+        const p=parseInt(document.getElementById('list-pass-score').value) || 100; 
+        const rs=document.querySelectorAll('.edit-row'); 
+        const nws=[]; 
+        
+        rs.forEach(r=>{ 
+            const i=r.querySelector('.img-data').value; 
+            const rawVal=r.querySelector('.word-input').value;
+            // 根據換行符號切割，並移除空行
+            const sentences = rawVal.split('\n').map(s => s.trim()).filter(s => s !== "");
+            
+            if(sentences.length > 0) {
+                // 儲存為新的格式：sentences 陣列
+                nws.push({sentences: sentences, img:i||'❓'}); 
+            }
+        }); 
+        
+        if(nws.length<1) return alert("請輸入至少一個題目"); 
+        
+        const nd={id:editingListId!==null?allLists[editingListId].id:Date.now().toString(),name:n,gems:g,passScore:p,words:nws}; 
+        if(editingListId!==null) allLists[editingListId]=nd; else allLists.push(nd); 
+        saveListData(); showPage('page-home'); 
+    }
+
     function deleteList(i) { if(confirm("確定刪除此題庫？")){allLists.splice(i,1);saveListData();renderLists();} }
     function updateTimer() { const d=Math.floor((Date.now()-startTime)/1000); const m=Math.floor(d/60).toString().padStart(2,'0'); const s=(d%60).toString().padStart(2,'0'); document.getElementById('q-timer').innerText=`${m}:${s}`; }
-    function playTargetAudio() { speak(currentTargetSentence, false, 'en-US'); }
+    
+    // 修改：播放目前子句的發音
+    function playTargetAudio() { 
+        const txt = currentTargetSentences[currentSubIndex];
+        speak(txt, false, 'en-US'); 
+    }
+    
     function speakUserSpelling() { const t=document.getElementById('user-input').value; if(t)speak(t,false,'en-US'); else speak("請先輸入句子",false,'zh-TW'); }
     function speak(t,e,l) { if('speechSynthesis' in window){window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(t); u.lang=l; u.rate=0.9; if(e)u.pitch=1.2; window.speechSynthesis.speak(u);} }
     function quitQuiz() { if(confirm("確定退出練習？")){clearInterval(timerInterval);showPage('page-home');} }
