@@ -3,17 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sentence Builder 句子闖關王 v4.2 (全功能旗艦版)</title>
-    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    <title>Sentence Builder 句子闖關王 v5.0 (穩定縮放版)</title>
     <style>
         :root {
             --primary: #4834d4;
             --secondary: #686de0;
             --dark: #130f40;
             --light: #fdfdfd;
-            --accent: #f9ca24;
-            --success: #2ed573;
-            --danger: #eb4d4b;
             --bg-page: #dff9fb;
             --rank-1: #FFD700;
         }
@@ -44,36 +40,29 @@
         .container.active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* --- 按鈕 --- */
         button {
             border: none; border-radius: 8px; padding: 8px 12px; font-size: 0.95rem;
             font-weight: bold; cursor: pointer; transition: transform 0.1s;
             color: white; margin: 2px; touch-action: manipulation;
         }
         button:active { transform: scale(0.95); }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
         
         .btn-primary { background-color: var(--primary); }
         .btn-secondary { background-color: var(--secondary); }
         .btn-accent { background-color: #f0932b; }
         .btn-gray { background-color: #95a5a6; }
-        .btn-danger { background-color: var(--danger); }
-        .btn-link { background-color: #22a6b3; }
-        .btn-success { background-color: var(--success); }
+        .btn-danger { background-color: #eb4d4b; }
+        .btn-success { background-color: #2ed573; }
         .btn-gold { background-color: #f1c40f; color: #333; }
-        .btn-magic { background: linear-gradient(45deg, #6c5ce7, #a29bfe); color: white; }
-        .btn-outline { background: transparent; border: 1px solid #999; color: #666; padding: 2px 6px; font-size: 0.8rem;}
         .btn-block { width: 100%; margin: 5px 0; padding: 12px; font-size: 1.1rem; }
         .btn-hint { background-color: #2ed573; color: white; } 
 
-        /* --- 列表項目 --- */
         .list-item {
             background: #f8f9fa; border: 1px solid #e9ecef; padding: 12px; margin-bottom: 10px;
             border-radius: 8px; display: flex; align-items: center; gap: 10px;
         }
 
         /* --- 英雄榜 --- */
-        .rank-list { margin-top: 10px; }
         .rank-item { display: flex; align-items: center; padding: 10px; margin-bottom: 8px; background: #fff; border-radius: 8px; border: 1px solid #eee; }
         .rank-num { font-size: 1.5rem; font-weight: 900; width: 40px; text-align: center; margin-right: 10px; color: #7f8c8d; }
         .rank-item.rank-1 { background: linear-gradient(to right, #fff, #fff9c4); border: 2px solid var(--rank-1); }
@@ -87,34 +76,50 @@
             display: flex; justify-content: center; align-items: center; margin-bottom: 15px; overflow: hidden;
             background: #fcfcfc; border: 1px dashed #ddd; border-radius: 8px;
             position: relative;
-        }
-        .q-image-box img { 
-            max-height: 100%; max-width: 100%; border-radius: 8px; object-fit: contain; 
             cursor: zoom-in; 
         }
-        .q-image-box span { font-size: 4rem; }
+        .q-image-box img { max-height: 100%; max-width: 100%; object-fit: contain; }
         .zoom-hint { position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; font-size: 0.7rem; padding: 2px 5px; border-radius: 4px; pointer-events: none;}
 
-        /* 圖片放大燈箱 */
+        /* --- 圖片縮放燈箱 (Zoom Modal) --- */
         .modal {
             display: none; position: fixed; z-index: 10000; left: 0; top: 0;
-            width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.9);
+            width: 100%; height: 100%; background-color: rgba(0,0,0,0.9);
             animation: fadeIn 0.3s;
         }
-        .modal-content {
-            margin: auto; display: block; max-width: 95%; max-height: 95%;
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            border-radius: 5px; box-shadow: 0 0 20px rgba(255,255,255,0.2);
+        
+        /* 縮放工具列 */
+        .modal-toolbar {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 10px; z-index: 10002;
+            background: rgba(255,255,255,0.2); padding: 10px; border-radius: 30px;
+            backdrop-filter: blur(5px);
         }
-        .close-modal {
-            position: absolute; top: 20px; right: 30px; color: #f1f1f1;
-            font-size: 40px; font-weight: bold; cursor: pointer; z-index: 10001;
+        .tool-btn {
+            background: rgba(0,0,0,0.6); color: white; border: 1px solid #fff;
+            width: 40px; height: 40px; border-radius: 50%; font-size: 1.2rem;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+        .close-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 10002;
+            background: rgba(255,0,0,0.6); width: 40px; height: 40px;
         }
 
-        /* 答題堆疊區 */
-        .answer-stack {
-            display: flex; flex-direction: column; gap: 8px; width: 100%; margin-bottom: 15px;
+        /* 圖片容器：允許捲動 */
+        .modal-img-container {
+            width: 100%; height: 100%;
+            overflow: auto; /* 關鍵：讓放大的圖片可以捲動 */
+            display: flex; justify-content: center; align-items: center;
         }
+        
+        .modal-content {
+            max-width: 90%; max-height: 90%;
+            transition: transform 0.2s ease-out; /* 平滑縮放 */
+            transform-origin: center center;
+        }
+
+        /* --- 答題堆疊區 --- */
+        .answer-stack { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-bottom: 15px; }
         .history-block {
             padding: 12px 15px; border-radius: 10px; font-size: 1.1rem; position: relative;
             animation: slideUp 0.3s ease-out; border: 2px solid transparent;
@@ -126,26 +131,18 @@
         .history-block.wrong { background-color: #fee2e2; border-color: #fecaca; color: #991b1b; }
         .history-block.wrong::after { content: "❌"; position: absolute; right: 10px; top: 12px; font-size: 1.2rem; }
 
-        .correction-text {
-            display: block; margin-top: 5px; font-size: 0.9rem; color: #666;
-            background: rgba(255,255,255,0.6); padding: 4px 8px; border-radius: 6px; font-weight: bold;
-        }
+        .correction-text { display: block; margin-top: 5px; font-size: 0.9rem; color: #666; background: rgba(255,255,255,0.6); padding: 4px 8px; border-radius: 6px; font-weight: bold; }
 
-        .input-wrapper { margin-bottom: 10px; position: relative; }
         .sentence-input {
             width: 100%; font-size: 1.2rem; padding: 12px; border: 2px solid #ccc;
             border-radius: 12px; font-family: 'Segoe UI', sans-serif; box-sizing: border-box;
             outline: none; transition: border-color 0.3s; text-align: left; padding-left: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
         .sentence-input:focus { border-color: var(--primary); box-shadow: 0 0 8px rgba(72, 52, 212, 0.3); }
-
-        .progress-indicator { text-align:center; font-size:0.8rem; color:#999; margin-bottom: 5px;}
 
         /* --- 編輯區 --- */
         .edit-row { display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px; background: #fff; padding: 10px; border: 1px solid #eee; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .edit-top-row { display: flex; gap: 10px; align-items: flex-start; }
-        
         .edit-row textarea { 
             padding: 10px; border: 1px solid #ddd; border-radius: 4px; flex: 1; 
             font-family: inherit; font-size: 1rem; resize: vertical; min-height: 80px;
@@ -153,43 +150,15 @@
         .thumb-preview { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; background: #eee; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
         .file-input { display: none; }
         
-        .editor-header-group {
-            display: flex; gap: 15px; margin-top: 5px; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #eee;
-        }
-        .editor-input-label {
-            display: flex; flex-direction: column; flex: 1;
-        }
-        .editor-input-label span {
-            font-size: 0.85rem; color: #666; font-weight: bold; margin-bottom: 3px;
-        }
-        .editor-input-label input {
-            padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; text-align: center;
-        }
-        
-        /* OCR 相關 */
-        .ocr-loading {
-            position: absolute; top:0; left:0; width:100%; height:100%; 
-            background: rgba(255,255,255,0.95); display:none; 
-            justify-content: center; align-items: center; 
-            color: var(--primary); font-weight: bold; z-index: 10;
-            flex-direction: column; font-size: 0.9rem;
-            border-radius: 4px;
-        }
-        .ocr-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 0.85rem; color: #555;}
+        .editor-header-group { display: flex; gap: 15px; margin-top: 5px; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
+        .editor-input-label { display: flex; flex-direction: column; flex: 1; }
+        .editor-input-label span { font-size: 0.85rem; color: #666; font-weight: bold; margin-bottom: 3px; }
+        .editor-input-label input { padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; text-align: center; }
 
         /* --- 粒子動畫 (獎勵) --- */
-        #particle-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 9999; overflow: hidden; display: none;
-        }
-        .particle {
-            position: absolute; font-size: 2rem;
-            animation: fall linear forwards;
-        }
-        @keyframes fall {
-            0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
-            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
-        }
+        #particle-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; overflow: hidden; display: none; }
+        .particle { position: absolute; font-size: 2rem; animation: fall linear forwards; }
+        @keyframes fall { 0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotate(360deg); opacity: 0; } }
 
         .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #999; font-weight: bold; border-bottom: 2px solid #eee;}
         .tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
@@ -201,18 +170,27 @@
 
     <div id="particle-container"></div>
     
-    <div id="img-modal" class="modal" onclick="closeModal()">
-        <span class="close-modal">&times;</span>
-        <img class="modal-content" id="modal-img">
+    <div id="img-modal" class="modal">
+        <button class="tool-btn close-btn" onclick="closeModal()">×</button>
+        
+        <div class="modal-img-container" id="modal-container">
+            <img class="modal-content" id="modal-img">
+        </div>
+
+        <div class="modal-toolbar">
+            <button class="tool-btn" onclick="zoomImage(0.2)">➕</button>
+            <button class="tool-btn" onclick="zoomImage(-0.2)">➖</button>
+            <button class="tool-btn" onclick="resetZoom()">↺</button>
+        </div>
     </div>
 
     <div id="page-home" class="container active">
-        <h1>📝 句子闖關王 v4.2</h1>
+        <h1>📝 句子闖關王 v5.0</h1>
         
         <div style="background:#e056fd15; border:2px dashed #686de0; border-radius:10px; padding:10px; margin-bottom:15px; text-align:center;">
             <div style="font-size:1.2rem; font-weight:bold; color:#4834d4;">
                 <span id="display-student-name">學員</span>
-                <button class="btn-outline" onclick="changeStudentName()">✎</button>
+                <button class="btn-outline" style="border:1px solid #999; border-radius:4px; padding:2px 5px;" onclick="changeStudentName()">✎</button>
             </div>
             <div style="margin-top:5px;">
                 👑 <span id="stat-crowns">0</span> &nbsp;|&nbsp; 💎 <span id="stat-gems">0</span>
@@ -240,7 +218,7 @@
             <div id="history-container"></div>
             <button class="btn-gray btn-block" onclick="clearAllHistory()">清空紀錄</button>
         </div>
-        <div style="text-align:center; color:#ccc; margin-top:20px; font-size:0.8rem;">版本 v4.2 (旗艦全功能版)</div>
+        <div style="text-align:center; color:#ccc; margin-top:20px; font-size:0.8rem;">版本 v5.0 (穩定縮放版)</div>
     </div>
 
     <div id="page-quiz" class="container">
@@ -291,11 +269,11 @@
             </div>
         </div>
         
-        <div style="background:#fff3cd; padding:10px; font-size:0.9rem; margin-bottom:15px; border-radius:5px; color:#856404;">
-            📸 <strong>AI 辨識提示：</strong><br>
-            1. 建議勾選「僅英文」以提高準確率。<br>
-            2. 系統會自動將圖片轉為「黑白」以去除課本背景。<br>
-            3. 請將課本放平，避免陰影。
+        <div style="background:#e8f0fe; padding:8px; font-size:0.9rem; margin-bottom:10px; color:#2c3e50; border-radius:5px;">
+            💡 <strong>使用說明：</strong><br>
+            1. 上傳圖片後，請在文字框中<strong>手動輸入</strong>對應的句子。<br>
+            2. 請使用<strong>換行</strong>來區隔不同的對話句子。<br>
+            3. 在測驗時，點擊圖片可放大並縮放檢視。
         </div>
         
         <div id="editor-rows"></div>
@@ -375,6 +353,9 @@
     let timerInterval, startTime;
     let quizReport = [];
 
+    // 縮放變數
+    let currentZoom = 1;
+
     window.onload = function() {
         loadData();
         renderLists();
@@ -389,9 +370,17 @@
                 }
             }
         });
+
+        // 燈箱滑鼠滾輪縮放
+        const modalImg = document.getElementById('modal-img');
+        modalImg.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            if (e.deltaY < 0) zoomImage(0.1);
+            else zoomImage(-0.1);
+        });
     };
 
-    // --- 圖片燈箱邏輯 ---
+    // --- 圖片縮放邏輯 (Super Zoom) ---
     function openModal(box) {
         const img = box.querySelector('img');
         if(!img) return; 
@@ -399,25 +388,55 @@
         const modalImg = document.getElementById('modal-img');
         modal.style.display = "block";
         modalImg.src = img.src;
+        resetZoom(); // 每次打開重置
     }
+    
     function closeModal() {
         document.getElementById('img-modal').style.display = "none";
     }
 
+    function zoomImage(delta) {
+        currentZoom += delta;
+        if (currentZoom < 0.5) currentZoom = 0.5; // 最小縮放
+        if (currentZoom > 5) currentZoom = 5; // 最大縮放
+        updateZoomTransform();
+    }
+
+    function resetZoom() {
+        currentZoom = 1;
+        updateZoomTransform();
+    }
+
+    function updateZoomTransform() {
+        const img = document.getElementById('modal-img');
+        img.style.transform = `scale(${currentZoom})`;
+        // 確保放大的時候可以滾動容器
+        const container = document.getElementById('modal-container');
+        if (currentZoom > 1) {
+            container.style.overflow = 'auto';
+            img.style.cursor = 'grab';
+        } else {
+            container.style.overflow = 'hidden';
+            img.style.cursor = 'default';
+        }
+    }
+
+    // --- 基礎邏輯 ---
+
     function loadData() {
-        allLists = JSON.parse(localStorage.getItem('sb_lists_v42') || JSON.stringify([DEFAULT_LIST]));
-        studentName = localStorage.getItem('sb_name_v42') || "學員";
-        totalGems = parseInt(localStorage.getItem('sb_gems_v42') || 0);
-        historyLog = JSON.parse(localStorage.getItem('sb_hist_v42') || '[]');
-        exchangeLog = JSON.parse(localStorage.getItem('sb_ex_v42') || '[]');
+        allLists = JSON.parse(localStorage.getItem('sb_lists_v50') || JSON.stringify([DEFAULT_LIST]));
+        studentName = localStorage.getItem('sb_name_v50') || "學員";
+        totalGems = parseInt(localStorage.getItem('sb_gems_v50') || 0);
+        historyLog = JSON.parse(localStorage.getItem('sb_hist_v50') || '[]');
+        exchangeLog = JSON.parse(localStorage.getItem('sb_ex_v50') || '[]');
     }
 
     function saveData() {
-        localStorage.setItem('sb_lists_v42', JSON.stringify(allLists));
-        localStorage.setItem('sb_name_v42', studentName);
-        localStorage.setItem('sb_gems_v42', totalGems);
-        localStorage.setItem('sb_hist_v42', JSON.stringify(historyLog));
-        localStorage.setItem('sb_ex_v42', JSON.stringify(exchangeLog));
+        localStorage.setItem('sb_lists_v50', JSON.stringify(allLists));
+        localStorage.setItem('sb_name_v50', studentName);
+        localStorage.setItem('sb_gems_v50', totalGems);
+        localStorage.setItem('sb_hist_v50', JSON.stringify(historyLog));
+        localStorage.setItem('sb_ex_v50', JSON.stringify(exchangeLog));
         updateProfile();
     }
 
@@ -482,7 +501,7 @@
         // 圖片
         const ib = document.getElementById('q-image-box');
         if (q.img && q.img.length > 10) {
-            ib.innerHTML = `<img src="${q.img}"><div class="zoom-hint">🔍 點擊放大</div>`;
+            ib.innerHTML = `<img src="${q.img}"><div class="zoom-hint">🔍 點擊放大/縮放</div>`;
             ib.style.cursor = "zoom-in";
             ib.onclick = function() { openModal(this); };
         } else {
@@ -544,11 +563,10 @@
         if(currentSubIndex < currentTargetSentences.length) {
             updateSubInterface(false);
         } else {
-            // 本題結束
             inputEl.disabled = true;
             document.getElementById('btn-submit').style.display = 'none';
             document.getElementById('btn-next-q').style.display = 'block';
-            document.getElementById('sub-progress-indicator').innerText = "✅ 本題完成，請檢視結果後按下一題";
+            document.getElementById('sub-progress-indicator').innerText = "✅ 本題完成，請按下一題";
             
             if(currentQIndex < currentQuizList.length - 1) {
                 document.getElementById('btn-next-q').innerText = "下一題 ➔";
@@ -706,7 +724,6 @@
         showPage('page-editor');
     }
 
-    // OCR 編輯列
     function addEditRow(txt='', img='') {
         const d = document.createElement('div');
         d.className = 'edit-row';
@@ -719,17 +736,7 @@
                 <input type="hidden" class="img-val" value="${img}">
                 
                 <div style="display:flex; flex-direction:column; flex:1;">
-                    <div class="ocr-controls">
-                        <label><input type="checkbox" class="ocr-eng-only" checked> 僅辨識英文 (準確度↑)</label>
-                        <button class="btn-magic" style="padding:2px 8px; font-size:0.8rem;" onclick="processOCR(this)">✨ AI 辨識</button>
-                    </div>
-                    <div style="position:relative;">
-                        <textarea class="txt-val" placeholder="輸入句子 (換行可建立多句對話)">${txt}</textarea>
-                        <div class="ocr-loading">
-                            <div>🔄 正在強化影像...</div>
-                            <div style="font-size:0.8rem; color:#666; margin-top:5px;">去除背景/增強對比</div>
-                        </div>
-                    </div>
+                    <textarea class="txt-val" placeholder="輸入句子 (換行可建立多句對話)">${txt}</textarea>
                 </div>
             </div>
             <button class="btn-danger" style="align-self:flex-end; padding:4px 10px; font-size:0.8rem;" onclick="this.parentElement.remove()">刪除此題</button>
@@ -756,57 +763,6 @@
             };
             fr.readAsDataURL(inp.files[0]);
         }
-    }
-
-    // --- OCR 核心 (強化版) ---
-    function processOCR(btn) {
-        const row = btn.closest('.edit-row');
-        const imgSrc = row.querySelector('.img-val').value;
-        const txtArea = row.querySelector('.txt-val');
-        const loading = row.querySelector('.ocr-loading');
-        const engOnly = row.querySelector('.ocr-eng-only').checked;
-
-        if(!imgSrc || imgSrc.length < 50) return alert('請先上傳圖片');
-        
-        loading.style.display = 'flex';
-        loading.innerHTML = `<div>🔄 影像強化處理中...</div>`;
-
-        preprocessImage(imgSrc, (processedDataUrl) => {
-            loading.innerHTML = `<div>✨ AI 文字辨識中...</div>`;
-            Tesseract.recognize(
-                processedDataUrl,
-                engOnly ? 'eng' : 'chi_tra+eng',
-                { logger: m => console.log(m) }
-            ).then(({ data: { text } }) => {
-                let clean = text.replace(/\|/g, 'I').replace(/\n\s*\n/g, '\n').trim();
-                txtArea.value = clean;
-                loading.style.display = 'none';
-            }).catch(err => {
-                alert('辨識失敗');
-                loading.style.display = 'none';
-            });
-        });
-    }
-
-    function preprocessImage(src, callback) {
-        const img = new Image();
-        img.src = src;
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ctx.drawImage(img, 0, 0);
-            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imgData.data;
-            for (let i = 0; i < data.length; i += 4) {
-                const gray = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
-                const val = gray > 160 ? 255 : 0; 
-                data[i] = data[i + 1] = data[i + 2] = val;
-            }
-            ctx.putImageData(imgData, 0, 0);
-            callback(canvas.toDataURL('image/jpeg'));
-        };
     }
 
     function saveList() {
@@ -891,22 +847,6 @@
             c.appendChild(p);
         }
         setTimeout(()=>{c.style.display='none'}, 3000);
-    }
-    
-    function renderHistory() {
-        const c = document.getElementById('history-container');
-        c.innerHTML = historyLog.map(h => 
-            `<div class="list-item" style="justify-content:space-between">
-                <div>
-                    <div style="font-weight:bold">${h.title}</div>
-                    <div style="font-size:0.8rem; color:#777">${h.date}</div>
-                </div>
-                <div style="text-align:right">
-                    <div style="font-size:1.2rem; font-weight:bold; color:var(--primary)">${h.score}分</div>
-                    <div style="font-size:0.8rem;">${h.time}</div>
-                </div>
-            </div>`
-        ).join('') || '<div style="text-align:center; padding:10px; color:#999">尚無紀錄</div>';
     }
     
     function clearAllHistory() {
