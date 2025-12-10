@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sentence Builder 句子闖關王 v3.2 (流暢對話版)</title>
+    <title>Sentence Builder 句子闖關王 v3.3 (堆疊式介面)</title>
     <style>
         :root {
             --primary: #4834d4;
@@ -13,14 +13,12 @@
             --accent: #f9ca24;
             --success: #2ed573;
             --danger: #eb4d4b;
-            --bg-chat: #f1f2f6;
-            --user-bubble: #dff9fb;
-            --teacher-bubble: #ffffff;
+            --bg-page: #dff9fb;
         }
 
         body {
             font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
-            background-color: #dff9fb;
+            background-color: var(--bg-page);
             color: var(--dark);
             margin: 0;
             padding: 10px;
@@ -67,71 +65,69 @@
             background: #f8f9fa; border: 1px solid #e9ecef; padding: 12px; margin-bottom: 10px;
             border-radius: 8px; display: flex; align-items: center; gap: 10px;
         }
-        .list-header { display: flex; justify-content: space-between; align-items: center; width: 100%; }
         
-        /* --- 測驗區 (聊天室風格) --- */
+        /* --- 測驗區 (堆疊式風格) --- */
         .quiz-header { display: flex; justify-content: space-between; font-weight: bold; color: #7f8c8d; margin-bottom: 10px; background: #f1f2f6; padding: 10px; border-radius: 8px; }
-        .q-image-box { height: 120px; display: flex; justify-content: center; align-items: center; margin-bottom: 5px; overflow: hidden;}
+        .q-image-box { height: 120px; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; overflow: hidden;}
         .q-image-box img { max-height: 100%; max-width: 100%; border-radius: 8px; object-fit: contain; }
         .q-image-box span { font-size: 4rem; }
 
-        /* 對話歷史容器 */
-        .dialogue-box {
-            background: var(--bg-chat);
-            border-radius: 12px;
-            padding: 15px;
-            height: 250px;
-            overflow-y: auto;
-            margin-bottom: 15px;
-            border: 1px solid #e1e1e1;
+        /* 答題歷程堆疊區 (新) */
+        .answer-stack {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
+            width: 100%;
+            margin-bottom: 15px;
         }
-        
-        /* 對話氣泡 */
-        .chat-bubble {
-            max-width: 85%;
-            padding: 10px 14px;
-            border-radius: 15px;
-            font-size: 1rem;
-            line-height: 1.4;
+
+        /* 已完成的句子方塊 */
+        .history-block {
+            padding: 12px 15px;
+            border-radius: 10px;
+            font-size: 1.1rem;
             position: relative;
-            word-wrap: break-word;
-            animation: popIn 0.3s ease-out;
+            animation: slideUp 0.3s ease-out;
+            border: 2px solid transparent;
         }
-        
-        @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* 使用者 (右側) */
-        .chat-bubble.user {
-            align-self: flex-end;
-            background-color: var(--user-bubble);
-            color: #333;
-            border-bottom-right-radius: 2px;
-            border: 1px solid #c7ecee;
+        /* 正確樣式 */
+        .history-block.correct {
+            background-color: #d1fae5; 
+            border-color: #a7f3d0; 
+            color: #065f46;
         }
-        .chat-bubble.user.correct { background-color: #d1fae5; border-color: #a7f3d0; color: #065f46; }
-        .chat-bubble.user.wrong { background-color: #fee2e2; border-color: #fecaca; color: #991b1b; text-decoration: line-through; opacity: 0.8;}
+        .history-block.correct::after { content: "✅"; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 1.2rem; }
 
-        /* 老師/系統修正 (左側) */
-        .chat-bubble.teacher {
-            align-self: flex-start;
-            background-color: var(--teacher-bubble);
-            color: #444;
-            border-bottom-left-radius: 2px;
-            border: 1px solid #ddd;
+        /* 錯誤樣式 */
+        .history-block.wrong {
+            background-color: #fee2e2; 
+            border-color: #fecaca; 
+            color: #991b1b;
+        }
+        .history-block.wrong::after { content: "❌"; position: absolute; right: 10px; top: 12px; font-size: 1.2rem; }
+
+        /* 錯誤時的小字修正 */
+        .correction-text {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.9rem;
+            color: #666;
+            background: rgba(255,255,255,0.6);
+            padding: 4px 8px;
+            border-radius: 6px;
             font-weight: bold;
         }
-        .chat-bubble.teacher::before { content: "✅ "; }
 
         .input-wrapper { margin-bottom: 10px; position: relative; }
         .sentence-input {
             width: 100%; font-size: 1.2rem; padding: 12px; border: 2px solid #ccc;
-            border-radius: 25px; font-family: 'Segoe UI', sans-serif; box-sizing: border-box;
-            outline: none; transition: border-color 0.3s; text-align: left; padding-left: 20px;
+            border-radius: 12px; font-family: 'Segoe UI', sans-serif; box-sizing: border-box;
+            outline: none; transition: border-color 0.3s; text-align: left; padding-left: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
-        .sentence-input:focus { border-color: var(--primary); box-shadow: 0 0 5px rgba(72, 52, 212, 0.2); }
+        .sentence-input:focus { border-color: var(--primary); box-shadow: 0 0 8px rgba(72, 52, 212, 0.3); }
 
         .progress-indicator { text-align:center; font-size:0.8rem; color:#999; margin-bottom: 5px;}
 
@@ -158,7 +154,6 @@
             100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
         }
 
-        /* 其他輔助樣式 */
         .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #999; font-weight: bold; border-bottom: 2px solid #eee;}
         .tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
         .tabs { display: flex; margin-bottom: 15px; }
@@ -170,7 +165,7 @@
     <div id="particle-container"></div>
 
     <div id="page-home" class="container active">
-        <h1>💬 句子對話闖關 v3.2</h1>
+        <h1>📝 句子闖關王 v3.3</h1>
         
         <div style="background:#e056fd15; border:2px dashed #686de0; border-radius:10px; padding:10px; margin-bottom:15px; text-align:center;">
             <div style="font-size:1.2rem; font-weight:bold; color:#4834d4;">
@@ -203,7 +198,7 @@
             <div id="history-container"></div>
             <button class="btn-gray btn-block" onclick="clearAllHistory()">清空紀錄</button>
         </div>
-        <div style="text-align:center; color:#ccc; margin-top:20px; font-size:0.8rem;">版本 v3.2 (流暢對話版)</div>
+        <div style="text-align:center; color:#ccc; margin-top:20px; font-size:0.8rem;">版本 v3.3 (堆疊式介面)</div>
     </div>
 
     <div id="page-quiz" class="container">
@@ -215,7 +210,7 @@
         
         <div class="q-image-box" id="q-image-box"></div>
         
-        <div id="dialogue-box" class="dialogue-box">
+        <div id="answer-stack" class="answer-stack">
             </div>
 
         <div class="progress-indicator" id="sub-progress-indicator">等待開始...</div>
@@ -224,8 +219,9 @@
             <input type="text" id="user-input" class="sentence-input" placeholder="請輸入聽到的句子..." autocomplete="off" spellcheck="false">
         </div>
 
-        <div style="display: flex; gap: 5px; margin-bottom:10px;">
-            <button class="btn-secondary" style="flex:1" onclick="playTargetAudio()">🔊 重聽</button>
+        <div style="display: flex; gap: 5px; margin-bottom:10px; flex-wrap:wrap;">
+            <button class="btn-secondary" style="flex:1" onclick="playTargetAudio()">🔊 重聽題目</button>
+            <button class="btn-secondary" style="flex:1" onclick="speakUserInput()">👂 朗讀我的輸入</button>
             <button class="btn-hint" style="flex:1" onclick="provideHint()">💡 提示</button>
         </div>
 
@@ -244,8 +240,7 @@
             </div>
         </div>
         <div style="background:#e8f0fe; padding:8px; font-size:0.9rem; margin-bottom:10px; color:#2c3e50; border-radius:5px;">
-            💡 <strong>多句模式：</strong>請在輸入框中<b>換行</b>，每一行代表一句話。<br>
-            測驗時將會依序出現，形成對話。
+            💡 <strong>多句模式：</strong>請在輸入框中<b>換行</b>，每一行代表一句話。
         </div>
         <div id="editor-rows"></div>
         <button class="btn-gray" onclick="addEditRow()">+ 增加題目</button>
@@ -326,11 +321,9 @@
         // 綁定 Enter 鍵
         document.getElementById('user-input').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
-                // 如果按鈕是送出狀態
                 if(document.getElementById('btn-submit').style.display !== 'none'){
                     checkAnswer();
                 } else {
-                    // 如果按鈕是下一題狀態 (最後一題結束時)
                     finishCurrentQuestionAndNext();
                 }
             }
@@ -338,19 +331,19 @@
     };
 
     function loadData() {
-        allLists = JSON.parse(localStorage.getItem('sb_lists_v32') || JSON.stringify([DEFAULT_LIST]));
-        studentName = localStorage.getItem('sb_name_v32') || "學員";
-        totalGems = parseInt(localStorage.getItem('sb_gems_v32') || 0);
-        historyLog = JSON.parse(localStorage.getItem('sb_hist_v32') || '[]');
-        exchangeLog = JSON.parse(localStorage.getItem('sb_ex_v32') || '[]');
+        allLists = JSON.parse(localStorage.getItem('sb_lists_v33') || JSON.stringify([DEFAULT_LIST]));
+        studentName = localStorage.getItem('sb_name_v33') || "學員";
+        totalGems = parseInt(localStorage.getItem('sb_gems_v33') || 0);
+        historyLog = JSON.parse(localStorage.getItem('sb_hist_v33') || '[]');
+        exchangeLog = JSON.parse(localStorage.getItem('sb_ex_v33') || '[]');
     }
 
     function saveData() {
-        localStorage.setItem('sb_lists_v32', JSON.stringify(allLists));
-        localStorage.setItem('sb_name_v32', studentName);
-        localStorage.setItem('sb_gems_v32', totalGems);
-        localStorage.setItem('sb_hist_v32', JSON.stringify(historyLog));
-        localStorage.setItem('sb_ex_v32', JSON.stringify(exchangeLog));
+        localStorage.setItem('sb_lists_v33', JSON.stringify(allLists));
+        localStorage.setItem('sb_name_v33', studentName);
+        localStorage.setItem('sb_gems_v33', totalGems);
+        localStorage.setItem('sb_hist_v33', JSON.stringify(historyLog));
+        localStorage.setItem('sb_ex_v33', JSON.stringify(exchangeLog));
         updateProfile();
     }
 
@@ -383,7 +376,7 @@
         document.getElementById('tab-history-content').style.display = t==='history'?'block':'none';
     }
 
-    // --- 測驗核心邏輯 (Chat Flow) ---
+    // --- 測驗核心邏輯 (Stack Interface) ---
     function startQuizSetup(idx) {
         const list = allLists[idx];
         currentListId = list.id;
@@ -416,8 +409,9 @@
         const ib = document.getElementById('q-image-box');
         ib.innerHTML = (q.img && q.img.length>10) ? `<img src="${q.img}">` : `<span>${q.img}</span>`;
         
-        // 重置對話框與輸入區
-        document.getElementById('dialogue-box').innerHTML = ''; 
+        // 清空堆疊區
+        document.getElementById('answer-stack').innerHTML = ''; 
+        
         document.getElementById('user-input').disabled = false;
         document.getElementById('user-input').focus();
         document.getElementById('btn-submit').style.display = 'block';
@@ -429,7 +423,7 @@
     function updateSubInterface(first) {
         // 更新進度提示
         document.getElementById('sub-progress-indicator').innerText = 
-            `正在輸入第 ${currentSubIndex + 1} 句，共 ${currentTargetSentences.length} 句`;
+            `句子 ${currentSubIndex + 1} / ${currentTargetSentences.length}`;
         
         document.getElementById('user-input').value = '';
         document.getElementById('user-input').focus();
@@ -443,8 +437,17 @@
             speak(currentTargetSentences[currentSubIndex], 'en-US');
         }
     }
+    
+    // 新增：朗讀使用者目前的輸入
+    function speakUserInput() {
+        const val = document.getElementById('user-input').value;
+        if(val) {
+            speak(val, 'en-US');
+        } else {
+            speak("Please input something", 'en-US');
+        }
+    }
 
-    // 核心優化：檢查答案並推進，不卡關
     function checkAnswer() {
         const inputEl = document.getElementById('user-input');
         const val = inputEl.value.trim();
@@ -453,58 +456,67 @@
         const target = currentTargetSentences[currentSubIndex].trim();
         const isCorrect = val.toLowerCase().replace(/[.,?!]/g,'') === target.toLowerCase().replace(/[.,?!]/g,'');
         
-        // 1. 顯示使用者氣泡
-        addBubble(val, 'user', isCorrect ? 'correct' : 'wrong');
+        // 1. 建立堆疊方塊 (History Block)
+        createHistoryBlock(val, target, isCorrect);
 
-        // 2. 如果錯誤，顯示正確答案 (老師氣泡)
+        // 2. 播放回饋
         if (!isCorrect) {
-            addBubble(target, 'teacher');
-            speak("Correct answer is " + target, 'en-US', 1.2); // 快速唸出正確答案
+            speak("Correct answer is " + target, 'en-US', 1.2); 
         } else {
-            score += Math.round(100 / (currentQuizList.length * currentTargetSentences.length)); // 簡單計分
+            score += Math.round(100 / (currentQuizList.length * currentTargetSentences.length));
             speak("Correct!", 'en-US', 1.5);
         }
 
-        // 紀錄報表 (詳細到每一句)
-        quizReport.push({
-            q: target,
-            u: val,
-            res: isCorrect
-        });
+        quizReport.push({ q: target, u: val, res: isCorrect });
 
-        // 3. 推進下一句 (不管對錯都繼續!)
+        // 3. 推進下一句
         currentSubIndex++;
 
-        // 4. 判斷該題是否結束
         if(currentSubIndex < currentTargetSentences.length) {
-            // 還有下一句 -> 繼續
             updateSubInterface(false);
         } else {
-            // 該題結束
+            // 本題結束
             inputEl.disabled = true;
             document.getElementById('btn-submit').style.display = 'none';
             document.getElementById('btn-next-q').style.display = 'block';
-            document.getElementById('sub-progress-indicator').innerText = "✅ 本題對話結束";
+            document.getElementById('sub-progress-indicator').innerText = "✅ 本題完成";
             
-            // 如果這不是最後一題，自動跳下一題 (可選，這裡設為手動按或自動延遲)
             setTimeout(() => {
                 if(currentQIndex < currentQuizList.length - 1) {
                     finishCurrentQuestionAndNext();
                 } else {
-                    // 最後一題，停在畫面上讓使用者看結果，按按鈕才結束
                     document.getElementById('btn-next-q').innerText = "查看成績 🏁";
                 }
             }, 1500);
         }
     }
 
-    function addBubble(text, type, status='') {
-        const box = document.getElementById('dialogue-box');
-        const div = document.createElement('div');
-        div.className = `chat-bubble ${type} ${status}`;
-        div.innerText = text;
-        box.appendChild(div);
-        box.scrollTop = box.scrollHeight; // 自動捲動到底部
+    // 介面核心：建立堆疊方塊
+    function createHistoryBlock(userText, correctText, isCorrect) {
+        const stack = document.getElementById('answer-stack');
+        
+        const block = document.createElement('div');
+        block.className = isCorrect ? 'history-block correct' : 'history-block wrong';
+        
+        // 使用者輸入
+        const userDiv = document.createElement('div');
+        userDiv.innerText = userText;
+        block.appendChild(userDiv);
+
+        // 如果錯誤，加入正確答案(小字)
+        if(!isCorrect) {
+            const corrDiv = document.createElement('div');
+            corrDiv.className = 'correction-text';
+            corrDiv.innerText = "正確: " + correctText;
+            block.appendChild(corrDiv);
+        }
+
+        stack.appendChild(block);
+        
+        // 讓視窗滾動以確保輸入框可見
+        setTimeout(() => {
+            document.getElementById('user-input').scrollIntoView({behavior: "smooth", block: "center"});
+        }, 100);
     }
 
     function finishCurrentQuestionAndNext() {
@@ -554,7 +566,6 @@
             div.innerHTML = `<div style="color:#7f8c8d;">未達及格分 (${pass})，再接再厲！</div>`;
         }
 
-        // 詳情表格
         const tb = document.getElementById('detail-tbody');
         tb.innerHTML = '';
         quizReport.forEach(r => {
@@ -568,13 +579,7 @@
             tb.innerHTML += row;
         });
 
-        // 紀錄歷史
-        historyLog.unshift({
-            title: list.name,
-            score: score,
-            date: new Date().toLocaleString(),
-            time: tStr
-        });
+        historyLog.unshift({ title: list.name, score: score, date: new Date().toLocaleString(), time: tStr });
         saveData();
     }
 
@@ -622,7 +627,6 @@
         if(inp.files && inp.files[0]){
             let fr = new FileReader();
             fr.onload = (e) => {
-                // 壓縮圖片
                 let img = new Image();
                 img.src = e.target.result;
                 img.onload = () => {
@@ -777,7 +781,6 @@
         fr.readAsText(inp.files[0]);
     }
     
-    // 商店邏輯
     function processExchange() {
         let name = document.getElementById('gift-name').value;
         let cost = parseInt(document.getElementById('gift-cost').value);
