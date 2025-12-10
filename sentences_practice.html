@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sentence Builder 句子闖關王 v3.3 (堆疊式介面)</title>
+    <title>Sentence Builder 句子闖關王 v3.4 (大圖確認版)</title>
     <style>
         :root {
             --primary: #4834d4;
@@ -57,6 +57,7 @@
         .btn-gray { background-color: #95a5a6; }
         .btn-danger { background-color: var(--danger); }
         .btn-link { background-color: #22a6b3; }
+        .btn-success { background-color: var(--success); }
         .btn-block { width: 100%; margin: 5px 0; padding: 12px; font-size: 1.1rem; }
         .btn-hint { background-color: #2ed573; color: white; } 
 
@@ -66,58 +67,57 @@
             border-radius: 8px; display: flex; align-items: center; gap: 10px;
         }
         
-        /* --- 測驗區 (堆疊式風格) --- */
+        /* --- 測驗區 --- */
         .quiz-header { display: flex; justify-content: space-between; font-weight: bold; color: #7f8c8d; margin-bottom: 10px; background: #f1f2f6; padding: 10px; border-radius: 8px; }
-        .q-image-box { height: 120px; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; overflow: hidden;}
-        .q-image-box img { max-height: 100%; max-width: 100%; border-radius: 8px; object-fit: contain; }
+        
+        /* 優化：圖片框加大，並提示可點擊 */
+        .q-image-box { 
+            height: 220px; /* 加大高度 */
+            display: flex; justify-content: center; align-items: center; margin-bottom: 15px; overflow: hidden;
+            background: #fcfcfc; border: 1px dashed #ddd; border-radius: 8px;
+            position: relative;
+        }
+        .q-image-box img { 
+            max-height: 100%; max-width: 100%; border-radius: 8px; object-fit: contain; 
+            cursor: zoom-in; /* 滑鼠游標提示 */
+        }
         .q-image-box span { font-size: 4rem; }
+        .zoom-hint { position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; font-size: 0.7rem; padding: 2px 5px; border-radius: 4px; pointer-events: none;}
 
-        /* 答題歷程堆疊區 (新) */
-        .answer-stack {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            width: 100%;
-            margin-bottom: 15px;
+        /* 圖片放大燈箱 (Lightbox) */
+        .modal {
+            display: none; position: fixed; z-index: 10000; left: 0; top: 0;
+            width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.9);
+            animation: fadeIn 0.3s;
+        }
+        .modal-content {
+            margin: auto; display: block; max-width: 95%; max-height: 95%;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            border-radius: 5px; box-shadow: 0 0 20px rgba(255,255,255,0.2);
+        }
+        .close-modal {
+            position: absolute; top: 20px; right: 30px; color: #f1f1f1;
+            font-size: 40px; font-weight: bold; cursor: pointer; z-index: 10001;
         }
 
-        /* 已完成的句子方塊 */
+        /* 答題堆疊區 */
+        .answer-stack {
+            display: flex; flex-direction: column; gap: 8px; width: 100%; margin-bottom: 15px;
+        }
         .history-block {
-            padding: 12px 15px;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            position: relative;
-            animation: slideUp 0.3s ease-out;
-            border: 2px solid transparent;
+            padding: 12px 15px; border-radius: 10px; font-size: 1.1rem; position: relative;
+            animation: slideUp 0.3s ease-out; border: 2px solid transparent;
         }
         @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* 正確樣式 */
-        .history-block.correct {
-            background-color: #d1fae5; 
-            border-color: #a7f3d0; 
-            color: #065f46;
-        }
+        .history-block.correct { background-color: #d1fae5; border-color: #a7f3d0; color: #065f46; }
         .history-block.correct::after { content: "✅"; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 1.2rem; }
-
-        /* 錯誤樣式 */
-        .history-block.wrong {
-            background-color: #fee2e2; 
-            border-color: #fecaca; 
-            color: #991b1b;
-        }
+        .history-block.wrong { background-color: #fee2e2; border-color: #fecaca; color: #991b1b; }
         .history-block.wrong::after { content: "❌"; position: absolute; right: 10px; top: 12px; font-size: 1.2rem; }
 
-        /* 錯誤時的小字修正 */
         .correction-text {
-            display: block;
-            margin-top: 5px;
-            font-size: 0.9rem;
-            color: #666;
-            background: rgba(255,255,255,0.6);
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-weight: bold;
+            display: block; margin-top: 5px; font-size: 0.9rem; color: #666;
+            background: rgba(255,255,255,0.6); padding: 4px 8px; border-radius: 6px; font-weight: bold;
         }
 
         .input-wrapper { margin-bottom: 10px; position: relative; }
@@ -131,7 +131,7 @@
 
         .progress-indicator { text-align:center; font-size:0.8rem; color:#999; margin-bottom: 5px;}
 
-        /* --- 編輯區 --- */
+        /* --- 編輯區優化 --- */
         .edit-row { display: flex; gap: 5px; margin-bottom: 10px; align-items: flex-start; background: #fff; padding: 8px; border: 1px solid #eee; border-radius: 8px; }
         .edit-row textarea { 
             padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; 
@@ -139,6 +139,19 @@
         }
         .thumb-preview { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; background: #eee; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
         .file-input { display: none; }
+        
+        .editor-header-group {
+            display: flex; gap: 15px; margin-top: 5px; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #eee;
+        }
+        .editor-input-label {
+            display: flex; flex-direction: column; flex: 1;
+        }
+        .editor-input-label span {
+            font-size: 0.85rem; color: #666; font-weight: bold; margin-bottom: 3px;
+        }
+        .editor-input-label input {
+            padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; text-align: center;
+        }
 
         /* --- 粒子動畫 (獎勵) --- */
         #particle-container {
@@ -163,9 +176,14 @@
 <body>
 
     <div id="particle-container"></div>
+    
+    <div id="img-modal" class="modal" onclick="closeModal()">
+        <span class="close-modal">&times;</span>
+        <img class="modal-content" id="modal-img">
+    </div>
 
     <div id="page-home" class="container active">
-        <h1>📝 句子闖關王 v3.3</h1>
+        <h1>📝 句子闖關王 v3.4</h1>
         
         <div style="background:#e056fd15; border:2px dashed #686de0; border-radius:10px; padding:10px; margin-bottom:15px; text-align:center;">
             <div style="font-size:1.2rem; font-weight:bold; color:#4834d4;">
@@ -198,7 +216,7 @@
             <div id="history-container"></div>
             <button class="btn-gray btn-block" onclick="clearAllHistory()">清空紀錄</button>
         </div>
-        <div style="text-align:center; color:#ccc; margin-top:20px; font-size:0.8rem;">版本 v3.3 (堆疊式介面)</div>
+        <div style="text-align:center; color:#ccc; margin-top:20px; font-size:0.8rem;">版本 v3.4 (大圖確認版)</div>
     </div>
 
     <div id="page-quiz" class="container">
@@ -208,10 +226,10 @@
             <span id="q-score">得分: 0</span>
         </div>
         
-        <div class="q-image-box" id="q-image-box"></div>
-        
-        <div id="answer-stack" class="answer-stack">
+        <div class="q-image-box" id="q-image-box" onclick="openModal(this)">
             </div>
+        
+        <div id="answer-stack" class="answer-stack"></div>
 
         <div class="progress-indicator" id="sub-progress-indicator">等待開始...</div>
 
@@ -227,20 +245,30 @@
 
         <button id="btn-submit" class="btn-primary btn-block" onclick="checkAnswer()">送出 (Enter)</button>
         <button id="btn-next-q" class="btn-success btn-block" style="display:none;" onclick="finishCurrentQuestionAndNext()">下一題 ➔</button>
-        <button class="btn-gray btn-block" onclick="quitQuiz()">退出練習</button>
+        
+        <button class="btn-gray btn-block" style="margin-top:10px;" onclick="quitQuiz()">退出練習</button>
     </div>
 
     <div id="page-editor" class="container">
         <h2>✏️ 編輯題庫</h2>
         <div style="margin-bottom:10px;">
-            <input type="text" id="list-name-input" placeholder="題庫名稱" style="padding:8px; width:100%; box-sizing:border-box; margin-bottom:5px;">
-            <div style="display:flex; gap:10px;">
-                <input type="number" id="list-gems" placeholder="寶石" style="padding:5px; width:60px;" value="5">
-                <input type="number" id="list-pass-score" placeholder="及格分" style="padding:5px; width:60px;" value="100">
+            <label style="font-weight:bold; color:#555;">題庫名稱</label>
+            <input type="text" id="list-name-input" placeholder="例如: 第三課 單字與對話" style="padding:10px; width:100%; box-sizing:border-box; margin-bottom:5px; border-radius:5px; border:1px solid #ccc;">
+            
+            <div class="editor-header-group">
+                <div class="editor-input-label">
+                    <span>💎 獎勵寶石 (每題通關)</span>
+                    <input type="number" id="list-gems" placeholder="5" value="5">
+                </div>
+                <div class="editor-input-label">
+                    <span>🎯 及格分數 (總分100)</span>
+                    <input type="number" id="list-pass-score" placeholder="100" value="100">
+                </div>
             </div>
         </div>
         <div style="background:#e8f0fe; padding:8px; font-size:0.9rem; margin-bottom:10px; color:#2c3e50; border-radius:5px;">
-            💡 <strong>多句模式：</strong>請在輸入框中<b>換行</b>，每一行代表一句話。
+            💡 <strong>輸入說明：</strong>請在文字框中<b>換行</b>來建立多個句子。<br>
+            系統會依序出題，形成連續對話或問答。
         </div>
         <div id="editor-rows"></div>
         <button class="btn-gray" onclick="addEditRow()">+ 增加題目</button>
@@ -323,27 +351,41 @@
             if (e.key === 'Enter') {
                 if(document.getElementById('btn-submit').style.display !== 'none'){
                     checkAnswer();
-                } else {
+                } else if(document.getElementById('btn-next-q').style.display !== 'none') {
+                    // 如果顯示下一題按鈕，按 Enter 等同點擊下一題
                     finishCurrentQuestionAndNext();
                 }
             }
         });
     };
 
+    // --- 圖片燈箱邏輯 ---
+    function openModal(box) {
+        const img = box.querySelector('img');
+        if(!img) return; // 如果只是文字icon就不放大
+        const modal = document.getElementById('img-modal');
+        const modalImg = document.getElementById('modal-img');
+        modal.style.display = "block";
+        modalImg.src = img.src;
+    }
+    function closeModal() {
+        document.getElementById('img-modal').style.display = "none";
+    }
+
     function loadData() {
-        allLists = JSON.parse(localStorage.getItem('sb_lists_v33') || JSON.stringify([DEFAULT_LIST]));
-        studentName = localStorage.getItem('sb_name_v33') || "學員";
-        totalGems = parseInt(localStorage.getItem('sb_gems_v33') || 0);
-        historyLog = JSON.parse(localStorage.getItem('sb_hist_v33') || '[]');
-        exchangeLog = JSON.parse(localStorage.getItem('sb_ex_v33') || '[]');
+        allLists = JSON.parse(localStorage.getItem('sb_lists_v34') || JSON.stringify([DEFAULT_LIST]));
+        studentName = localStorage.getItem('sb_name_v34') || "學員";
+        totalGems = parseInt(localStorage.getItem('sb_gems_v34') || 0);
+        historyLog = JSON.parse(localStorage.getItem('sb_hist_v34') || '[]');
+        exchangeLog = JSON.parse(localStorage.getItem('sb_ex_v34') || '[]');
     }
 
     function saveData() {
-        localStorage.setItem('sb_lists_v33', JSON.stringify(allLists));
-        localStorage.setItem('sb_name_v33', studentName);
-        localStorage.setItem('sb_gems_v33', totalGems);
-        localStorage.setItem('sb_hist_v33', JSON.stringify(historyLog));
-        localStorage.setItem('sb_ex_v33', JSON.stringify(exchangeLog));
+        localStorage.setItem('sb_lists_v34', JSON.stringify(allLists));
+        localStorage.setItem('sb_name_v34', studentName);
+        localStorage.setItem('sb_gems_v34', totalGems);
+        localStorage.setItem('sb_hist_v34', JSON.stringify(historyLog));
+        localStorage.setItem('sb_ex_v34', JSON.stringify(exchangeLog));
         updateProfile();
     }
 
@@ -376,13 +418,13 @@
         document.getElementById('tab-history-content').style.display = t==='history'?'block':'none';
     }
 
-    // --- 測驗核心邏輯 (Stack Interface) ---
+    // --- 測驗核心邏輯 ---
     function startQuizSetup(idx) {
         const list = allLists[idx];
         currentListId = list.id;
         
         let shuffled = [...list.words].sort(()=>0.5-Math.random());
-        currentQuizList = shuffled.slice(0, 10); // 最多10題
+        currentQuizList = shuffled.slice(0, 10);
         
         currentQIndex = 0;
         score = 0;
@@ -405,13 +447,19 @@
         document.getElementById('q-progress').innerText = `題號: ${currentQIndex+1}/${currentQuizList.length}`;
         document.getElementById('q-score').innerText = `得分: ${score}`;
         
-        // 圖片
+        // 圖片處理
         const ib = document.getElementById('q-image-box');
-        ib.innerHTML = (q.img && q.img.length>10) ? `<img src="${q.img}">` : `<span>${q.img}</span>`;
+        if (q.img && q.img.length > 10) {
+            ib.innerHTML = `<img src="${q.img}"><div class="zoom-hint">🔍 點擊放大</div>`;
+            ib.style.cursor = "zoom-in";
+            ib.onclick = function() { openModal(this); };
+        } else {
+            ib.innerHTML = `<span>${q.img}</span>`;
+            ib.style.cursor = "default";
+            ib.onclick = null;
+        }
         
-        // 清空堆疊區
         document.getElementById('answer-stack').innerHTML = ''; 
-        
         document.getElementById('user-input').disabled = false;
         document.getElementById('user-input').focus();
         document.getElementById('btn-submit').style.display = 'block';
@@ -421,14 +469,10 @@
     }
 
     function updateSubInterface(first) {
-        // 更新進度提示
         document.getElementById('sub-progress-indicator').innerText = 
             `句子 ${currentSubIndex + 1} / ${currentTargetSentences.length}`;
-        
         document.getElementById('user-input').value = '';
         document.getElementById('user-input').focus();
-        
-        // 自動播放該句語音
         setTimeout(() => playTargetAudio(), first ? 1500 : 800);
     }
 
@@ -438,28 +482,22 @@
         }
     }
     
-    // 新增：朗讀使用者目前的輸入
     function speakUserInput() {
         const val = document.getElementById('user-input').value;
-        if(val) {
-            speak(val, 'en-US');
-        } else {
-            speak("Please input something", 'en-US');
-        }
+        if(val) speak(val, 'en-US');
+        else speak("Please input something", 'en-US');
     }
 
     function checkAnswer() {
         const inputEl = document.getElementById('user-input');
         const val = inputEl.value.trim();
-        if(!val) return; // 空白不送出
+        if(!val) return;
 
         const target = currentTargetSentences[currentSubIndex].trim();
         const isCorrect = val.toLowerCase().replace(/[.,?!]/g,'') === target.toLowerCase().replace(/[.,?!]/g,'');
         
-        // 1. 建立堆疊方塊 (History Block)
         createHistoryBlock(val, target, isCorrect);
 
-        // 2. 播放回饋
         if (!isCorrect) {
             speak("Correct answer is " + target, 'en-US', 1.2); 
         } else {
@@ -469,51 +507,43 @@
 
         quizReport.push({ q: target, u: val, res: isCorrect });
 
-        // 3. 推進下一句
         currentSubIndex++;
 
         if(currentSubIndex < currentTargetSentences.length) {
             updateSubInterface(false);
         } else {
-            // 本題結束
+            // 本題結束：這裡做了修正，不再自動倒數跳轉，而是停留在這裡等待確認
             inputEl.disabled = true;
             document.getElementById('btn-submit').style.display = 'none';
             document.getElementById('btn-next-q').style.display = 'block';
-            document.getElementById('sub-progress-indicator').innerText = "✅ 本題完成";
+            document.getElementById('sub-progress-indicator').innerText = "✅ 本題完成，請檢視結果後按下一題";
             
-            setTimeout(() => {
-                if(currentQIndex < currentQuizList.length - 1) {
-                    finishCurrentQuestionAndNext();
-                } else {
-                    document.getElementById('btn-next-q').innerText = "查看成績 🏁";
-                }
-            }, 1500);
+            // 更新按鈕文字
+            if(currentQIndex < currentQuizList.length - 1) {
+                document.getElementById('btn-next-q').innerText = "下一題 ➔";
+            } else {
+                document.getElementById('btn-next-q').innerText = "查看成績 🏁";
+            }
         }
     }
 
-    // 介面核心：建立堆疊方塊
     function createHistoryBlock(userText, correctText, isCorrect) {
         const stack = document.getElementById('answer-stack');
-        
         const block = document.createElement('div');
         block.className = isCorrect ? 'history-block correct' : 'history-block wrong';
         
-        // 使用者輸入
         const userDiv = document.createElement('div');
         userDiv.innerText = userText;
         block.appendChild(userDiv);
 
-        // 如果錯誤，加入正確答案(小字)
         if(!isCorrect) {
             const corrDiv = document.createElement('div');
             corrDiv.className = 'correction-text';
             corrDiv.innerText = "正確: " + correctText;
             block.appendChild(corrDiv);
         }
-
         stack.appendChild(block);
         
-        // 讓視窗滾動以確保輸入框可見
         setTimeout(() => {
             document.getElementById('user-input').scrollIntoView({behavior: "smooth", block: "center"});
         }, 100);
@@ -540,7 +570,7 @@
         inp.focus();
     }
 
-    // --- 結算與其他 ---
+    // --- 結算 ---
     function finishQuiz() {
         clearInterval(timerInterval);
         showPage('page-result');
@@ -550,7 +580,6 @@
         let tStr = document.getElementById('q-timer').innerText;
         document.getElementById('final-stats').innerText = `耗時: ${tStr}`;
         
-        // 獎勵計算
         const list = allLists.find(l=>l.id===currentListId);
         const pass = list.passScore || 80;
         const div = document.getElementById('reward-area');
@@ -583,7 +612,7 @@
         saveData();
     }
 
-    // --- 編輯器邏輯 ---
+    // --- 編輯器 ---
     function createNewList() {
         editingListId = null;
         document.getElementById('list-name-input').value = "";
@@ -632,10 +661,10 @@
                 img.onload = () => {
                     let cvs = document.createElement('canvas');
                     let ctx = cvs.getContext('2d');
-                    let scale = 200/img.width;
-                    cvs.width = 200; cvs.height = img.height*scale;
+                    let scale = 300/img.width; // 稍微提高解析度給放大用
+                    cvs.width = 300; cvs.height = img.height*scale;
                     ctx.drawImage(img,0,0,cvs.width,cvs.height);
-                    let base64 = cvs.toDataURL('image/jpeg', 0.6);
+                    let base64 = cvs.toDataURL('image/jpeg', 0.65);
                     inp.previousElementSibling.innerHTML = `<img src="${base64}" style="width:100%;height:100%;object-fit:cover;">`;
                     inp.nextElementSibling.value = base64;
                 }
@@ -753,7 +782,6 @@
         else timerInterval = setInterval(()=>{ /* resume timer */ }, 1000);
     }
     
-    // 匯出匯入
     function exportSelectedData() {
         const data = JSON.stringify({lists:allLists, student:{name:studentName, gems:totalGems}});
         const blob = new Blob([data], {type:'application/json'});
