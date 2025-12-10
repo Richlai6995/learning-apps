@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>除法闖關王 4.9 (儲存修復版)</title>
+    <title>除法闖關王 5.0 (教學優化版)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -142,6 +142,7 @@
         }
         .stats-badge { background: #fff; padding: 5px 12px; border-radius: 20px; font-size: 1rem; }
 
+        /* Tabs (已移除 Rank，保留樣式以防未來擴充) */
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; background: #f0f3f4; padding: 5px; border-radius: 30px; }
         .tab { flex: 1; text-align: center; padding: 10px 20px; cursor: pointer; color: #7f8c8d; font-weight: bold; border-radius: 25px; }
         .tab.active { color: white; background-color: var(--primary); }
@@ -162,14 +163,16 @@
         }
         .edit-row input { padding: 8px; flex: 1; text-align: center; border-radius: 5px; border: 1px solid #ccc; font-size: 1.1rem; }
         
-        /* 商店列樣式 (獨立出來避免衝突) */
+        /* 商店列樣式 */
         .shop-row { 
             display: flex; gap: 10px; margin-bottom: 8px; align-items: center; 
             background: #fff; padding: 5px; border-radius: 5px; border: 1px solid #eee;
         }
         
         .settings-box { background-color: #f0f8ff; border: 2px solid #bcdbf3; border-radius: 10px; padding: 15px; margin-bottom: 20px; }
-        .checkbox-group { display: flex; gap: 20px; justify-content: center; }
+        .checkbox-group { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;}
+        .checkbox-item { display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: bold; font-size: 1.1rem; }
+        .checkbox-item input { width: 20px; height: 20px; cursor: pointer; }
         
         /* 算式區 */
         .grid-container {
@@ -239,9 +242,8 @@
         </div>
 
         <div class="tabs">
-            <div class="tab active" onclick="switchTab('quiz')">選擇題庫</div>
-            <div class="tab" onclick="switchTab('rank')">英雄榜</div>
-        </div>
+            <div class="tab active" style="width:100%; border-radius:25px;">選擇題庫</div>
+            </div>
 
         <div id="tab-quiz">
             <button class="btn-accent btn-block" style="margin-bottom:15px; box-shadow:0 4px #d35400;" onclick="showPage('page-shop')">🎁 獎勵兌換商店</button>
@@ -254,12 +256,7 @@
             </div>
         </div>
 
-        <div id="tab-rank" style="display:none;">
-            <div id="rank-container"></div>
-            <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
-        </div>
-
-        <div class="version-tag">版本：v4.9 (儲存修復版)</div>
+        <div class="version-tag">版本：v5.0 (教學優化版)</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -331,6 +328,7 @@
             <div class="checkbox-group">
                 <label class="checkbox-item"><input type="checkbox" id="opt-voice" checked> 🔊 語音提示</label>
                 <label class="checkbox-item"><input type="checkbox" id="opt-text" checked> 📝 文字提示</label>
+                <label class="checkbox-item"><input type="checkbox" id="opt-help" checked> 💡 允許求救</label>
             </div>
         </div>
         <div style="text-align: center;">
@@ -389,27 +387,24 @@
                 </table>
             </div>
 
-            <button class="btn-warning btn-block" onclick="saveRank()">登記英雄榜</button>
             <button class="btn-gray btn-block" onclick="showPage('page-home')">回首頁</button>
         </div>
     </div>
 
 <script>
     // --- 全域變數 ---
-    let quizSettings = { voice: true, text: true };
+    let quizSettings = { voice: true, text: true, allowHelp: true };
     let studentName = '小小學員';
     let totalGems = 0; 
     let allLists = [], currentList = null, quizData = [];
     let currentQIdx = 0, currentMode = '', editingId = null;
     let timerInt, startTime;
-    let rankData = [];
     let exchangeLog = [];
 
-    const STORAGE_KEY_LISTS = 'div_v4_5_lists';
-    const STORAGE_KEY_RANK = 'div_v4_5_rank';
-    const STORAGE_KEY_USER = 'div_v4_5_user';
-    const STORAGE_KEY_GEMS = 'div_v4_5_gems';
-    const STORAGE_KEY_EXCHANGE = 'div_v4_5_exchange';
+    const STORAGE_KEY_LISTS = 'div_v5_0_lists';
+    const STORAGE_KEY_USER = 'div_v5_0_user';
+    const STORAGE_KEY_GEMS = 'div_v5_0_gems';
+    const STORAGE_KEY_EXCHANGE = 'div_v5_0_exchange';
 
     // --- 語音功能 ---
     function speak(text) {
@@ -429,9 +424,8 @@
     // --- 初始化與資料讀寫 ---
     window.onload = function() {
         if(localStorage.getItem(STORAGE_KEY_LISTS)) allLists = JSON.parse(localStorage.getItem(STORAGE_KEY_LISTS));
-        else { allLists = [{name: "範例：估算練習", gems: 5, teachGems: 2, passScore: 100, qs: [{a:963, b:36}, {a:846, b:32}, {a:96, b:3}]}]; saveData(); }
+        else { allLists = [{name: "範例：基本練習", gems: 5, teachGems: 2, passScore: 100, qs: [{a:963, b:36}, {a:2458, b:854}]}]; saveData(); }
         
-        if(localStorage.getItem(STORAGE_KEY_RANK)) rankData = JSON.parse(localStorage.getItem(STORAGE_KEY_RANK));
         if(localStorage.getItem(STORAGE_KEY_USER)) studentName = localStorage.getItem(STORAGE_KEY_USER);
         if(localStorage.getItem(STORAGE_KEY_GEMS)) totalGems = parseInt(localStorage.getItem(STORAGE_KEY_GEMS)) || 0;
         if(localStorage.getItem(STORAGE_KEY_EXCHANGE)) exchangeLog = JSON.parse(localStorage.getItem(STORAGE_KEY_EXCHANGE));
@@ -442,7 +436,6 @@
     };
 
     function saveData() { localStorage.setItem(STORAGE_KEY_LISTS, JSON.stringify(allLists)); }
-    function saveRankData() { localStorage.setItem(STORAGE_KEY_RANK, JSON.stringify(rankData)); }
     function saveStudentData() {
         localStorage.setItem(STORAGE_KEY_USER, studentName);
         localStorage.setItem(STORAGE_KEY_GEMS, totalGems);
@@ -474,13 +467,6 @@
         if(pid === 'page-home') renderLists();
         if(pid === 'page-shop') { updateProfile(); renderExchangeLog(); }
         if(pid === 'page-result') updateProfile(); 
-    }
-    function switchTab(t) {
-        document.getElementById('tab-quiz').style.display = t==='quiz'?'block':'none';
-        document.getElementById('tab-rank').style.display = t==='rank'?'block':'none';
-        if(t==='rank') renderRank();
-        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-        event.target.classList.add('active');
     }
 
     // --- 題庫管理 ---
@@ -518,11 +504,11 @@
             `; 
             document.getElementById('editor-rows').appendChild(d); 
         } catch(e) {
-            alert("新增失敗，請重新整理頁面。錯誤：" + e.message);
+            alert("新增失敗，請重新整理頁面。");
         }
     }
     
-    // 儲存題庫 (修正：限制搜尋範圍在 #editor-rows 內)
+    // 儲存題庫
     function saveList() { 
         try {
             const n = document.getElementById('list-name').value; 
@@ -533,7 +519,6 @@
             const pVal = parseInt(document.getElementById('list-pass-score').value);
             const passScore = isNaN(pVal) ? 100 : pVal;
 
-            // 修正點：只抓取編輯區內的 edit-row，避免抓到商店區塊
             const rs = document.querySelectorAll('#editor-rows .edit-row'); 
             const qs = []; 
             
@@ -552,7 +537,7 @@
             }); 
 
             if(qs.length < 1) {
-                alert("請至少輸入一題有效的題目！(注意：除數不能為0、也不能留空)"); 
+                alert("請至少輸入一題有效的題目！(注意：除數不能為0)"); 
                 return;
             }
             
@@ -568,7 +553,7 @@
             showPage('page-home'); 
             editingId = null; 
         } catch (e) {
-            alert("儲存失敗！請檢查輸入資料。錯誤訊息: " + e.message);
+            alert("儲存失敗！");
         }
     }
     
@@ -596,7 +581,7 @@
         const now = new Date();
         const dateStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}`;
         const exportObj = {
-            version: "4.9",
+            version: "5.0",
             student: { name: studentName, totalGems: totalGems },
             lists: allLists,
             exchangeLog: exchangeLog
@@ -662,6 +647,7 @@
         if(mode === 'teach') {
             quizSettings.voice = document.getElementById('opt-voice').checked;
             quizSettings.text = document.getElementById('opt-text').checked;
+            quizSettings.allowHelp = document.getElementById('opt-help').checked; // 設定求救按鈕
         }
 
         quizData = currentList.qs.map(q => ({
@@ -747,57 +733,94 @@
         }
     }
 
+    // --- 優化後的除法步驟產生邏輯 ---
     function generateDivSteps(dividend, divisor) {
         let dStr = dividend.toString();
         let steps = [];
-        let curRem = 0;
         let row = 1;
-        let offset = 6 - dStr.length;
-        let workingRow = 1;
+        let offset = 6 - dStr.length; // 保持原本的視覺偏移量
+        
+        // 1. 初始化試商範圍
+        let divisorLen = divisor.toString().length;
+        let dIndex = divisorLen - 1; // 指向目前 working string 的最後一位在 dStr 中的索引
+        let workingStr = dStr.substring(0, divisorLen);
+        let currentVal = parseInt(workingStr);
+        let firstStep = true;
 
-        for(let i=0; i<dStr.length; i++) {
-            let digit = parseInt(dStr[i]);
-            let working = curRem * 10 + digit; 
-            let quo = Math.floor(working / divisor);
-            let prod = quo * divisor;
-            let rem = working - prod;
-            let col = offset + i;
-            let workingStr = working.toString();
-
-            if(!(i===0 && quo===0)) { 
-                let hintText = `看 ${working} ÷ ${divisor}，商多少？`;
-                let estHint = "";
-                if(divisor >= 10 && working >= 10) {
-                    let d_round = Math.round(divisor / 10);
-                    let w_round = Math.round(working / 10);
-                    if(d_round === 0) d_round = 1;
-                    let d_est = d_round * 10;
-                    let w_est = w_round * 10;
-                    estHint = `${working}估${w_est}，${divisor}估${d_est}。這時提醒${d_round}幾倍接近並小於${w_round}？`;
-                    hintText = estHint; 
-                }
-                steps.push({ 
-                    type:'quo', r:0, c:col, ans:quo, 
-                    hint: hintText,
-                    currVal: working,
-                    workingStrLen: workingStr.length,
-                    dividendEndIdx: col,
-                    highlightRow: workingRow 
-                });
-            } else {
-                curRem = working; continue;
-            }
-            steps.push({ type:'prod', r:row+1, c:col, ans:prod, hint: `${quo} × ${divisor} = ?`, align:'right', quoVal: quo });
-            row += 2;
-            steps.push({ type:'rem', r:row, c:col, ans:rem, hint: `${working} - ${prod} = ?`, align:'right', working: working, prod: prod });
-
-            if(i < dStr.length - 1) {
-                let next = dStr[i+1];
-                steps.push({ type:'drop', r:row, c:col+1, ans:next, hint: `把 ${next} 降下來` });
-            }
-            curRem = rem;
-            workingRow = row;
+        // 邏輯修正：如果第一次抓取的數值比除數小，且還有下一位，則自動多抓一位
+        // 例如 2458 / 854 => 抓 245 < 854 => 改抓 2458
+        // 這樣第一步就是 2458 / 854 = 2，而不是先商0
+        if (currentVal < divisor && dIndex < dStr.length - 1) {
+            dIndex++;
+            workingStr += dStr[dIndex];
+            currentVal = parseInt(workingStr);
         }
+
+        while(true) {
+            let quo = Math.floor(currentVal / divisor);
+            let prod = quo * divisor;
+            let rem = currentVal - prod;
+            let col = offset + dIndex; // 這裡的col對應到商的位置 (對齊 dividend 的當前位)
+
+            // 產生提示文字
+            let hintText = `看 ${currentVal} ÷ ${divisor}，商多少？`;
+            let estHint = "";
+            if(divisor >= 10 && currentVal >= 10) {
+                let d_round = Math.round(divisor / 10);
+                if(d_round === 0) d_round = 1;
+                let w_round = Math.round(currentVal / 10);
+                estHint = `提示：${currentVal}估${w_round*10}，${divisor}估${d_round*10}。${d_round}的幾倍接近${w_round}？`;
+                hintText = estHint; 
+            }
+
+            // 步驟1: 商
+            steps.push({ 
+                type: 'quo', r: 0, c: col, ans: quo, 
+                hint: hintText,
+                currVal: currentVal,
+                workingStrLen: workingStr.length,
+                dividendEndIdx: col,
+                highlightRow: row // 高亮當前計算的數字所在行
+            });
+
+            // 步驟2: 乘積
+            steps.push({ 
+                type: 'prod', r: row+1, c: col, ans: prod, 
+                hint: `${quo} × ${divisor} = ?`, align:'right', quoVal: quo 
+            });
+
+            row += 2;
+
+            // 步驟3: 餘數
+            steps.push({ 
+                type: 'rem', r: row, c: col, ans: rem, 
+                hint: `${currentVal} - ${prod} = ?`, align:'right', working: currentVal, prod: prod 
+            });
+
+            // 檢查是否還有下一位
+            if(dIndex < dStr.length - 1) {
+                dIndex++;
+                let nextDigit = dStr[dIndex];
+
+                // 步驟4: 降位
+                steps.push({ 
+                    type: 'drop', r: row, c: offset+dIndex, 
+                    ans: nextDigit, hint: `把 ${nextDigit} 降下來` 
+                });
+
+                // 更新下一輪的數值
+                workingStr = rem.toString() + nextDigit;
+                currentVal = parseInt(workingStr);
+                
+                // 下一輪的 highlightRow 應該停留在降位後的這一行 (row)
+                // 但迴圈開頭 row 變數還沒加，所以這裡不用變，等到 loop 回去使用 row
+            } else {
+                break; // 結束
+            }
+            
+            firstStep = false;
+        }
+
         return steps;
     }
 
@@ -806,6 +829,14 @@
         const msg = document.getElementById('teach-msg');
         document.getElementById('help-content').style.display = 'none';
         
+        // 判斷是否顯示求救按鈕
+        const btnHelp = document.getElementById('btn-help-trigger');
+        if(quizSettings.allowHelp) {
+            btnHelp.style.display = 'inline-block';
+        } else {
+            btnHelp.style.display = 'none';
+        }
+
         const cols = 8;
         box.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
         
@@ -850,7 +881,7 @@
         if(q.stepIdx >= q.steps.length) {
             msg.innerText = "太棒了！本題完成。";
             q.isCorrect = true; 
-            document.querySelector('.btn-help').style.display = 'none';
+            if(btnHelp) btnHelp.style.display = 'none';
             
             const btn = document.getElementById('btn-next-q');
             btn.style.display = 'inline-block';
@@ -859,7 +890,6 @@
             return;
         }
 
-        document.querySelector('.btn-help').style.display = 'inline-block';
         let cur = q.steps[q.stepIdx];
 
         if(quizSettings.text) msg.innerText = cur.hint;
@@ -991,6 +1021,7 @@
             let oldBtn = msg.querySelector('button'); 
             if(oldBtn) oldBtn.remove();
             
+            // 如果允許求救，這裡只顯示錯誤訊息；若不允許，也只能顯示錯誤訊息，不會彈出 help-box
             msg.innerText = errorMsg; 
             const okBtn = document.createElement('button'); okBtn.className='btn-warning'; okBtn.innerText='OK';
             okBtn.onclick = () => checkTeachAnswerMulti(step, q);
@@ -1003,6 +1034,8 @@
     }
 
     function toggleHelp() {
+        if (!quizSettings.allowHelp) return; // 雙重防護
+
         const helpBox = document.getElementById('help-content');
         if(helpBox.style.display === 'block') {
             helpBox.style.display = 'none';
@@ -1126,23 +1159,6 @@
         setTimeout(() => { container.style.display = 'none'; container.innerHTML = ''; }, 3000);
     }
 
-    function saveRank() {
-        const t = document.getElementById('q-timer').innerText;
-        const s = document.getElementById('res-score').innerText;
-        rankData.push({name: studentName, score: parseInt(s), time: t, list: currentList.name});
-        saveRankData(); alert("已登記"); switchTab('rank'); showPage('page-home');
-    }
-    function renderRank() {
-        const box = document.getElementById('rank-container'); box.innerHTML='';
-        rankData.sort((a,b)=>b.score-a.score || a.time.localeCompare(b.time));
-        rankData.forEach((r,i)=>{
-            const d=document.createElement('div'); d.className='rank-item';
-            if(i===0) d.classList.add('rank-1');
-            d.innerHTML=`<span>${i+1}. ${r.name} (${r.list})</span><span>${r.score}分 <small>${r.time}</small></span>`;
-            box.appendChild(d);
-        });
-    }
-    function clearRank() { if(confirm("清空?")){rankData=[]; saveRankData(); renderRank();} }
     function processExchange() {
         const giftName = document.getElementById('gift-name').value.trim();
         const costVal = parseInt(document.getElementById('gift-cost').value);
