@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sentence Builder 句子闖關王 v3.4 (大圖確認版)</title>
+    <title>Sentence Builder 句子闖關王 v4.0 (AI 智慧辨識版)</title>
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <style>
         :root {
             --primary: #4834d4;
@@ -58,6 +59,7 @@
         .btn-danger { background-color: var(--danger); }
         .btn-link { background-color: #22a6b3; }
         .btn-success { background-color: var(--success); }
+        .btn-magic { background: linear-gradient(45deg, #6c5ce7, #a29bfe); color: white; border: 1px solid #a29bfe; }
         .btn-block { width: 100%; margin: 5px 0; padding: 12px; font-size: 1.1rem; }
         .btn-hint { background-color: #2ed573; color: white; } 
 
@@ -70,21 +72,20 @@
         /* --- 測驗區 --- */
         .quiz-header { display: flex; justify-content: space-between; font-weight: bold; color: #7f8c8d; margin-bottom: 10px; background: #f1f2f6; padding: 10px; border-radius: 8px; }
         
-        /* 優化：圖片框加大，並提示可點擊 */
         .q-image-box { 
-            height: 220px; /* 加大高度 */
+            height: 220px; 
             display: flex; justify-content: center; align-items: center; margin-bottom: 15px; overflow: hidden;
             background: #fcfcfc; border: 1px dashed #ddd; border-radius: 8px;
             position: relative;
         }
         .q-image-box img { 
             max-height: 100%; max-width: 100%; border-radius: 8px; object-fit: contain; 
-            cursor: zoom-in; /* 滑鼠游標提示 */
+            cursor: zoom-in; 
         }
         .q-image-box span { font-size: 4rem; }
         .zoom-hint { position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; font-size: 0.7rem; padding: 2px 5px; border-radius: 4px; pointer-events: none;}
 
-        /* 圖片放大燈箱 (Lightbox) */
+        /* 圖片放大燈箱 */
         .modal {
             display: none; position: fixed; z-index: 10000; left: 0; top: 0;
             width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.9);
@@ -131,13 +132,15 @@
 
         .progress-indicator { text-align:center; font-size:0.8rem; color:#999; margin-bottom: 5px;}
 
-        /* --- 編輯區優化 --- */
-        .edit-row { display: flex; gap: 5px; margin-bottom: 10px; align-items: flex-start; background: #fff; padding: 8px; border: 1px solid #eee; border-radius: 8px; }
+        /* --- 編輯區 --- */
+        .edit-row { display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px; background: #fff; padding: 10px; border: 1px solid #eee; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .edit-top-row { display: flex; gap: 10px; align-items: flex-start; }
+        
         .edit-row textarea { 
-            padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; 
-            font-family: inherit; font-size: 1rem; resize: vertical; min-height: 40px;
+            padding: 10px; border: 1px solid #ddd; border-radius: 4px; flex: 1; 
+            font-family: inherit; font-size: 1rem; resize: vertical; min-height: 60px;
         }
-        .thumb-preview { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; background: #eee; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .thumb-preview { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; background: #eee; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
         .file-input { display: none; }
         
         .editor-header-group {
@@ -151,6 +154,15 @@
         }
         .editor-input-label input {
             padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; text-align: center;
+        }
+        
+        /* 辨識 Loading 遮罩 */
+        .ocr-loading {
+            position: absolute; top:0; left:0; width:100%; height:100%; 
+            background: rgba(255,255,255,0.8); display:none; 
+            justify-content: center; align-items: center; 
+            color: var(--primary); font-weight: bold; z-index: 10;
+            border-radius: 4px;
         }
 
         /* --- 粒子動畫 (獎勵) --- */
@@ -183,7 +195,7 @@
     </div>
 
     <div id="page-home" class="container active">
-        <h1>📝 句子闖關王 v3.4</h1>
+        <h1>📝 句子闖關王 v4.0</h1>
         
         <div style="background:#e056fd15; border:2px dashed #686de0; border-radius:10px; padding:10px; margin-bottom:15px; text-align:center;">
             <div style="font-size:1.2rem; font-weight:bold; color:#4834d4;">
@@ -216,7 +228,7 @@
             <div id="history-container"></div>
             <button class="btn-gray btn-block" onclick="clearAllHistory()">清空紀錄</button>
         </div>
-        <div style="text-align:center; color:#ccc; margin-top:20px; font-size:0.8rem;">版本 v3.4 (大圖確認版)</div>
+        <div style="text-align:center; color:#ccc; margin-top:20px; font-size:0.8rem;">版本 v4.0 (AI 智慧辨識版)</div>
     </div>
 
     <div id="page-quiz" class="container">
@@ -266,10 +278,12 @@
                 </div>
             </div>
         </div>
+        
         <div style="background:#e8f0fe; padding:8px; font-size:0.9rem; margin-bottom:10px; color:#2c3e50; border-radius:5px;">
-            💡 <strong>輸入說明：</strong>請在文字框中<b>換行</b>來建立多個句子。<br>
-            系統會依序出題，形成連續對話或問答。
+            💡 <strong>AI 智慧辨識：</strong>上傳課本圖片後，點選「✨ 辨識文字」，系統會自動抓取圖片中的英文填入下方！<br>
+            (請記得檢查並手動換行，一行一句)
         </div>
+        
         <div id="editor-rows"></div>
         <button class="btn-gray" onclick="addEditRow()">+ 增加題目</button>
         <div style="display:flex; gap:10px; margin-top:15px;">
@@ -346,13 +360,11 @@
         renderLists();
         updateProfile();
         
-        // 綁定 Enter 鍵
         document.getElementById('user-input').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 if(document.getElementById('btn-submit').style.display !== 'none'){
                     checkAnswer();
                 } else if(document.getElementById('btn-next-q').style.display !== 'none') {
-                    // 如果顯示下一題按鈕，按 Enter 等同點擊下一題
                     finishCurrentQuestionAndNext();
                 }
             }
@@ -362,7 +374,7 @@
     // --- 圖片燈箱邏輯 ---
     function openModal(box) {
         const img = box.querySelector('img');
-        if(!img) return; // 如果只是文字icon就不放大
+        if(!img) return; 
         const modal = document.getElementById('img-modal');
         const modalImg = document.getElementById('modal-img');
         modal.style.display = "block";
@@ -373,19 +385,19 @@
     }
 
     function loadData() {
-        allLists = JSON.parse(localStorage.getItem('sb_lists_v34') || JSON.stringify([DEFAULT_LIST]));
-        studentName = localStorage.getItem('sb_name_v34') || "學員";
-        totalGems = parseInt(localStorage.getItem('sb_gems_v34') || 0);
-        historyLog = JSON.parse(localStorage.getItem('sb_hist_v34') || '[]');
-        exchangeLog = JSON.parse(localStorage.getItem('sb_ex_v34') || '[]');
+        allLists = JSON.parse(localStorage.getItem('sb_lists_v40') || JSON.stringify([DEFAULT_LIST]));
+        studentName = localStorage.getItem('sb_name_v40') || "學員";
+        totalGems = parseInt(localStorage.getItem('sb_gems_v40') || 0);
+        historyLog = JSON.parse(localStorage.getItem('sb_hist_v40') || '[]');
+        exchangeLog = JSON.parse(localStorage.getItem('sb_ex_v40') || '[]');
     }
 
     function saveData() {
-        localStorage.setItem('sb_lists_v34', JSON.stringify(allLists));
-        localStorage.setItem('sb_name_v34', studentName);
-        localStorage.setItem('sb_gems_v34', totalGems);
-        localStorage.setItem('sb_hist_v34', JSON.stringify(historyLog));
-        localStorage.setItem('sb_ex_v34', JSON.stringify(exchangeLog));
+        localStorage.setItem('sb_lists_v40', JSON.stringify(allLists));
+        localStorage.setItem('sb_name_v40', studentName);
+        localStorage.setItem('sb_gems_v40', totalGems);
+        localStorage.setItem('sb_hist_v40', JSON.stringify(historyLog));
+        localStorage.setItem('sb_ex_v40', JSON.stringify(exchangeLog));
         updateProfile();
     }
 
@@ -447,7 +459,7 @@
         document.getElementById('q-progress').innerText = `題號: ${currentQIndex+1}/${currentQuizList.length}`;
         document.getElementById('q-score').innerText = `得分: ${score}`;
         
-        // 圖片處理
+        // 圖片
         const ib = document.getElementById('q-image-box');
         if (q.img && q.img.length > 10) {
             ib.innerHTML = `<img src="${q.img}"><div class="zoom-hint">🔍 點擊放大</div>`;
@@ -512,13 +524,12 @@
         if(currentSubIndex < currentTargetSentences.length) {
             updateSubInterface(false);
         } else {
-            // 本題結束：這裡做了修正，不再自動倒數跳轉，而是停留在這裡等待確認
+            // 本題結束
             inputEl.disabled = true;
             document.getElementById('btn-submit').style.display = 'none';
             document.getElementById('btn-next-q').style.display = 'block';
             document.getElementById('sub-progress-indicator').innerText = "✅ 本題完成，請檢視結果後按下一題";
             
-            // 更新按鈕文字
             if(currentQIndex < currentQuizList.length - 1) {
                 document.getElementById('btn-next-q').innerText = "下一題 ➔";
             } else {
@@ -637,17 +648,29 @@
         showPage('page-editor');
     }
 
+    // 更新的 Add Edit Row (含 OCR)
     function addEditRow(txt='', img='') {
         const d = document.createElement('div');
         d.className = 'edit-row';
         let imgDisplay = img ? (img.length>10 ? `<img src="${img}" style="width:100%;height:100%;object-fit:cover;">` : img) : '📷';
         
         d.innerHTML = `
-            <div class="thumb-preview" onclick="this.nextElementSibling.click()">${imgDisplay}</div>
-            <input type="file" class="file-input" accept="image/*" onchange="handleFile(this)">
-            <input type="hidden" class="img-val" value="${img}">
-            <textarea class="txt-val" placeholder="輸入句子 (換行可建立多句對話)">${txt}</textarea>
-            <button class="btn-danger" onclick="this.parentElement.remove()">×</button>
+            <div class="edit-top-row">
+                <div class="thumb-preview" onclick="this.nextElementSibling.click()">${imgDisplay}</div>
+                <input type="file" class="file-input" accept="image/*" onchange="handleFile(this)">
+                <input type="hidden" class="img-val" value="${img}">
+                
+                <div style="display:flex; flex-direction:column; flex:1;">
+                    <div style="text-align:right; margin-bottom:5px;">
+                        <button class="btn-magic" style="padding:4px 8px; font-size:0.8rem;" onclick="triggerOCR(this)">✨ 辨識文字</button>
+                        <button class="btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="this.closest('.edit-row').remove()">🗑️</button>
+                    </div>
+                    <div style="position:relative;">
+                        <textarea class="txt-val" placeholder="輸入句子 (換行可建立多句對話)">${txt}</textarea>
+                        <div class="ocr-loading">📸 辨識中...請稍候</div>
+                    </div>
+                </div>
+            </div>
         `;
         document.getElementById('editor-rows').appendChild(d);
     }
@@ -661,7 +684,7 @@
                 img.onload = () => {
                     let cvs = document.createElement('canvas');
                     let ctx = cvs.getContext('2d');
-                    let scale = 300/img.width; // 稍微提高解析度給放大用
+                    let scale = 300/img.width;
                     cvs.width = 300; cvs.height = img.height*scale;
                     ctx.drawImage(img,0,0,cvs.width,cvs.height);
                     let base64 = cvs.toDataURL('image/jpeg', 0.65);
@@ -672,6 +695,37 @@
             fr.readAsDataURL(inp.files[0]);
         }
     }
+
+    // --- OCR 邏輯 ---
+    function triggerOCR(btn) {
+        const row = btn.closest('.edit-row');
+        const imgVal = row.querySelector('.img-val').value;
+        const textArea = row.querySelector('.txt-val');
+        const loading = row.querySelector('.ocr-loading');
+
+        if (!imgVal || imgVal.length < 50) {
+            alert("請先上傳圖片再使用辨識功能");
+            return;
+        }
+
+        loading.style.display = 'flex';
+
+        Tesseract.recognize(
+            imgVal,
+            'eng', // 英文模型，若要中文可改為 'chi_tra' (但會比較慢且檔案大)
+            { logger: m => console.log(m) }
+        ).then(({ data: { text } }) => {
+            // 簡單清理文字：去除空行
+            const cleanText = text.replace(/\n\s*\n/g, '\n').trim();
+            textArea.value = cleanText;
+            loading.style.display = 'none';
+        }).catch(err => {
+            alert("辨識失敗，請重試");
+            console.error(err);
+            loading.style.display = 'none';
+        });
+    }
+
 
     function saveList() {
         const name = document.getElementById('list-name-input').value;
