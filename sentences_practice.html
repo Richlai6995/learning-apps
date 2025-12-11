@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sentence Builder v5.1 (嚴格模式)</title>
+    <title>Sentence Builder v5.2 (iPad 友善版)</title>
     <style>
         :root {
             --primary: #4834d4;
@@ -133,7 +133,6 @@
         .editor-input-label span { font-size: 0.85rem; color: #666; font-weight: bold; margin-bottom: 3px; }
         .editor-input-label input[type="number"] { padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; text-align: center; }
         
-        /* 提示開關樣式 */
         .toggle-switch-label { display: flex; align-items: center; justify-content: center; height: 100%; cursor: pointer;}
         .toggle-switch-label input { width: 20px; height: 20px; margin-right: 5px; }
 
@@ -164,7 +163,7 @@
     </div>
 
     <div id="page-home" class="container active">
-        <h1>📝 句子闖關王 v5.1</h1>
+        <h1>📝 句子闖關王 v5.2</h1>
         
         <div style="background:#e056fd15; border:2px dashed #686de0; border-radius:10px; padding:10px; margin-bottom:15px; text-align:center;">
             <div style="font-size:1.2rem; font-weight:bold; color:#4834d4;">
@@ -197,7 +196,7 @@
             <div id="history-container"></div>
             <button class="btn-gray btn-block" onclick="clearAllHistory()">清空紀錄</button>
         </div>
-        <div style="text-align:center; color:#ccc; margin-top:20px; font-size:0.8rem;">版本 v5.1 (嚴格標點+提示開關)</div>
+        <div style="text-align:center; color:#ccc; margin-top:20px; font-size:0.8rem;">版本 v5.2 (iPad 引號修正版)</div>
     </div>
 
     <div id="page-quiz" class="container">
@@ -214,7 +213,12 @@
         <div class="progress-indicator" id="sub-progress-indicator">等待開始...</div>
 
         <div class="input-wrapper">
-            <input type="text" id="user-input" class="sentence-input" placeholder="請輸入聽到的句子..." autocomplete="off" spellcheck="false">
+            <input type="text" id="user-input" class="sentence-input" 
+                   placeholder="請輸入聽到的句子..." 
+                   autocomplete="off" 
+                   spellcheck="false" 
+                   autocorrect="off" 
+                   autocapitalize="off">
         </div>
 
         <div style="display: flex; gap: 5px; margin-bottom:10px; flex-wrap:wrap;">
@@ -254,9 +258,8 @@
         </div>
         
         <div style="background:#e8f0fe; padding:8px; font-size:0.9rem; margin-bottom:10px; color:#2c3e50; border-radius:5px;">
-            💡 <strong>使用說明：</strong><br>
-            1. 系統將嚴格檢查<strong>標點符號</strong>，請確保題目輸入正確。<br>
-            2. 可取消上方「允許使用提示」來增加測驗難度。
+            💡 <strong>說明：</strong>標點符號需嚴格一致 (例如句號)。<br>
+            系統會自動處理 iPad 的彎引號 (’) 問題。
         </div>
         
         <div id="editor-rows"></div>
@@ -314,9 +317,9 @@
         name: '範例：日常對話',
         gems: 10,
         passScore: 80,
-        allowHints: true, // 預設開啟提示
+        allowHints: true, 
         words: [
-            {sentences: ['Hello, how are you?', 'I am fine, thank you.'], img: '👋'}, 
+            {sentences: ['You\'re a student.', 'Yes, I am.'], img: '👋'}, 
             {sentences: ['What time is it?', 'It is three o\'clock.'], img: '⏰'}
         ]
     };
@@ -333,7 +336,7 @@
     let currentQIndex = 0; 
     let currentSubIndex = 0; 
     let currentTargetSentences = [];
-    let currentAllowHints = true; // 紀錄目前測驗是否允許提示
+    let currentAllowHints = true; 
     let score = 0;
     let timerInterval, startTime;
     let quizReport = [];
@@ -356,7 +359,6 @@
             }
         });
 
-        // 燈箱滑鼠滾輪縮放
         const modalImg = document.getElementById('modal-img');
         modalImg.addEventListener('wheel', function(e) {
             e.preventDefault();
@@ -407,19 +409,19 @@
 
     // --- 基礎邏輯 ---
     function loadData() {
-        allLists = JSON.parse(localStorage.getItem('sb_lists_v51') || JSON.stringify([DEFAULT_LIST]));
-        studentName = localStorage.getItem('sb_name_v51') || "學員";
-        totalGems = parseInt(localStorage.getItem('sb_gems_v51') || 0);
-        historyLog = JSON.parse(localStorage.getItem('sb_hist_v51') || '[]');
-        exchangeLog = JSON.parse(localStorage.getItem('sb_ex_v51') || '[]');
+        allLists = JSON.parse(localStorage.getItem('sb_lists_v52') || JSON.stringify([DEFAULT_LIST]));
+        studentName = localStorage.getItem('sb_name_v52') || "學員";
+        totalGems = parseInt(localStorage.getItem('sb_gems_v52') || 0);
+        historyLog = JSON.parse(localStorage.getItem('sb_hist_v52') || '[]');
+        exchangeLog = JSON.parse(localStorage.getItem('sb_ex_v52') || '[]');
     }
 
     function saveData() {
-        localStorage.setItem('sb_lists_v51', JSON.stringify(allLists));
-        localStorage.setItem('sb_name_v51', studentName);
-        localStorage.setItem('sb_gems_v51', totalGems);
-        localStorage.setItem('sb_hist_v51', JSON.stringify(historyLog));
-        localStorage.setItem('sb_ex_v51', JSON.stringify(exchangeLog));
+        localStorage.setItem('sb_lists_v52', JSON.stringify(allLists));
+        localStorage.setItem('sb_name_v52', studentName);
+        localStorage.setItem('sb_gems_v52', totalGems);
+        localStorage.setItem('sb_hist_v52', JSON.stringify(historyLog));
+        localStorage.setItem('sb_ex_v52', JSON.stringify(exchangeLog));
         updateProfile();
     }
 
@@ -456,7 +458,6 @@
     function startQuizSetup(idx) {
         const list = allLists[idx];
         currentListId = list.id;
-        // 載入該題庫的提示設定 (相容舊資料)
         currentAllowHints = (list.allowHints !== undefined) ? list.allowHints : true;
         
         let shuffled = [...list.words].sort(()=>0.5-Math.random());
@@ -532,6 +533,12 @@
         else speak("Please input something", 'en-US');
     }
 
+    // --- 核心邏輯：標準化引號 ---
+    function standardizeText(str) {
+        // 將 Unicode 左/右單引號、重音符號等全部轉為 ASCII 直撇號 (')
+        return str.replace(/[\u2018\u2019`]/g, "'");
+    }
+
     function checkAnswer() {
         const inputEl = document.getElementById('user-input');
         const val = inputEl.value.trim();
@@ -539,10 +546,11 @@
 
         const target = currentTargetSentences[currentSubIndex].trim();
         
-        // --- 核心修改：嚴格比對 (但保留大小寫彈性) ---
-        // 舊版: .replace(/[.,?!]/g,'')
-        // 新版: 直接比對，僅忽略大小寫差異
-        const isCorrect = val.toLowerCase() === target.toLowerCase();
+        // 先標準化引號，再進行比對
+        const normVal = standardizeText(val).toLowerCase();
+        const normTarget = standardizeText(target).toLowerCase();
+
+        const isCorrect = normVal === normTarget;
         
         createHistoryBlock(val, target, isCorrect);
 
@@ -605,11 +613,17 @@
     }
 
     function provideHint() {
-        if(!currentAllowHints) return; // 雙重檢查
-        const t = currentTargetSentences[currentSubIndex];
+        if(!currentAllowHints) return;
+        
+        // 取得標準化後的目標與目前輸入
+        const t = standardizeText(currentTargetSentences[currentSubIndex]);
         const inp = document.getElementById('user-input');
-        let now = inp.value;
+        
+        let now = standardizeText(inp.value);
+        
+        // 提示邏輯也需要對引號寬容
         if(t.toLowerCase().startsWith(now.toLowerCase())) {
+            // 從原始目標字串擷取，確保提示的是正確的標點
             inp.value = t.substring(0, now.length + 1);
         } else {
             inp.value = t.substring(0, 1);
@@ -702,7 +716,6 @@
         editingListId = null;
         document.getElementById('list-name-input').value = "";
         document.getElementById('editor-rows').innerHTML = "";
-        // 預設開啟提示
         document.getElementById('list-allow-hints').checked = true;
         addEditRow(); addEditRow();
         showPage('page-editor');
@@ -715,7 +728,6 @@
         document.getElementById('list-name-input').value = l.name;
         document.getElementById('list-gems').value = l.gems;
         document.getElementById('list-pass-score').value = l.passScore;
-        // 載入提示設定，若舊資料無此欄位則預設為 true
         document.getElementById('list-allow-hints').checked = (l.allowHints !== undefined) ? l.allowHints : true;
         
         const con = document.getElementById('editor-rows');
@@ -790,7 +802,7 @@
             name: name,
             gems: parseInt(document.getElementById('list-gems').value),
             passScore: parseInt(document.getElementById('list-pass-score').value),
-            allowHints: document.getElementById('list-allow-hints').checked, // 儲存提示設定
+            allowHints: document.getElementById('list-allow-hints').checked, 
             words: words
         };
         
