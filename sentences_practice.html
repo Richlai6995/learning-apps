@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sentence Builder v5.2 (iPad 友善版)</title>
+    <title>Sentence Builder v5.3 (自由導航版)</title>
     <style>
         :root {
             --primary: #4834d4;
@@ -45,6 +45,7 @@
             color: white; margin: 2px; touch-action: manipulation;
         }
         button:active { transform: scale(0.95); }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
         
         .btn-primary { background-color: var(--primary); }
         .btn-secondary { background-color: var(--secondary); }
@@ -55,6 +56,7 @@
         .btn-gold { background-color: #f1c40f; color: #333; }
         .btn-block { width: 100%; margin: 5px 0; padding: 12px; font-size: 1.1rem; }
         .btn-hint { background-color: #2ed573; color: white; } 
+        .btn-nav { background-color: #fff; border: 1px solid var(--primary); color: var(--primary); padding: 5px 10px; }
 
         .list-item {
             background: #f8f9fa; border: 1px solid #e9ecef; padding: 12px; margin-bottom: 10px;
@@ -66,8 +68,23 @@
         .rank-item.rank-1 { background: linear-gradient(to right, #fff, #fff9c4); border: 2px solid var(--rank-1); }
         .rank-item.rank-1 .rank-num { color: #d4ac0d; font-size: 2rem; }
         
-        .quiz-header { display: flex; justify-content: space-between; font-weight: bold; color: #7f8c8d; margin-bottom: 10px; background: #f1f2f6; padding: 10px; border-radius: 8px; }
-        
+        /* --- 測驗區導航優化 --- */
+        .quiz-header { 
+            display: flex; flex-direction: column; gap: 10px;
+            font-weight: bold; color: #7f8c8d; margin-bottom: 10px; 
+            background: #f1f2f6; padding: 10px; border-radius: 8px; 
+        }
+        .quiz-nav-row {
+            display: flex; justify-content: space-between; align-items: center; width: 100%;
+        }
+        .quiz-info-row {
+            display: flex; justify-content: space-between; width: 100%; font-size: 0.9rem; border-top: 1px solid #ddd; padding-top: 5px;
+        }
+        .nav-select {
+            padding: 5px; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem;
+            background: white; color: var(--primary); font-weight: bold; text-align: center;
+        }
+
         .q-image-box { 
             height: 220px; 
             display: flex; justify-content: center; align-items: center; margin-bottom: 15px; overflow: hidden;
@@ -163,7 +180,7 @@
     </div>
 
     <div id="page-home" class="container active">
-        <h1>📝 句子闖關王 v5.2</h1>
+        <h1>📝 句子闖關王 v5.3</h1>
         
         <div style="background:#e056fd15; border:2px dashed #686de0; border-radius:10px; padding:10px; margin-bottom:15px; text-align:center;">
             <div style="font-size:1.2rem; font-weight:bold; color:#4834d4;">
@@ -196,14 +213,21 @@
             <div id="history-container"></div>
             <button class="btn-gray btn-block" onclick="clearAllHistory()">清空紀錄</button>
         </div>
-        <div style="text-align:center; color:#ccc; margin-top:20px; font-size:0.8rem;">版本 v5.2 (iPad 引號修正版)</div>
+        <div style="text-align:center; color:#ccc; margin-top:20px; font-size:0.8rem;">版本 v5.3 (自由導航版)</div>
     </div>
 
     <div id="page-quiz" class="container">
         <div class="quiz-header">
-            <span id="q-progress">題號: 1/5</span>
-            <span id="q-timer">00:00</span>
-            <span id="q-score">得分: 0</span>
+            <div class="quiz-nav-row">
+                <button class="btn-nav" onclick="navQuestion(-1)">❮ 上一題</button>
+                <select id="question-select" class="nav-select" onchange="jumpToQuestion()">
+                    </select>
+                <button class="btn-nav" onclick="navQuestion(1)">下一題 ❯</button>
+            </div>
+            <div class="quiz-info-row">
+                <span id="q-timer">00:00</span>
+                <span id="q-score">得分: 0</span>
+            </div>
         </div>
         
         <div class="q-image-box" id="q-image-box" onclick="openModal(this)"></div>
@@ -222,13 +246,14 @@
         </div>
 
         <div style="display: flex; gap: 5px; margin-bottom:10px; flex-wrap:wrap;">
-            <button class="btn-secondary" style="flex:1" onclick="playTargetAudio()">🔊 重聽題目</button>
-            <button class="btn-secondary" style="flex:1" onclick="speakUserInput()">👂 朗讀我的輸入</button>
+            <button class="btn-secondary" style="flex:1" onclick="playTargetAudio()">🔊 重聽</button>
+            <button class="btn-secondary" style="flex:1" onclick="speakUserInput()">👂 朗讀</button>
             <button id="btn-hint" class="btn-hint" style="flex:1" onclick="provideHint()">💡 提示</button>
         </div>
 
         <button id="btn-submit" class="btn-primary btn-block" onclick="checkAnswer()">送出 (Enter)</button>
-        <button id="btn-next-q" class="btn-success btn-block" style="display:none;" onclick="finishCurrentQuestionAndNext()">下一題 ➔</button>
+        
+        <button id="btn-finish-round" class="btn-success btn-block" style="display:none;" onclick="finishQuiz()">🏁 結束測驗並結算</button>
         
         <button class="btn-gray btn-block" style="margin-top:10px;" onclick="quitQuiz()">退出練習</button>
     </div>
@@ -258,8 +283,8 @@
         </div>
         
         <div style="background:#e8f0fe; padding:8px; font-size:0.9rem; margin-bottom:10px; color:#2c3e50; border-radius:5px;">
-            💡 <strong>說明：</strong>標點符號需嚴格一致 (例如句號)。<br>
-            系統會自動處理 iPad 的彎引號 (’) 問題。
+            💡 <strong>說明：</strong>輸入時請注意標點符號。<br>
+            測驗時可自由切換題目 (上一題/下一題)。
         </div>
         
         <div id="editor-rows"></div>
@@ -353,8 +378,9 @@
             if (e.key === 'Enter') {
                 if(document.getElementById('btn-submit').style.display !== 'none'){
                     checkAnswer();
-                } else if(document.getElementById('btn-next-q').style.display !== 'none') {
-                    finishCurrentQuestionAndNext();
+                } else if(document.getElementById('btn-finish-round').style.display !== 'none') {
+                    // 如果已是最後一題且完成，按 Enter 結束
+                    finishQuiz();
                 }
             }
         });
@@ -409,19 +435,19 @@
 
     // --- 基礎邏輯 ---
     function loadData() {
-        allLists = JSON.parse(localStorage.getItem('sb_lists_v52') || JSON.stringify([DEFAULT_LIST]));
-        studentName = localStorage.getItem('sb_name_v52') || "學員";
-        totalGems = parseInt(localStorage.getItem('sb_gems_v52') || 0);
-        historyLog = JSON.parse(localStorage.getItem('sb_hist_v52') || '[]');
-        exchangeLog = JSON.parse(localStorage.getItem('sb_ex_v52') || '[]');
+        allLists = JSON.parse(localStorage.getItem('sb_lists_v53') || JSON.stringify([DEFAULT_LIST]));
+        studentName = localStorage.getItem('sb_name_v53') || "學員";
+        totalGems = parseInt(localStorage.getItem('sb_gems_v53') || 0);
+        historyLog = JSON.parse(localStorage.getItem('sb_hist_v53') || '[]');
+        exchangeLog = JSON.parse(localStorage.getItem('sb_ex_v53') || '[]');
     }
 
     function saveData() {
-        localStorage.setItem('sb_lists_v52', JSON.stringify(allLists));
-        localStorage.setItem('sb_name_v52', studentName);
-        localStorage.setItem('sb_gems_v52', totalGems);
-        localStorage.setItem('sb_hist_v52', JSON.stringify(historyLog));
-        localStorage.setItem('sb_ex_v52', JSON.stringify(exchangeLog));
+        localStorage.setItem('sb_lists_v53', JSON.stringify(allLists));
+        localStorage.setItem('sb_name_v53', studentName);
+        localStorage.setItem('sb_gems_v53', totalGems);
+        localStorage.setItem('sb_hist_v53', JSON.stringify(historyLog));
+        localStorage.setItem('sb_ex_v53', JSON.stringify(exchangeLog));
         updateProfile();
     }
 
@@ -454,7 +480,7 @@
         document.getElementById('tab-history-content').style.display = t==='history'?'block':'none';
     }
 
-    // --- 測驗核心邏輯 ---
+    // --- 測驗核心邏輯 (含導航) ---
     function startQuizSetup(idx) {
         const list = allLists[idx];
         currentListId = list.id;
@@ -472,16 +498,43 @@
             document.getElementById('q-timer').innerText = new Date(s*1000).toISOString().substr(14,5);
         }, 1000);
 
+        // 初始化導航選單
+        const sel = document.getElementById('question-select');
+        sel.innerHTML = '';
+        currentQuizList.forEach((_, i) => {
+            let opt = document.createElement('option');
+            opt.value = i;
+            opt.text = `題目 ${i+1} / ${currentQuizList.length}`;
+            sel.appendChild(opt);
+        });
+
         showPage('page-quiz');
         loadQuestion(true);
     }
 
-    function loadQuestion(first) {
+    // 跳轉題目
+    function navQuestion(offset) {
+        let newIdx = currentQIndex + offset;
+        if(newIdx >= 0 && newIdx < currentQuizList.length) {
+            currentQIndex = newIdx;
+            loadQuestion(false); // 切換題目時，不強迫朗讀
+        }
+    }
+
+    function jumpToQuestion() {
+        let sel = document.getElementById('question-select');
+        currentQIndex = parseInt(sel.value);
+        loadQuestion(false);
+    }
+
+    function loadQuestion(playAudioNow) {
+        // 更新選單狀態
+        document.getElementById('question-select').value = currentQIndex;
+        
         let q = currentQuizList[currentQIndex];
         currentTargetSentences = q.sentences || [q.word];
         currentSubIndex = 0;
         
-        document.getElementById('q-progress').innerText = `題號: ${currentQIndex+1}/${currentQuizList.length}`;
         document.getElementById('q-score').innerText = `得分: ${score}`;
         
         // 圖片
@@ -496,29 +549,27 @@
             ib.onclick = null;
         }
         
-        // 控制提示按鈕顯示
         const hintBtn = document.getElementById('btn-hint');
-        if(currentAllowHints) {
-            hintBtn.style.display = 'block';
-        } else {
-            hintBtn.style.display = 'none';
-        }
+        hintBtn.style.display = currentAllowHints ? 'block' : 'none';
         
         document.getElementById('answer-stack').innerHTML = ''; 
         document.getElementById('user-input').disabled = false;
         document.getElementById('user-input').focus();
         document.getElementById('btn-submit').style.display = 'block';
-        document.getElementById('btn-next-q').style.display = 'none';
+        document.getElementById('btn-finish-round').style.display = 'none';
 
-        updateSubInterface(first);
+        updateSubInterface(playAudioNow);
     }
 
-    function updateSubInterface(first) {
+    function updateSubInterface(playAudioNow) {
         document.getElementById('sub-progress-indicator').innerText = 
             `句子 ${currentSubIndex + 1} / ${currentTargetSentences.length}`;
         document.getElementById('user-input').value = '';
         document.getElementById('user-input').focus();
-        setTimeout(() => playTargetAudio(), first ? 1500 : 800);
+        
+        if(playAudioNow) {
+            setTimeout(() => playTargetAudio(), 800);
+        }
     }
 
     function playTargetAudio() {
@@ -533,9 +584,7 @@
         else speak("Please input something", 'en-US');
     }
 
-    // --- 核心邏輯：標準化引號 ---
     function standardizeText(str) {
-        // 將 Unicode 左/右單引號、重音符號等全部轉為 ASCII 直撇號 (')
         return str.replace(/[\u2018\u2019`]/g, "'");
     }
 
@@ -546,7 +595,6 @@
 
         const target = currentTargetSentences[currentSubIndex].trim();
         
-        // 先標準化引號，再進行比對
         const normVal = standardizeText(val).toLowerCase();
         const normTarget = standardizeText(target).toLowerCase();
 
@@ -557,7 +605,9 @@
         if (!isCorrect) {
             speak("Correct answer is " + target, 'en-US', 1.2); 
         } else {
-            score += Math.round(100 / (currentQuizList.length * currentTargetSentences.length));
+            // 簡單計分：總分100 / 總句數
+            let totalSentences = currentQuizList.reduce((acc, q) => acc + (q.sentences ? q.sentences.length : 1), 0);
+            score += Math.round(100 / totalSentences);
             speak("Correct!", 'en-US', 1.5);
         }
 
@@ -570,13 +620,15 @@
         } else {
             inputEl.disabled = true;
             document.getElementById('btn-submit').style.display = 'none';
-            document.getElementById('btn-next-q').style.display = 'block';
-            document.getElementById('sub-progress-indicator').innerText = "✅ 本題完成，請按下一題";
+            document.getElementById('sub-progress-indicator').innerText = "✅ 本題完成";
             
-            if(currentQIndex < currentQuizList.length - 1) {
-                document.getElementById('btn-next-q').innerText = "下一題 ➔";
+            // 如果是最後一題，顯示結束按鈕
+            if(currentQIndex === currentQuizList.length - 1) {
+                document.getElementById('btn-finish-round').style.display = 'block';
             } else {
-                document.getElementById('btn-next-q').innerText = "查看成績 🏁";
+                // 自動跳下一題，或等待使用者按「下一題」
+                // 這裡保持 V5.3 邏輯：停在當前畫面，等待使用者按上方導航
+                document.getElementById('sub-progress-indicator').innerText = "✅ 本題完成，請按上方 [下一題]";
             }
         }
     }
@@ -603,27 +655,12 @@
         }, 100);
     }
 
-    function finishCurrentQuestionAndNext() {
-        if(currentQIndex < currentQuizList.length - 1) {
-            currentQIndex++;
-            loadQuestion(false);
-        } else {
-            finishQuiz();
-        }
-    }
-
     function provideHint() {
         if(!currentAllowHints) return;
-        
-        // 取得標準化後的目標與目前輸入
         const t = standardizeText(currentTargetSentences[currentSubIndex]);
         const inp = document.getElementById('user-input');
-        
         let now = standardizeText(inp.value);
-        
-        // 提示邏輯也需要對引號寬容
         if(t.toLowerCase().startsWith(now.toLowerCase())) {
-            // 從原始目標字串擷取，確保提示的是正確的標點
             inp.value = t.substring(0, now.length + 1);
         } else {
             inp.value = t.substring(0, 1);
@@ -673,45 +710,23 @@
         saveData();
     }
 
-    // --- 英雄榜 ---
+    // --- 英雄榜 (略，同上) ---
     function showLeaderboard(listId, listName) {
         document.getElementById('lb-title').innerText = `🏆 ${listName} - 英雄榜`;
         const container = document.getElementById('lb-container');
         container.innerHTML = '';
-        
         let listLogs = historyLog.filter(log => log.listId === listId);
-        listLogs.sort((a, b) => {
-            if (b.score !== a.score) return b.score - a.score;
-            return a.time.localeCompare(b.time);
-        });
-        
-        if (listLogs.length === 0) {
-            container.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">尚無紀錄，快來挑戰！</p>';
-        } else {
-            listLogs.forEach((log, index) => {
-                const rank = index + 1;
-                let rankClass = '';
-                let rankDisplay = rank;
-                if (rank === 1) { rankClass = 'rank-1'; rankDisplay = '🏆'; }
-                
-                const div = document.createElement('div');
-                div.className = `rank-item ${rankClass}`;
-                div.innerHTML = `<div class="rank-num">${rankDisplay}</div>
-                    <div style="flex:1">
-                        <span style="font-weight:bold">${log.user}</span><br>
-                        <span style="font-size:0.8rem;color:#777">${log.date}</span>
-                    </div>
-                    <div style="text-align:right">
-                        <span style="font-size:1.2rem;font-weight:bold;color:#4834d4">${log.score}分</span><br>
-                        <span style="font-size:0.8rem;color:#666">${log.time}</span>
-                    </div>`;
-                container.appendChild(div);
-            });
-        }
+        listLogs.sort((a, b) => { if (b.score !== a.score) return b.score - a.score; return a.time.localeCompare(b.time); });
+        if (listLogs.length === 0) { container.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">尚無紀錄</p>'; } 
+        else { listLogs.forEach((log, index) => { 
+            const div = document.createElement('div'); div.className = `rank-item ${index===0?'rank-1':''}`;
+            div.innerHTML = `<div class="rank-num">${index+1}</div><div style="flex:1"><b>${log.user}</b><br><small>${log.date}</small></div><div style="text-align:right"><b>${log.score}分</b></div>`;
+            container.appendChild(div);
+        }); }
         showPage('page-leaderboard');
     }
 
-    // --- 編輯器 ---
+    // --- 編輯器 (略，同上) ---
     function createNewList() {
         editingListId = null;
         document.getElementById('list-name-input').value = "";
@@ -729,33 +744,16 @@
         document.getElementById('list-gems').value = l.gems;
         document.getElementById('list-pass-score').value = l.passScore;
         document.getElementById('list-allow-hints').checked = (l.allowHints !== undefined) ? l.allowHints : true;
-        
         const con = document.getElementById('editor-rows');
         con.innerHTML = '';
-        l.words.forEach(w => {
-            let txt = (w.sentences || [w.word]).join('\n');
-            addEditRow(txt, w.img);
-        });
+        l.words.forEach(w => { addEditRow((w.sentences || [w.word]).join('\n'), w.img); });
         showPage('page-editor');
     }
 
     function addEditRow(txt='', img='') {
-        const d = document.createElement('div');
-        d.className = 'edit-row';
+        const d = document.createElement('div'); d.className = 'edit-row';
         let imgDisplay = img ? (img.length>10 ? `<img src="${img}" style="width:100%;height:100%;object-fit:cover;">` : img) : '📷';
-        
-        d.innerHTML = `
-            <div class="edit-top-row">
-                <div class="thumb-preview" onclick="this.nextElementSibling.click()">${imgDisplay}</div>
-                <input type="file" class="file-input" accept="image/*" onchange="handleFile(this)">
-                <input type="hidden" class="img-val" value="${img}">
-                
-                <div style="display:flex; flex-direction:column; flex:1;">
-                    <textarea class="txt-val" placeholder="輸入句子 (換行可建立多句對話)">${txt}</textarea>
-                </div>
-            </div>
-            <button class="btn-danger" style="align-self:flex-end; padding:4px 10px; font-size:0.8rem;" onclick="this.parentElement.remove()">刪除此題</button>
-        `;
+        d.innerHTML = `<div class="edit-top-row"><div class="thumb-preview" onclick="this.nextElementSibling.click()">${imgDisplay}</div><input type="file" class="file-input" accept="image/*" onchange="handleFile(this)"><input type="hidden" class="img-val" value="${img}"><div style="flex:1;"><textarea class="txt-val" placeholder="輸入句子">${txt}</textarea></div></div><button class="btn-danger" style="align-self:flex-end; padding:4px 10px; font-size:0.8rem;" onclick="this.parentElement.remove()">刪除</button>`;
         document.getElementById('editor-rows').appendChild(d);
     }
     
@@ -763,13 +761,10 @@
         if(inp.files && inp.files[0]){
             let fr = new FileReader();
             fr.onload = (e) => {
-                let img = new Image();
-                img.src = e.target.result;
+                let img = new Image(); img.src = e.target.result;
                 img.onload = () => {
-                    let cvs = document.createElement('canvas');
-                    let ctx = cvs.getContext('2d');
-                    let scale = 300/img.width;
-                    cvs.width = 300; cvs.height = img.height*scale;
+                    let cvs = document.createElement('canvas'); let ctx = cvs.getContext('2d');
+                    let scale = 300/img.width; cvs.width = 300; cvs.height = img.height*scale;
                     ctx.drawImage(img,0,0,cvs.width,cvs.height);
                     let base64 = cvs.toDataURL('image/jpeg', 0.65);
                     inp.previousElementSibling.innerHTML = `<img src="${base64}" style="width:100%;height:100%;object-fit:cover;">`;
@@ -783,150 +778,37 @@
     function saveList() {
         const name = document.getElementById('list-name-input').value;
         if(!name) return alert('請輸入題庫名稱');
-        
         const rows = document.querySelectorAll('.edit-row');
         let words = [];
         rows.forEach(r => {
-            let raw = r.querySelector('.txt-val').value;
-            let img = r.querySelector('.img-val').value;
-            let sents = raw.split('\n').map(s=>s.trim()).filter(s=>s);
-            if(sents.length > 0) {
-                words.push({ sentences: sents, img: img || '❓' });
-            }
+            let txt = r.querySelector('.txt-val').value; let img = r.querySelector('.img-val').value;
+            let sents = txt.split('\n').map(s=>s.trim()).filter(s=>s);
+            if(sents.length > 0) words.push({ sentences: sents, img: img || '❓' });
         });
-        
         if(words.length === 0) return alert('請至少輸入一題');
-        
-        const newItem = {
-            id: editingListId!==null ? allLists[editingListId].id : Date.now().toString(),
-            name: name,
-            gems: parseInt(document.getElementById('list-gems').value),
-            passScore: parseInt(document.getElementById('list-pass-score').value),
-            allowHints: document.getElementById('list-allow-hints').checked, 
-            words: words
-        };
-        
-        if(editingListId!==null) allLists[editingListId] = newItem;
-        else allLists.push(newItem);
-        
-        saveData();
-        showPage('page-home');
+        const newItem = { id: editingListId!==null ? allLists[editingListId].id : Date.now().toString(), name: name, gems: parseInt(document.getElementById('list-gems').value), passScore: parseInt(document.getElementById('list-pass-score').value), allowHints: document.getElementById('list-allow-hints').checked, words: words };
+        if(editingListId!==null) allLists[editingListId] = newItem; else allLists.push(newItem);
+        saveData(); showPage('page-home');
     }
 
     function renderLists() {
-        const c = document.getElementById('lists-container');
-        c.innerHTML = '';
+        const c = document.getElementById('lists-container'); c.innerHTML = '';
         allLists.forEach((l, i) => {
-            let div = document.createElement('div');
-            div.className = 'list-item';
-            div.innerHTML = `
-                <div style="flex:1">
-                    <div style="font-weight:bold; font-size:1.1rem;">${l.name}</div>
-                    <div style="font-size:0.85rem; color:#666;">
-                        題目: ${l.words.length} | 💎 ${l.gems} | 及格: ${l.passScore}
-                    </div>
-                </div>
-                <div>
-                    <button class="btn-gold" onclick="showLeaderboard('${l.id}', '${l.name}')">榜單</button>
-                    <button class="btn-primary" onclick="startQuizSetup(${i})">開始</button>
-                    <button class="btn-gray" onclick="editList(${i})">編輯</button>
-                    <button class="btn-danger" onclick="deleteList(${i})">刪</button>
-                </div>
-            `;
+            let div = document.createElement('div'); div.className = 'list-item';
+            div.innerHTML = `<div style="flex:1"><b>${l.name}</b><br><small>${l.words.length}題 | 💎${l.gems}</small></div><div><button class="btn-gold" onclick="showLeaderboard('${l.id}', '${l.name}')">榜單</button><button class="btn-primary" onclick="startQuizSetup(${i})">開始</button><button class="btn-gray" onclick="editList(${i})">編輯</button><button class="btn-danger" onclick="deleteList(${i})">刪</button></div>`;
             c.appendChild(div);
         });
     }
     
-    function deleteList(i) {
-        if(confirm('確定刪除?')) { allLists.splice(i,1); saveData(); renderLists(); }
-    }
-
-    // --- 輔助功能 ---
-    function speak(txt, lang='en-US', rate=0.9) {
-        if('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-            let u = new SpeechSynthesisUtterance(txt);
-            u.lang = lang; u.rate = rate;
-            window.speechSynthesis.speak(u);
-        }
-    }
-    
-    function triggerParticles() {
-        const c = document.getElementById('particle-container');
-        c.style.display = 'block'; c.innerHTML = '';
-        for(let i=0; i<30; i++) {
-            let p = document.createElement('div');
-            p.innerText = Math.random()>0.5 ? '💎' : '👑';
-            p.className = 'particle';
-            p.style.left = Math.random()*100+'vw';
-            p.style.animationDuration = (1+Math.random()*2)+'s';
-            c.appendChild(p);
-        }
-        setTimeout(()=>{c.style.display='none'}, 3000);
-    }
-    
-    function clearAllHistory() {
-        if(confirm('清空所有紀錄?')) { historyLog=[]; saveData(); renderHistory(); }
-    }
-    
-    function quitQuiz() {
-        clearInterval(timerInterval);
-        if(confirm('確定退出?')) showPage('page-home');
-        else timerInterval = setInterval(()=>{ /* resume timer */ }, 1000);
-    }
-    
-    function exportSelectedData() {
-        const data = JSON.stringify({lists:allLists, student:{name:studentName, gems:totalGems}});
-        const blob = new Blob([data], {type:'application/json'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'sentence_backup.json';
-        a.click();
-    }
-    function handleImportData(inp) {
-        if(!inp.files[0]) return;
-        let fr = new FileReader();
-        fr.onload = (e) => {
-            try {
-                let d = JSON.parse(e.target.result);
-                if(d.lists) {
-                    allLists = d.lists;
-                    if(d.student && confirm('是否還原學員資料(姓名/寶石)?')) {
-                        studentName = d.student.name;
-                        totalGems = d.student.gems;
-                    }
-                    saveData(); renderLists(); alert('匯入成功');
-                }
-            } catch(e) { alert('格式錯誤'); }
-        };
-        fr.readAsText(inp.files[0]);
-    }
-    
-    function processExchange() {
-        let name = document.getElementById('gift-name').value;
-        let cost = parseInt(document.getElementById('gift-cost').value);
-        let cur = document.getElementById('gift-currency').value;
-        let realCost = cur==='crowns' ? cost*100 : cost;
-        
-        if(!name || isNaN(cost)) return alert('請輸入完整資訊');
-        if(totalGems < realCost) return alert('餘額不足');
-        
-        if(confirm(`確認兌換 ${name}?`)) {
-            totalGems -= realCost;
-            exchangeLog.unshift({item:name, cost:`${cost} ${cur==='crowns'?'👑':'💎'}`, date:new Date().toLocaleString()});
-            saveData();
-            renderExchangeLog();
-            alert('兌換成功!');
-        }
-    }
-    
-    function renderExchangeLog() {
-        document.getElementById('exchange-log').innerHTML = exchangeLog.map(l => 
-            `<div style="border-bottom:1px solid #eee; padding:5px; display:flex; justify-content:space-between;">
-                <span>${l.item}</span> <span style="font-weight:bold;">-${l.cost}</span>
-             </div>`
-        ).join('');
-    }
+    function deleteList(i) { if(confirm('確定刪除?')) { allLists.splice(i,1); saveData(); renderLists(); } }
+    function speak(t,l,r=0.9) { if('speechSynthesis' in window) { window.speechSynthesis.cancel(); let u = new SpeechSynthesisUtterance(t); u.lang=l; u.rate=r; window.speechSynthesis.speak(u); } }
+    function triggerParticles() { const c=document.getElementById('particle-container'); c.style.display='block'; c.innerHTML=''; for(let i=0;i<30;i++){ let p=document.createElement('div'); p.innerText=Math.random()>0.5?'💎':'👑'; p.className='particle'; p.style.left=Math.random()*100+'vw'; p.style.animationDuration=(1+Math.random()*2)+'s'; c.appendChild(p); } setTimeout(()=>{c.style.display='none'},3000); }
+    function clearAllHistory() { if(confirm('清空?')) { historyLog=[]; saveData(); renderHistory(); } }
+    function quitQuiz() { clearInterval(timerInterval); if(confirm('退出?')) showPage('page-home'); else timerInterval = setInterval(()=>{},1000); }
+    function exportSelectedData() { const d=JSON.stringify({lists:allLists,student:{name:studentName,gems:totalGems}}); const b=new Blob([d],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='backup.json'; a.click(); }
+    function handleImportData(i) { if(!i.files[0])return; let r=new FileReader(); r.onload=e=>{ try{ let d=JSON.parse(e.target.result); if(d.lists){ allLists=d.lists; if(d.student&&confirm('還原學員?')){studentName=d.student.name;totalGems=d.student.gems;} saveData(); renderLists(); alert('成功'); } }catch(e){alert('錯誤');} }; r.readAsText(i.files[0]); }
+    function processExchange() { let n=document.getElementById('gift-name').value; let c=parseInt(document.getElementById('gift-cost').value); let cr=document.getElementById('gift-currency').value; let rc=cr==='crowns'?c*100:c; if(!n||isNaN(c))return alert('輸入完整'); if(totalGems<rc)return alert('餘額不足'); if(confirm(`兌換 ${n}?`)){ totalGems-=rc; exchangeLog.unshift({item:n,cost:`${c} ${cr==='crowns'?'👑':'💎'}`,date:new Date().toLocaleString()}); saveData(); renderExchangeLog(); alert('成功'); } }
+    function renderExchangeLog() { document.getElementById('exchange-log').innerHTML = exchangeLog.map(l=>`<div style="border-bottom:1px solid #eee; padding:5px; display:flex; justify-content:space-between;"><span>${l.item}</span><span>-${l.cost}</span></div>`).join(''); }
 
 </script>
 </body>
