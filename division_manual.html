@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>除法闖關王 5.3 (遮住法視覺強化版)</title>
+    <title>除法闖關王 5.4 (儲存修復完美版)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -186,7 +186,7 @@
         .dividend-cell { border-top: 3px solid #333; margin-top: -3px; }
         .subtraction-line { border-bottom: 3px solid #333 !important; }
         
-        /* 新增/修改的視覺強調樣式 */
+        /* 視覺強調樣式 */
         .txt-highlight { color: var(--danger); font-weight: 900; } /* 紅色強調 (看的部分) */
         .txt-faded { color: #bdc3c7; } /* 淡灰色 (遮住的部分) */
         
@@ -256,7 +256,7 @@
             </div>
         </div>
 
-        <div class="version-tag">版本：v5.3 (遮住法視覺強化版)</div>
+        <div class="version-tag">版本：v5.4 (儲存修復完美版)</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -508,10 +508,18 @@
         }
     }
     
-    // 儲存題庫
+    // 儲存題庫 (修復版：增加詳細錯誤訊息與驗證)
     function saveList() { 
         try {
-            const n = document.getElementById('list-name').value; 
+            // 確保題庫陣列存在
+            if(!allLists || !Array.isArray(allLists)) allLists = [];
+
+            // 取得題庫設定
+            const nInput = document.getElementById('list-name');
+            if(!nInput) throw new Error("找不到題目名稱欄位");
+            const n = nInput.value.trim();
+            if(!n) throw new Error("請輸入題庫名稱");
+
             const gVal = parseInt(document.getElementById('list-gems').value);
             const gems = isNaN(gVal) ? 5 : gVal;
             const tgVal = parseInt(document.getElementById('list-teach-gems').value);
@@ -519,41 +527,52 @@
             const pVal = parseInt(document.getElementById('list-pass-score').value);
             const passScore = isNaN(pVal) ? 100 : pVal;
 
+            // 取得題目列表
             const rs = document.querySelectorAll('#editor-rows .edit-row'); 
             const qs = []; 
             
-            rs.forEach(r => {
+            if(rs.length === 0) throw new Error("請至少加入一道題目");
+
+            rs.forEach((r, index) => {
                 const aInput = r.querySelector('.inp-a');
                 const bInput = r.querySelector('.inp-b');
                 
-                if (aInput && bInput) {
-                    const a = parseInt(aInput.value); 
-                    const b = parseInt(bInput.value); 
-                    
-                    if(!isNaN(a) && !isNaN(b) && b > 0) {
-                        qs.push({a: a, b: b});
-                    }
-                }
+                if (!aInput || !bInput) return; // 跳過無效行
+                
+                const a = parseInt(aInput.value); 
+                const b = parseInt(bInput.value); 
+                
+                // 驗證輸入
+                if(isNaN(a) || isNaN(b)) throw new Error(`第 ${index+1} 題的數字輸入不正確`);
+                if(b === 0) throw new Error(`第 ${index+1} 題的除數不能為 0`);
+                if(b < 0 || a < 0) throw new Error(`第 ${index+1} 題請輸入正整數`);
+
+                qs.push({a: a, b: b});
             }); 
 
-            if(qs.length < 1) {
-                alert("請至少輸入一題有效的題目！(注意：除數不能為0)"); 
-                return;
-            }
+            if(qs.length === 0) throw new Error("沒有有效的題目被儲存");
             
             const data = {name: n, gems: gems, teachGems: teachGems, passScore: passScore, qs: qs};
             
             if(editingId === null) {
                 allLists.push(data); 
             } else {
-                allLists[editingId] = data; 
+                // 防止索引錯誤
+                if(editingId < 0 || editingId >= allLists.length) {
+                    allLists.push(data);
+                } else {
+                    allLists[editingId] = data; 
+                }
             }
             
             saveData(); 
             showPage('page-home'); 
             editingId = null; 
+            alert("儲存成功！");
+
         } catch (e) {
-            alert("儲存失敗！");
+            console.error(e);
+            alert("儲存失敗：\n" + e.message);
         }
     }
     
@@ -581,7 +600,7 @@
         const now = new Date();
         const dateStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}`;
         const exportObj = {
-            version: "5.3",
+            version: "5.4",
             student: { name: studentName, totalGems: totalGems },
             lists: allLists,
             exchangeLog: exchangeLog
