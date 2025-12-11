@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>除法闖關王 5.4 (儲存修復完美版)</title>
+    <title>除法闖關王 5.5 (資料救援修復版)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -256,7 +256,7 @@
             </div>
         </div>
 
-        <div class="version-tag">版本：v5.4 (儲存修復完美版)</div>
+        <div class="version-tag">版本：v5.5 (資料救援修復版)</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -421,10 +421,31 @@
         }
     }
 
-    // --- 初始化與資料讀寫 ---
+    // --- 初始化與資料讀寫 (包含資料修復) ---
     window.onload = function() {
-        if(localStorage.getItem(STORAGE_KEY_LISTS)) allLists = JSON.parse(localStorage.getItem(STORAGE_KEY_LISTS));
-        else { allLists = [{name: "範例：估算練習", gems: 5, teachGems: 2, passScore: 100, qs: [{a:9564, b:24}, {a:2584, b:348}]}]; saveData(); }
+        if(localStorage.getItem(STORAGE_KEY_LISTS)) {
+            try {
+                let parsed = JSON.parse(localStorage.getItem(STORAGE_KEY_LISTS));
+                // 自動修復：過濾掉空值，並確保每個物件都有 qs 屬性
+                if (Array.isArray(parsed)) {
+                    allLists = parsed.filter(item => item && typeof item === 'object').map(item => {
+                        if(!item.qs) item.qs = []; // 補上遺失的 qs
+                        if(!item.name) item.name = "未命名題庫";
+                        return item;
+                    });
+                } else {
+                    allLists = [];
+                }
+            } catch(e) {
+                console.error("Data corrupted, resetting lists.");
+                allLists = [];
+            }
+        }
+        
+        if (allLists.length === 0) {
+             allLists = [{name: "範例：估算練習", gems: 5, teachGems: 2, passScore: 100, qs: [{a:9564, b:24}, {a:2584, b:348}]}]; 
+             saveData(); 
+        }
         
         if(localStorage.getItem(STORAGE_KEY_USER)) studentName = localStorage.getItem(STORAGE_KEY_USER);
         if(localStorage.getItem(STORAGE_KEY_GEMS)) totalGems = parseInt(localStorage.getItem(STORAGE_KEY_GEMS)) || 0;
@@ -488,7 +509,9 @@
         document.getElementById('list-teach-gems').value=l.teachGems || 2;
         document.getElementById('list-pass-score').value=l.passScore || 100;
         document.getElementById('editor-rows').innerHTML=''; 
-        l.qs.forEach(q=>addEditRow(q.a,q.b)); 
+        if(l.qs) {
+            l.qs.forEach(q=>addEditRow(q.a,q.b)); 
+        }
         showPage('page-editor'); 
     }
 
@@ -537,7 +560,7 @@
                 const aInput = r.querySelector('.inp-a');
                 const bInput = r.querySelector('.inp-b');
                 
-                if (!aInput || !bInput) return; // 跳過無效行
+                if (!aInput || !bInput) return; 
                 
                 const a = parseInt(aInput.value); 
                 const b = parseInt(bInput.value); 
@@ -557,7 +580,6 @@
             if(editingId === null) {
                 allLists.push(data); 
             } else {
-                // 防止索引錯誤
                 if(editingId < 0 || editingId >= allLists.length) {
                     allLists.push(data);
                 } else {
@@ -600,7 +622,7 @@
         const now = new Date();
         const dateStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}`;
         const exportObj = {
-            version: "5.4",
+            version: "5.5",
             student: { name: studentName, totalGems: totalGems },
             lists: allLists,
             exchangeLog: exchangeLog
@@ -627,6 +649,11 @@
                         }
                     }
                 }
+                // 匯入後再做一次消毒
+                allLists = allLists.map(item => {
+                    if(!item.qs) item.qs = [];
+                    return item;
+                });
                 saveData(); renderLists(); alert("匯入成功");
             } catch(e){alert("格式錯誤");}
         }; r.readAsText(f); 
@@ -635,15 +662,24 @@
     // --- 測驗核心邏輯 ---
     function renderLists() {
         const c = document.getElementById('lists-container'); c.innerHTML='';
+        
+        // 防呆：確保 allLists 是陣列
+        if(!Array.isArray(allLists)) { allLists = []; }
+
         allLists.forEach((l,i) => {
+            // 防呆：如果物件是 null 或沒有 qs，就跳過或修復
+            if(!l || typeof l !== 'object') return;
+            const qsCount = (l.qs && Array.isArray(l.qs)) ? l.qs.length : 0;
+            
             const d = document.createElement('div'); d.className='list-item';
             let gemVal = l.gems ? l.gems : 5; 
             let teachGemVal = l.teachGems ? l.teachGems : 2;
             let passVal = l.passScore ? l.passScore : 100;
+            let listName = l.name ? l.name : "未命名";
 
             d.innerHTML = `
                 <div>
-                    <strong>${l.name}</strong> (${l.qs.length}題)
+                    <strong>${listName}</strong> (${qsCount}題)
                     <div style="margin-top:5px;">
                         <span class="gem-tag">💎測驗+${gemVal}</span>
                         <span class="teach-gem-tag">💎教學+${teachGemVal}</span>
@@ -668,6 +704,9 @@
             quizSettings.text = document.getElementById('opt-text').checked;
             quizSettings.allowHelp = document.getElementById('opt-help').checked; 
         }
+
+        // 確保 currentList.qs 存在
+        if(!currentList.qs) currentList.qs = [];
 
         quizData = currentList.qs.map(q => ({
             a: q.a, b: q.b, 
@@ -1055,10 +1094,8 @@
                 const prod = divisor * userVal;
 
                 if (prod > working) {
-                    // 太大了，只提示太大
                     errorMsg = `太大了！${divisor}乘${userVal}會超過${working}喔。試試小一點的數。`;
                 } else if ((working - prod) >= divisor) {
-                    // 太小了，只提示太小
                     errorMsg = `太小了！餘數會比除數${divisor}還大喔。試試大一點的數。`;
                 }
             } else if (step.type === 'prod') {
@@ -1084,7 +1121,7 @@
         }
     }
 
-    // 求助按鈕：只有按下去才顯示正確答案與過程
+    // 求助按鈕
     function toggleHelp() {
         if (!quizSettings.allowHelp) return; 
 
