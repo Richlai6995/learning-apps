@@ -110,8 +110,8 @@
             grid-template-columns: 1.2fr 0.8fr;
             gap: 20px;
         }
-        @media (max-width: 768px) {
-            .editor-layout { grid-template-columns: 1fr; }
+        @media (max-width: 800px) {
+            .editor-layout { grid-template-columns: 1fr; } /* 手機版改為單欄，避免擠壓 */
         }
 
         .editor-input-area {
@@ -134,8 +134,8 @@
         }
         .pool-list { overflow-y: auto; flex: 1; }
         .pool-item {
-            background: white; border-bottom: 1px solid #ddd; padding: 8px; margin-bottom: 5px; cursor: pointer;
-            border-radius: 4px; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center;
+            background: white; border-bottom: 1px solid #ddd; padding: 10px; margin-bottom: 5px; cursor: pointer;
+            border-radius: 4px; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: flex-start; /* 改為 flex-start 讓按鈕靠上 */
         }
         .pool-item:hover { background: #fdf2e9; }
 
@@ -301,7 +301,7 @@
             </div>
         </div>
 
-        <div class="app-version">v8.0 (雙重驗證優化版)</div>
+        <div class="app-version">v9.0 (題庫顯示優化版)</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -493,7 +493,7 @@
 
 <script>
     /* --- 全域變數與初始化 --- */
-    const APP_VERSION = "v8.0";
+    const APP_VERSION = "v9.0";
     let studentName = "小小學員";
     let totalGems = 0; 
     let allLists = [];
@@ -809,9 +809,9 @@
             div.className = 'pool-item';
             let displayFormula = q.formula_steps ? q.formula_steps[q.formula_steps.length-1] : (q.formula || '');
             div.innerHTML = `
-                <div style="flex:1; overflow:hidden;">
+                <div style="flex:1; padding-right: 10px;">
                     <div style="font-weight:bold; font-size:0.8rem; color:#d35400;">${displayFormula}</div>
-                    <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${q.text}</div>
+                    <div style="white-space: normal; word-wrap: break-word; line-height: 1.4;">${q.text}</div>
                 </div>
                 <button class="btn-success" onclick="addFromPool(${idx})">➕</button>
             `;
@@ -837,7 +837,7 @@
 
     /* --- 匯入匯出 --- */
     function exportData() {
-        const d = { version: "8.0", lists: allLists, pool: poolData, user: studentName, gems: totalGems, log: exchangeLog };
+        const d = { version: "9.0", lists: allLists, pool: poolData, user: studentName, gems: totalGems, log: exchangeLog };
         const blob = new Blob([JSON.stringify(d)], {type: "application/json"});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
         a.download = "four_arithmetic_full_backup.json"; a.click();
