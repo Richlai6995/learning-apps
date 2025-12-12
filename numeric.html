@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>位數闖關王 1.0 (全功能獎勵版)</title>
+    <title>位數闖關王 2.0 (小數特訓版)</title>
     <style>
         :root {
-            --primary: #16a085; /* 改為青綠色系 */
+            --primary: #16a085;
             --secondary: #1abc9c;
             --light: #e8f8f5;
             --dark: #2c3e50;
             --success: #27ae60;
             --danger: #c0392b;
             --warning: #f39c12;
-            --cell-size: 45px; 
+            --cell-size: 55px; /* 格子稍微加大以容納文字 */
         }
 
         * { box-sizing: border-box; }
@@ -33,7 +33,7 @@
 
         h1 { color: var(--primary); margin: 10px 0; text-align: center; font-size: 1.8rem;}
 
-        /* --- 學員名牌 & 獎勵 (維持原樣) --- */
+        /* --- 學員名牌 & 獎勵 --- */
         .user-profile {
             background-color: #fff3cd;
             border: 2px dashed #f39c12;
@@ -80,8 +80,6 @@
         .btn-warning { background-color: var(--warning); }
         .btn-gray { background-color: #95a5a6; }
         .btn-accent { background-color: #f39c12; }
-        .btn-help { background-color: #e67e22; box-shadow: 0 4px #d35400; }
-        .btn-help:active { box-shadow: 0 0 #d35400; transform: translateY(4px); }
         .btn-block { width: 100%; padding: 12px; margin-top: 10px; }
         
         .btn-next-level {
@@ -98,7 +96,6 @@
             border-radius: 6px; display: flex; justify-content: space-between; align-items: center;
         }
         .gem-tag { color: #2980b9; font-weight: bold; background: #d6eaf8; padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; margin-left: 5px;}
-        .teach-gem-tag { color: #27ae60; font-weight: bold; background: #d5f5e3; padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; margin-left: 5px;}
         .score-tag { color: #d35400; font-weight: bold; background: #fdebd0; padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; margin-left: 5px;}
 
         /* --- 編輯器相關 --- */
@@ -113,7 +110,7 @@
 
         .quiz-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 15px; background: #eee; padding: 10px; border-radius: 6px; }
         
-        /* --- 位數練習專用 CSS --- */
+        /* --- 位數練習專用 CSS (更新) --- */
         .pv-question-box {
             text-align: center; margin: 20px 0; padding: 20px;
             background: #fff; border: 2px solid var(--primary); border-radius: 10px;
@@ -122,7 +119,8 @@
         }
 
         .pv-board {
-            display: flex; flex-direction: row-reverse; /* 讓個位數在最右邊 */
+            display: flex; 
+            flex-direction: row; /* 改回左到右排列，方便小數點顯示 */
             justify-content: center;
             overflow-x: auto;
             padding: 10px;
@@ -135,14 +133,12 @@
 
         .pv-header {
             width: var(--cell-size); height: 40px;
-            background: var(--dark); color: white;
+            background: #34495e; /* 統一顏色，不給提示 */
+            color: white;
             display: flex; justify-content: center; align-items: center;
-            border-radius: 5px; font-weight: bold; font-size: 1rem;
+            border-radius: 5px; font-weight: bold; font-size: 0.9rem;
+            white-space: nowrap;
         }
-        /* 不同位數給予不同顏色標示，方便識別 */
-        .pv-header.group-1 { background: #2980b9; } /* 個十百千 */
-        .pv-header.group-2 { background: #e67e22; } /* 萬... */
-        .pv-header.group-3 { background: #c0392b; } /* 億... */
 
         .pv-input {
             width: var(--cell-size); height: 60px;
@@ -154,6 +150,12 @@
         .pv-input:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(22, 160, 133, 0.3); background: #e8f8f5; }
         .pv-input.correct { border-color: #27ae60; background-color: #d5f5e3; color: #27ae60; }
         .pv-input.wrong { border-color: #c0392b; background-color: #fadbd8; animation: shake 0.4s; }
+
+        .decimal-point {
+            width: 20px;
+            display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
+            font-size: 3rem; font-weight: bold; color: var(--dark); padding-bottom: 10px;
+        }
 
         /* --- 獎勵與共用 --- */
         .shop-balance {
@@ -217,7 +219,7 @@
     <div id="particle-container"></div>
 
     <div id="page-home" class="container active">
-        <h1>🔢 位數闖關王 1.0</h1>
+        <h1>🔢 位數闖關王 2.0 (小數版)</h1>
         
         <div class="user-profile" onclick="changeName()">
             <div>🎓 <span id="display-name">設定學員姓名</span> ✎</div>
@@ -246,12 +248,11 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v1.0 (位數練習版)</div>
+        <div class="version-tag">版本：v2.0 (支援小數點/自動跳格)</div>
     </div>
 
     <div id="page-shop" class="container">
         <h2>🎁 獎勵兌換商店</h2>
-        
         <div class="shop-balance">
             <h3>目前持有</h3>
             <div class="balance-row">
@@ -259,13 +260,11 @@
                 <span>💎 <span id="shop-gems">0</span></span>
             </div>
         </div>
-
         <div class="exchange-form">
             <div style="text-align:center; margin-bottom:10px; color:#555; font-weight:bold;">我要兌換...</div>
             <div class="exchange-row">
                 <input type="text" id="gift-name" class="exchange-input" placeholder="輸入獎品名稱 (如: 看電視10分鐘)">
             </div>
-            
             <div style="text-align:center; margin-bottom:10px; color:#555; font-weight:bold;">需要花費</div>
             <div class="exchange-row">
                 <input type="number" id="gift-cost" class="exchange-input" placeholder="數量" min="1">
@@ -274,15 +273,12 @@
                     <option value="crowns">👑 皇冠</option>
                 </select>
             </div>
-
             <button class="btn-primary btn-block" onclick="processExchange()">確認兌換</button>
         </div>
-
         <div style="margin-top:20px;">
             <h4>📜 兌換紀錄</h4>
             <div id="exchange-log" class="log-list"></div>
         </div>
-
         <button class="btn-gray btn-block" style="margin-top:20px;" onclick="showPage('page-home')">返回首頁</button>
     </div>
 
@@ -297,8 +293,9 @@
         <div class="gen-controls">
             <span><strong>自動生成:</strong></span>
             題數<input type="number" id="gen-count" value="5">
-            位數(1-9)<input type="number" id="gen-digits" value="5" max="9" min="1">
-            <button class="btn-warning" onclick="autoGenerate()">生成數字題</button>
+            <span style="font-size:0.9rem">整數位</span><input type="number" id="gen-int-digits" value="2" max="5" min="1" placeholder="整數">
+            <span style="font-size:0.9rem">小數位</span><input type="number" id="gen-dec-digits" value="1" max="3" min="0" placeholder="小數">
+            <button class="btn-warning" onclick="autoGenerate()">生成</button>
         </div>
         
         <div style="margin: 10px 0;">
@@ -308,15 +305,18 @@
                 <button onclick="insertChar('千')">千</button>
                 <button onclick="insertChar('百')">百</button>
                 <button onclick="insertChar('十')">十</button>
+                <button onclick="insertChar('個')">個</button>
+                <button onclick="insertChar('點')">點</button>
                 <button onclick="insertChar('零')">零</button>
-                <button onclick="insertChar('億')">億</button>
+                <button onclick="insertChar('十分')">十分</button>
+                <button onclick="insertChar('百分')">百分</button>
             </div>
         </div>
 
         <div style="max-height: 300px; overflow-y: auto;">
             <div id="editor-rows"></div>
         </div>
-        <button class="btn-gray" onclick="addEditRow()">+ 手動增加 (數字或國字)</button>
+        <button class="btn-gray" onclick="addEditRow()">+ 手動增加 (支援小數如 12.5)</button>
         <div style="margin-top:15px; display:flex; gap:10px;">
             <button class="btn-gray" style="flex:1" onclick="showPage('page-home')">取消</button>
             <button class="btn-primary" style="flex:1" onclick="saveList()">儲存</button>
@@ -374,21 +374,26 @@
     let allLists = [], currentList = null, quizData = [], currentQIdx = 0;
     let timerInt, startTime, rankData = [], exchangeLog = [];
 
-    const STORAGE_KEY_LISTS = 'pv_game_lists';
-    const STORAGE_KEY_RANK = 'pv_game_rank';
-    const STORAGE_KEY_USER = 'pv_game_user';
-    const STORAGE_KEY_GEMS = 'pv_game_gems';
-    const STORAGE_KEY_EXCHANGE = 'pv_game_exchange';
+    const STORAGE_KEY_LISTS = 'pv_game_lists_v2';
+    const STORAGE_KEY_RANK = 'pv_game_rank_v2';
+    const STORAGE_KEY_USER = 'pv_game_user_v2';
+    const STORAGE_KEY_GEMS = 'pv_game_gems_v2';
+    const STORAGE_KEY_EXCHANGE = 'pv_game_exchange_v2';
     
-    // 位數定義
-    const PLACES = ['個', '十', '百', '千', '萬', '十萬', '百萬', '千萬', '億'];
+    // 位數定義映射：Power of 10 -> Name
+    // 0:個, 1:十, 2:百... -1:十分, -2:百分
+    const PLACE_NAMES = {
+        8: '億', 7: '千萬', 6: '百萬', 5: '十萬', 4: '萬',
+        3: '千', 2: '百', 1: '十', 0: '個',
+        '-1': '十分', '-2': '百分', '-3': '千分', '-4': '萬分'
+    };
 
-    // 語音功能
     function speak(text) {
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
-            // 處理數字發音優化
             let cleanText = text.replace(/<[^>]*>/g, '');
+            // 修正小數點發音
+            cleanText = cleanText.replace(/\./g, '點');
             const utterance = new SpeechSynthesisUtterance(cleanText);
             utterance.lang = 'zh-TW'; utterance.rate = 1.0; 
             window.speechSynthesis.speak(utterance);
@@ -399,10 +404,10 @@
         if(localStorage.getItem(STORAGE_KEY_LISTS)) {
             allLists = JSON.parse(localStorage.getItem(STORAGE_KEY_LISTS));
         } else {
-            // 預設題庫
             allLists = [
-                {name: "基礎練習 (4位數)", gems: 5, passScore: 100, qs: [{t:"2500", v:2500}, {t:"三千零五", v:3005}, {t:"4020", v:4020}]},
-                {name: "進階挑戰 (萬位)", gems: 10, passScore: 80, qs: [{t:"20萬零80", v:200080}, {t:"五萬四千三百", v:54300}]}
+                {name: "基礎整數", gems: 5, passScore: 100, qs: [{t:"2500", v:"2500"}, {t:"三千零五", v:"3005"}]},
+                {name: "小數練習 (一位)", gems: 8, passScore: 100, qs: [{t:"3.5", v:"3.5"}, {t:"零點八", v:"0.8"}, {t:"12.9", v:"12.9"}]},
+                {name: "小數進階 (二位)", gems: 10, passScore: 80, qs: [{t:"4.25", v:"4.25"}, {t:"零點零五", v:"0.05"}, {t:"10.08", v:"10.08"}]}
             ];
             saveData();
         }
@@ -458,7 +463,7 @@
         event.target.classList.add('active');
     }
 
-    // --- 獎勵兌換邏輯 (與乘法程式相同) ---
+    // --- 獎勵兌換邏輯 ---
     function processExchange() {
         const giftName = document.getElementById('gift-name').value.trim();
         const costVal = parseInt(document.getElementById('gift-cost').value);
@@ -543,7 +548,6 @@
         document.getElementById('list-gems').value = l.gems || 5;
         document.getElementById('list-pass-score').value = l.passScore || 100;
         const box = document.getElementById('editor-rows'); box.innerHTML = '';
-        // l.qs 結構: [{t:"題目文字", v:數值}, ...]
         l.qs.forEach(q => addEditRow(q.t, q.v));
         showPage('page-editor');
     }
@@ -552,15 +556,14 @@
         const div = document.createElement('div'); div.className='edit-row';
         div.innerHTML = `
             <span style="font-weight:bold; color:#555;">題:</span>
-            <input type="text" class="inp-txt" placeholder="題目 (如: 20萬05)" value="${txt}" style="flex:2">
+            <input type="text" class="inp-txt" placeholder="題目" value="${txt}" style="flex:2">
             <span style="font-weight:bold; color:#555;">值:</span>
-            <input type="number" class="inp-val" placeholder="數值 (如: 200005)" value="${val}" style="flex:1">
+            <input type="text" class="inp-val" placeholder="數值(可小數)" value="${val}" style="flex:1">
             <button class="btn-danger" onclick="this.parentElement.remove()">×</button>`;
         document.getElementById('editor-rows').appendChild(div);
     }
     
     function insertChar(char) {
-        // 插入文字到目前聚焦的輸入框，如果沒有則插入到最後一行的題目欄
         let activeEl = document.activeElement;
         if(activeEl && activeEl.classList.contains('inp-txt')) {
             let start = activeEl.selectionStart;
@@ -568,9 +571,8 @@
             let val = activeEl.value;
             activeEl.value = val.substring(0, start) + char + val.substring(end);
             activeEl.focus();
-            activeEl.selectionStart = activeEl.selectionEnd = start + 1;
+            activeEl.selectionStart = activeEl.selectionEnd = start + char.length;
         } else {
-            // 嘗試找最後一個
             let rows = document.querySelectorAll('.inp-txt');
             if(rows.length > 0) {
                 let last = rows[rows.length-1];
@@ -582,16 +584,22 @@
 
     function autoGenerate() {
         const count = parseInt(document.getElementById('gen-count').value);
-        const digits = parseInt(document.getElementById('gen-digits').value);
-        if(digits < 1 || digits > 9) return alert("位數請在 1-9 之間");
+        const intDigits = parseInt(document.getElementById('gen-int-digits').value) || 2;
+        const decDigits = parseInt(document.getElementById('gen-dec-digits').value) || 0;
         
-        const min = Math.pow(10, digits-1);
-        const max = Math.pow(10, digits) - 1;
+        const minInt = Math.pow(10, intDigits-1);
+        const maxInt = Math.pow(10, intDigits) - 1;
         
         for(let i=0; i<count; i++) {
-            let val = Math.floor(Math.random()*(max-min+1)) + min;
-            // 隨機決定是用數字出題還是簡單中文出題 (這裡簡單用數字)
-            addEditRow(val.toString(), val);
+            let intPart = Math.floor(Math.random()*(maxInt-minInt+1)) + minInt;
+            let valStr = intPart.toString();
+            
+            if(decDigits > 0) {
+                let decPart = "";
+                for(let j=0; j<decDigits; j++) decPart += Math.floor(Math.random()*10);
+                valStr += "." + decPart;
+            }
+            addEditRow(valStr, valStr);
         }
     }
 
@@ -604,8 +612,8 @@
         const qs = [];
         rows.forEach(r => {
             const t = r.querySelector('.inp-txt').value.trim();
-            const v = parseInt(r.querySelector('.inp-val').value);
-            if(t && !isNaN(v)) qs.push({t, v});
+            const v = r.querySelector('.inp-val').value.trim(); // Keep as string for decimals
+            if(t && v) qs.push({t, v});
         });
 
         if(qs.length===0) return alert("請至少新增一題");
@@ -620,10 +628,10 @@
     function exportData() {
         const now = new Date();
         const dateStr = `${now.getFullYear()}${now.getMonth()+1}${now.getDate()}`;
-        const exportObj = { version: "1.0", student: { name: studentName, totalGems: totalGems }, lists: allLists, exchangeLog: exchangeLog };
+        const exportObj = { version: "2.0", student: { name: studentName, totalGems: totalGems }, lists: allLists, exchangeLog: exchangeLog };
         const blob = new Blob([JSON.stringify(exportObj)], {type: "application/json"});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-        a.download = `placevalue_backup_${dateStr}.json`; 
+        a.download = `placevalue_v2_backup_${dateStr}.json`; 
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
     }
     function handleImport(inp) {
@@ -640,14 +648,12 @@
         }; r.readAsText(f);
     }
 
-    // --- 測驗核心邏輯 ---
+    // --- 測驗核心邏輯 (含小數支援) ---
     function startQuizInit(i) {
         currentList = allLists[i];
-        // 初始化測驗資料
         quizData = currentList.qs.map(q => ({
             text: q.t,
-            val: q.v,
-            userAns: null,
+            val: q.v.toString(), // 轉字串處理
             isCorrect: false
         }));
         currentQIdx = 0;
@@ -671,82 +677,114 @@
         document.getElementById('pv-q-text').innerText = q.text;
         document.getElementById('quiz-msg').innerText = "";
         
-        // 重置按鈕狀態
         document.getElementById('btn-check').style.display = 'inline-block';
         document.getElementById('btn-next-q').style.display = 'none';
 
         renderBoard(q.val);
+        // Focus first input
+        setTimeout(() => {
+            let first = document.querySelector('.pv-input');
+            if(first) first.focus();
+        }, 300);
     }
 
-    function renderBoard(val) {
+    // 自動跳格邏輯
+    function moveToNext(elm) {
+        elm.value = elm.value.replace(/[^0-9]/g, ''); // 只能數字
+        if(elm.value.length === 1) {
+            let nextId = parseInt(elm.id.split('-')[1]) + 1;
+            let nextElm = document.getElementById(`inp-${nextId}`);
+            if(nextElm) {
+                nextElm.focus();
+            }
+        }
+    }
+
+    function renderBoard(valStr) {
         const board = document.getElementById('pv-board');
         board.innerHTML = '';
         
-        const valStr = val.toString();
-        // 至少顯示 5 位數，或根據題目長度顯示，最多 9 位 (億)
-        let totalCols = Math.max(valStr.length + 1, 5); 
-        if(totalCols > 9) totalCols = 9; // 上限億
+        // 解析數值結構
+        let parts = valStr.split('.');
+        let intPart = parts[0];
+        let decPart = parts.length > 1 ? parts[1] : "";
 
-        for(let i = 0; i < totalCols; i++) {
-            // i=0 是個位, i=1 是十位...
-            let col = document.createElement('div'); col.className = 'pv-col';
+        // 決定顯示範圍
+        // 至少顯示到個位 (power 0)
+        let maxPower = intPart.length - 1; 
+        if(maxPower < 0) maxPower = 0; // 即使是 0.5，個位也要有
+        
+        // 至少顯示到小數部分結束，若無小數則為 0
+        let minPower = decPart.length > 0 ? -decPart.length : 0;
+        
+        // 為避免題目太短不好看，可以設定最小顯示範圍，但為了精準練習，我們動態生成剛好夠用的格子
+        // 但如果有小數，一定要顯示個位
+        
+        // 從最大的位數 (左邊) 到 最小的位數 (右邊)
+        // 為了方便 ID 索引與跳轉，我們賦予 ID 從 0 開始 (由左至右)
+        let globalIndex = 0;
+
+        for(let p = maxPower; p >= minPower; p--) {
+            // 處理小數點 (在 0 和 -1 之間)
+            if(p === -1) {
+                let dotCol = document.createElement('div');
+                dotCol.className = 'decimal-point';
+                dotCol.innerText = '•';
+                board.appendChild(dotCol);
+                // 小數點不算一個 input index，這樣跳轉邏輯直接 +1 就會跳過它找到下一個 input
+            }
+
+            let col = document.createElement('div'); 
+            col.className = 'pv-col';
+            let placeName = PLACE_NAMES[p] || '?';
             
-            let placeName = PLACES[i] || '?';
-            
-            let headerClass = 'group-1';
-            if(i >= 4 && i < 8) headerClass = 'group-2'; // 萬~千萬
-            if(i >= 8) headerClass = 'group-3'; // 億
-            
+            // data-power 用於驗證答案
             col.innerHTML = `
-                <div class="pv-header ${headerClass}">${placeName}</div>
-                <input type="tel" class="pv-input" id="inp-${i}" maxlength="1" oninput="moveToNext(this, ${i})">
+                <div class="pv-header">${placeName}</div>
+                <input type="tel" class="pv-input" id="inp-${globalIndex}" data-power="${p}" maxlength="1" oninput="moveToNext(this)">
             `;
             board.appendChild(col);
+            globalIndex++;
         }
-    }
-    
-    // 輸入優化：輸入後自動跳到左邊的格子(如果是由右往左填) 或者 右邊(一般習慣)
-    // 這裡實作：輸入完數字後不自動跳焦，因為可能要修改。但可以用方向鍵
-    function moveToNext(elm, idx) {
-        // 簡單驗證是否為數字
-        elm.value = elm.value.replace(/[^0-9]/g, '');
     }
 
     function checkAnswer() {
         const q = quizData[currentQIdx];
-        const valStr = q.val.toString();
-        let correctCount = 0;
+        const valStr = q.val;
+        let parts = valStr.split('.');
+        let intPart = parts[0];
+        let decPart = parts.length > 1 ? parts[1] : "";
+        
         let isAllCorrect = true;
         
-        // 檢查每一位
-        // 邏輯：從個位數 (idx 0) 開始比對 value 字串的倒數第1個字
-        for(let i = 0; i < 9; i++) {
-            let inp = document.getElementById(`inp-${i}`);
-            if(!inp) break; // 超出格子範圍
+        // 抓取所有 input
+        const inputs = document.querySelectorAll('.pv-input');
+        
+        inputs.forEach(inp => {
+            let power = parseInt(inp.getAttribute('data-power'));
+            let userVal = inp.value;
+            let correctVal = "";
 
-            let userDigit = inp.value;
-            // 正確答案的該位數
-            let correctDigit = '';
-            let charIndex = valStr.length - 1 - i;
+            if(power >= 0) {
+                // 整數部分：由右算起 index = intPart.length - 1 - power
+                let charIndex = intPart.length - 1 - power;
+                if(charIndex >= 0 && charIndex < intPart.length) correctVal = intPart[charIndex];
+                else correctVal = "0"; // 前補零
+            } else {
+                // 小數部分：由左算起 index = -power - 1
+                let charIndex = -power - 1;
+                if(charIndex >= 0 && charIndex < decPart.length) correctVal = decPart[charIndex];
+                else correctVal = "0"; // 後補零? 通常題目會給定長度
+            }
+
+            // 寬容檢查：如果題目是 05，填 5 也算對；空字串視為 0
+            if(userVal === "") userVal = "0";
+            if(correctVal === "") correctVal = "0";
+
+            // 特殊處理：如果是最高位且是0 (例如 0.5 的個位)，使用者可能不填
+            // 但標準寫法 0.5 個位是 0。這裡嚴格要求必須填。
             
-            if(charIndex >= 0) {
-                correctDigit = valStr[charIndex];
-            } else {
-                // 如果題目只有3位數，但格子有5位，高位應該是空或是0 (看嚴格程度，這裡允許空或0)
-                correctDigit = '0'; // 視為 0
-            }
-
-            // 判斷
-            // 如果應該是空/0，用戶填0或空都算對
-            // 如果應該是有數字，用戶必須填對
-            let isCellCorrect = false;
-            if (charIndex < 0) {
-                if (userDigit === '' || userDigit === '0') isCellCorrect = true;
-            } else {
-                if (userDigit === correctDigit) isCellCorrect = true;
-            }
-
-            if(isCellCorrect) {
+            if(userVal === correctVal) {
                 inp.classList.remove('wrong');
                 inp.classList.add('correct');
                 inp.disabled = true;
@@ -754,7 +792,7 @@
                 inp.classList.add('wrong');
                 isAllCorrect = false;
             }
-        }
+        });
 
         if(isAllCorrect) {
             quizData[currentQIdx].isCorrect = true;
@@ -769,7 +807,7 @@
             }
         } else {
             document.getElementById('quiz-msg').innerText = "有錯誤喔，再檢查一下紅色的格子。";
-            speak("有地方算錯囉，再檢查一下");
+            speak("有地方算錯囉");
         }
     }
 
@@ -827,7 +865,7 @@
         let score = parseInt(document.getElementById('res-score').innerText);
         rankData.push({name: studentName, score: score, list: currentList.name, date: new Date().toLocaleDateString()});
         rankData.sort((a,b) => b.score - a.score);
-        rankData = rankData.slice(0, 20); // 只留前20
+        rankData = rankData.slice(0, 20); 
         localStorage.setItem(STORAGE_KEY_RANK, JSON.stringify(rankData));
         alert("已登記！"); switchTab('rank'); showPage('page-home');
     }
@@ -844,7 +882,6 @@
     }
     function clearRank() { if(confirm("清空榜單?")) { rankData=[]; localStorage.removeItem(STORAGE_KEY_RANK); renderRank(); } }
 
-    // --- 特效 ---
     function triggerRewardAnimation(type) {
         const container = document.getElementById('particle-container');
         container.style.display = 'block'; container.innerHTML = ''; 
