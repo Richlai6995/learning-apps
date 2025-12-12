@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>位數闖關王 2.0 (小數特訓版)</title>
+    <title>位數闖關王 2.1 (百萬固定版)</title>
     <style>
         :root {
             --primary: #16a085;
@@ -13,7 +13,7 @@
             --success: #27ae60;
             --danger: #c0392b;
             --warning: #f39c12;
-            --cell-size: 55px; /* 格子稍微加大以容納文字 */
+            --cell-size: 55px; 
         }
 
         * { box-sizing: border-box; }
@@ -90,7 +90,6 @@
         .btn-next-level:active { transform: translateY(6px); box-shadow: 0 0 #1e8449; }
         @keyframes popIn { from {transform: scale(0);} to {transform: scale(1);} }
 
-        /* --- 列表與標籤 --- */
         .list-item {
             background: #e8f6f3; border: 1px solid #a2d9ce; padding: 10px; margin-bottom: 8px;
             border-radius: 6px; display: flex; justify-content: space-between; align-items: center;
@@ -110,7 +109,7 @@
 
         .quiz-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 15px; background: #eee; padding: 10px; border-radius: 6px; }
         
-        /* --- 位數練習專用 CSS (更新) --- */
+        /* --- 位數練習專用 CSS --- */
         .pv-question-box {
             text-align: center; margin: 20px 0; padding: 20px;
             background: #fff; border: 2px solid var(--primary); border-radius: 10px;
@@ -120,15 +119,24 @@
 
         .pv-board {
             display: flex; 
-            flex-direction: row; /* 改回左到右排列，方便小數點顯示 */
-            justify-content: center;
+            flex-direction: row; 
+            justify-content: flex-start; /* 改為靠左開始，如果畫面寬度不夠可以滑動 */
             overflow-x: auto;
             padding: 10px;
-            gap: 5px;
+            gap: 2px; /* 格子緊湊一點 */
+        }
+        /* 讓捲軸美觀一點 */
+        .pv-board::-webkit-scrollbar { height: 8px; }
+        .pv-board::-webkit-scrollbar-thumb { background: #bdc3c7; border-radius: 4px; }
+        .pv-board::-webkit-scrollbar-track { background: #f1f1f1; }
+
+        @media (min-width: 600px) {
+            .pv-board { justify-content: center; } /* 寬螢幕置中 */
         }
 
         .pv-col {
             display: flex; flex-direction: column; align-items: center; gap: 5px;
+            min-width: var(--cell-size); /* 確保最小寬度 */
         }
 
         .pv-header {
@@ -146,6 +154,7 @@
             border: 2px solid #ccc; border-radius: 8px;
             font-weight: bold; outline: none;
             background: white; transition: 0.2s;
+            padding: 0; /* 修正可能的內距 */
         }
         .pv-input:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(22, 160, 133, 0.3); background: #e8f8f5; }
         .pv-input.correct { border-color: #27ae60; background-color: #d5f5e3; color: #27ae60; }
@@ -219,7 +228,7 @@
     <div id="particle-container"></div>
 
     <div id="page-home" class="container active">
-        <h1>🔢 位數闖關王 2.0 (小數版)</h1>
+        <h1>🔢 位數闖關王 2.1 (百萬固定版)</h1>
         
         <div class="user-profile" onclick="changeName()">
             <div>🎓 <span id="display-name">設定學員姓名</span> ✎</div>
@@ -248,7 +257,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v2.0 (支援小數點/自動跳格)</div>
+        <div class="version-tag">版本：v2.1 (固定百萬/Enter送出)</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -293,8 +302,8 @@
         <div class="gen-controls">
             <span><strong>自動生成:</strong></span>
             題數<input type="number" id="gen-count" value="5">
-            <span style="font-size:0.9rem">整數位</span><input type="number" id="gen-int-digits" value="2" max="5" min="1" placeholder="整數">
-            <span style="font-size:0.9rem">小數位</span><input type="number" id="gen-dec-digits" value="1" max="3" min="0" placeholder="小數">
+            <span style="font-size:0.9rem">整數位</span><input type="number" id="gen-int-digits" value="2" max="6" min="1" placeholder="整數">
+            <span style="font-size:0.9rem">小數位</span><input type="number" id="gen-dec-digits" value="0" max="3" min="0" placeholder="小數">
             <button class="btn-warning" onclick="autoGenerate()">生成</button>
         </div>
         
@@ -334,7 +343,7 @@
             <span id="pv-q-text">題目文字</span>
         </div>
         
-        <div style="text-align:center; color:#777; margin-bottom:5px;">請將數字填入正確的位置：</div>
+        <div style="text-align:center; color:#777; margin-bottom:5px;">請將數字填入正確的位置 (按 Enter 送出)：</div>
 
         <div class="pv-board" id="pv-board">
             </div>
@@ -381,9 +390,8 @@
     const STORAGE_KEY_EXCHANGE = 'pv_game_exchange_v2';
     
     // 位數定義映射：Power of 10 -> Name
-    // 0:個, 1:十, 2:百... -1:十分, -2:百分
     const PLACE_NAMES = {
-        8: '億', 7: '千萬', 6: '百萬', 5: '十萬', 4: '萬',
+        6: '百萬', 5: '十萬', 4: '萬',
         3: '千', 2: '百', 1: '十', 0: '個',
         '-1': '十分', '-2': '百分', '-3': '千分', '-4': '萬分'
     };
@@ -392,7 +400,6 @@
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
             let cleanText = text.replace(/<[^>]*>/g, '');
-            // 修正小數點發音
             cleanText = cleanText.replace(/\./g, '點');
             const utterance = new SpeechSynthesisUtterance(cleanText);
             utterance.lang = 'zh-TW'; utterance.rate = 1.0; 
@@ -612,7 +619,7 @@
         const qs = [];
         rows.forEach(r => {
             const t = r.querySelector('.inp-txt').value.trim();
-            const v = r.querySelector('.inp-val').value.trim(); // Keep as string for decimals
+            const v = r.querySelector('.inp-val').value.trim(); 
             if(t && v) qs.push({t, v});
         });
 
@@ -628,10 +635,10 @@
     function exportData() {
         const now = new Date();
         const dateStr = `${now.getFullYear()}${now.getMonth()+1}${now.getDate()}`;
-        const exportObj = { version: "2.0", student: { name: studentName, totalGems: totalGems }, lists: allLists, exchangeLog: exchangeLog };
+        const exportObj = { version: "2.1", student: { name: studentName, totalGems: totalGems }, lists: allLists, exchangeLog: exchangeLog };
         const blob = new Blob([JSON.stringify(exportObj)], {type: "application/json"});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-        a.download = `placevalue_v2_backup_${dateStr}.json`; 
+        a.download = `placevalue_v2.1_backup_${dateStr}.json`; 
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
     }
     function handleImport(inp) {
@@ -648,12 +655,12 @@
         }; r.readAsText(f);
     }
 
-    // --- 測驗核心邏輯 (含小數支援) ---
+    // --- 測驗核心邏輯 (固定百萬位 + 小數支援) ---
     function startQuizInit(i) {
         currentList = allLists[i];
         quizData = currentList.qs.map(q => ({
             text: q.t,
-            val: q.v.toString(), // 轉字串處理
+            val: q.v.toString(), 
             isCorrect: false
         }));
         currentQIdx = 0;
@@ -681,14 +688,22 @@
         document.getElementById('btn-next-q').style.display = 'none';
 
         renderBoard(q.val);
-        // Focus first input
+        // Focus first input (百萬位)
         setTimeout(() => {
-            let first = document.querySelector('.pv-input');
-            if(first) first.focus();
+            let inputs = document.querySelectorAll('.pv-input');
+            // 找第一個可以輸入的格子(雖然大家都可以，但通常想從頭或從題目對應的地方開始)
+            // 這裡直接 focus 最左邊 (百萬位)
+            if(inputs.length > 0) inputs[0].focus();
         }, 300);
     }
 
-    // 自動跳格邏輯
+    function handleEnter(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            checkAnswer();
+        }
+    }
+
     function moveToNext(elm) {
         elm.value = elm.value.replace(/[^0-9]/g, ''); // 只能數字
         if(elm.value.length === 1) {
@@ -704,44 +719,34 @@
         const board = document.getElementById('pv-board');
         board.innerHTML = '';
         
-        // 解析數值結構
         let parts = valStr.split('.');
-        let intPart = parts[0];
         let decPart = parts.length > 1 ? parts[1] : "";
 
-        // 決定顯示範圍
-        // 至少顯示到個位 (power 0)
-        let maxPower = intPart.length - 1; 
-        if(maxPower < 0) maxPower = 0; // 即使是 0.5，個位也要有
+        // 修改：整數部分固定從百萬位 (power 6) 開始
+        let maxPower = 6; 
         
-        // 至少顯示到小數部分結束，若無小數則為 0
+        // 小數部分：視情況延伸
         let minPower = decPart.length > 0 ? -decPart.length : 0;
         
-        // 為避免題目太短不好看，可以設定最小顯示範圍，但為了精準練習，我們動態生成剛好夠用的格子
-        // 但如果有小數，一定要顯示個位
-        
-        // 從最大的位數 (左邊) 到 最小的位數 (右邊)
-        // 為了方便 ID 索引與跳轉，我們賦予 ID 從 0 開始 (由左至右)
         let globalIndex = 0;
 
         for(let p = maxPower; p >= minPower; p--) {
-            // 處理小數點 (在 0 和 -1 之間)
+            // 小數點處理
             if(p === -1) {
                 let dotCol = document.createElement('div');
                 dotCol.className = 'decimal-point';
                 dotCol.innerText = '•';
                 board.appendChild(dotCol);
-                // 小數點不算一個 input index，這樣跳轉邏輯直接 +1 就會跳過它找到下一個 input
             }
 
             let col = document.createElement('div'); 
             col.className = 'pv-col';
             let placeName = PLACE_NAMES[p] || '?';
             
-            // data-power 用於驗證答案
+            // 加入 onkeydown="handleEnter(event)"
             col.innerHTML = `
                 <div class="pv-header">${placeName}</div>
-                <input type="tel" class="pv-input" id="inp-${globalIndex}" data-power="${p}" maxlength="1" oninput="moveToNext(this)">
+                <input type="tel" class="pv-input" id="inp-${globalIndex}" data-power="${p}" maxlength="1" oninput="moveToNext(this)" onkeydown="handleEnter(event)">
             `;
             board.appendChild(col);
             globalIndex++;
@@ -757,7 +762,6 @@
         
         let isAllCorrect = true;
         
-        // 抓取所有 input
         const inputs = document.querySelectorAll('.pv-input');
         
         inputs.forEach(inp => {
@@ -766,24 +770,21 @@
             let correctVal = "";
 
             if(power >= 0) {
-                // 整數部分：由右算起 index = intPart.length - 1 - power
+                // 整數部分：對齊處理
                 let charIndex = intPart.length - 1 - power;
                 if(charIndex >= 0 && charIndex < intPart.length) correctVal = intPart[charIndex];
-                else correctVal = "0"; // 前補零
+                else correctVal = "0"; 
             } else {
-                // 小數部分：由左算起 index = -power - 1
+                // 小數部分
                 let charIndex = -power - 1;
                 if(charIndex >= 0 && charIndex < decPart.length) correctVal = decPart[charIndex];
-                else correctVal = "0"; // 後補零? 通常題目會給定長度
+                else correctVal = "0"; 
             }
 
-            // 寬容檢查：如果題目是 05，填 5 也算對；空字串視為 0
+            // 空白視為 0
             if(userVal === "") userVal = "0";
             if(correctVal === "") correctVal = "0";
 
-            // 特殊處理：如果是最高位且是0 (例如 0.5 的個位)，使用者可能不填
-            // 但標準寫法 0.5 個位是 0。這裡嚴格要求必須填。
-            
             if(userVal === correctVal) {
                 inp.classList.remove('wrong');
                 inp.classList.add('correct');
