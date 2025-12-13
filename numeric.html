@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>位數闖關王 2.1 (百萬固定版)</title>
+    <title>位數闖關王 2.2 (提示功能版)</title>
     <style>
         :root {
             --primary: #16a085;
@@ -82,6 +82,25 @@
         .btn-accent { background-color: #f39c12; }
         .btn-block { width: 100%; padding: 12px; margin-top: 10px; }
         
+        /* 提示按鈕專用樣式 */
+        .btn-hint {
+            background-color: #f1c40f; color: #7f8c8d; 
+            border-bottom: 4px solid #f39c12;
+            margin-top: 10px;
+        }
+        .btn-hint:active { transform: translateY(4px); border-bottom: 0; }
+        .hint-box {
+            display: none;
+            background-color: #fff9c4;
+            border: 2px solid #fbc02d;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            color: #e65100;
+            font-weight: bold;
+            animation: fadeIn 0.5s;
+        }
+
         .btn-next-level {
             background-color: #27ae60; color: white; font-size: 1.5rem; padding: 15px 30px;
             border-radius: 50px; box-shadow: 0 6px #1e8449; margin-top: 20px;
@@ -100,8 +119,8 @@
         /* --- 編輯器相關 --- */
         .gen-controls { display: flex; gap: 5px; margin-bottom: 15px; align-items: center; flex-wrap: wrap; background: #e8f8f5; padding: 10px; border-radius: 8px;}
         .gen-controls input { padding: 5px; width: 60px; text-align: center; border: 1px solid #ccc; border-radius: 4px;}
-        .edit-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; background: #fff; padding: 5px; border-radius: 5px; border:1px solid #eee;}
-        .edit-row input { padding: 5px; text-align: left; border: 1px solid #ccc; border-radius: 4px; font-size: 1.1rem;}
+        .edit-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; background: #fff; padding: 5px; border-radius: 5px; border:1px solid #eee; flex-wrap: wrap;}
+        .edit-row input { padding: 5px; text-align: left; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem;}
         
         .cn-keypad { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; background: #eee; padding: 5px; border-radius: 5px; }
         .cn-keypad button { background: #fff; color: #333; border: 1px solid #ccc; font-size: 0.9rem; padding: 5px 10px; box-shadow: 0 2px #ddd; }
@@ -111,37 +130,37 @@
         
         /* --- 位數練習專用 CSS --- */
         .pv-question-box {
-            text-align: center; margin: 20px 0; padding: 20px;
+            text-align: center; margin: 20px 0 10px 0; padding: 20px;
             background: #fff; border: 2px solid var(--primary); border-radius: 10px;
             font-size: 2rem; font-weight: bold; color: var(--dark);
             min-height: 80px; display: flex; align-items: center; justify-content: center;
+            flex-direction: column;
         }
 
         .pv-board {
             display: flex; 
             flex-direction: row; 
-            justify-content: flex-start; /* 改為靠左開始，如果畫面寬度不夠可以滑動 */
+            justify-content: flex-start;
             overflow-x: auto;
             padding: 10px;
-            gap: 2px; /* 格子緊湊一點 */
+            gap: 2px; 
         }
-        /* 讓捲軸美觀一點 */
         .pv-board::-webkit-scrollbar { height: 8px; }
         .pv-board::-webkit-scrollbar-thumb { background: #bdc3c7; border-radius: 4px; }
         .pv-board::-webkit-scrollbar-track { background: #f1f1f1; }
 
         @media (min-width: 600px) {
-            .pv-board { justify-content: center; } /* 寬螢幕置中 */
+            .pv-board { justify-content: center; } 
         }
 
         .pv-col {
             display: flex; flex-direction: column; align-items: center; gap: 5px;
-            min-width: var(--cell-size); /* 確保最小寬度 */
+            min-width: var(--cell-size); 
         }
 
         .pv-header {
             width: var(--cell-size); height: 40px;
-            background: #34495e; /* 統一顏色，不給提示 */
+            background: #34495e; 
             color: white;
             display: flex; justify-content: center; align-items: center;
             border-radius: 5px; font-weight: bold; font-size: 0.9rem;
@@ -154,7 +173,7 @@
             border: 2px solid #ccc; border-radius: 8px;
             font-weight: bold; outline: none;
             background: white; transition: 0.2s;
-            padding: 0; /* 修正可能的內距 */
+            padding: 0; 
         }
         .pv-input:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(22, 160, 133, 0.3); background: #e8f8f5; }
         .pv-input.correct { border-color: #27ae60; background-color: #d5f5e3; color: #27ae60; }
@@ -228,7 +247,7 @@
     <div id="particle-container"></div>
 
     <div id="page-home" class="container active">
-        <h1>🔢 位數闖關王 2.1 (百萬固定版)</h1>
+        <h1>🔢 位數闖關王 2.2</h1>
         
         <div class="user-profile" onclick="changeName()">
             <div>🎓 <span id="display-name">設定學員姓名</span> ✎</div>
@@ -257,7 +276,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v2.1 (固定百萬/Enter送出)</div>
+        <div class="version-tag">版本：v2.2 (新增提示功能)</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -317,15 +336,15 @@
                 <button onclick="insertChar('個')">個</button>
                 <button onclick="insertChar('點')">點</button>
                 <button onclick="insertChar('零')">零</button>
-                <button onclick="insertChar('十分')">十分</button>
-                <button onclick="insertChar('百分')">百分</button>
+                <button onclick="insertChar('公尺')">公尺</button>
+                <button onclick="insertChar('公分')">公分</button>
             </div>
         </div>
 
         <div style="max-height: 300px; overflow-y: auto;">
             <div id="editor-rows"></div>
         </div>
-        <button class="btn-gray" onclick="addEditRow()">+ 手動增加 (支援小數如 12.5)</button>
+        <button class="btn-gray" onclick="addEditRow()">+ 手動增加 (支援小數與提示)</button>
         <div style="margin-top:15px; display:flex; gap:10px;">
             <button class="btn-gray" style="flex:1" onclick="showPage('page-home')">取消</button>
             <button class="btn-primary" style="flex:1" onclick="saveList()">儲存</button>
@@ -341,6 +360,8 @@
 
         <div class="pv-question-box">
             <span id="pv-q-text">題目文字</span>
+            <button id="btn-show-hint" class="btn-hint" onclick="showHint()" style="display:none;">💡 看提示</button>
+            <div id="pv-hint-box" class="hint-box"></div>
         </div>
         
         <div style="text-align:center; color:#777; margin-bottom:5px;">請將數字填入正確的位置 (按 Enter 送出)：</div>
@@ -400,7 +421,7 @@
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
             let cleanText = text.replace(/<[^>]*>/g, '');
-            cleanText = cleanText.replace(/\./g, '點');
+            cleanText = cleanText.replace(/\./g, '點').replace(/=/g, '等於');
             const utterance = new SpeechSynthesisUtterance(cleanText);
             utterance.lang = 'zh-TW'; utterance.rate = 1.0; 
             window.speechSynthesis.speak(utterance);
@@ -412,9 +433,9 @@
             allLists = JSON.parse(localStorage.getItem(STORAGE_KEY_LISTS));
         } else {
             allLists = [
-                {name: "基礎整數", gems: 5, passScore: 100, qs: [{t:"2500", v:"2500"}, {t:"三千零五", v:"3005"}]},
-                {name: "小數練習 (一位)", gems: 8, passScore: 100, qs: [{t:"3.5", v:"3.5"}, {t:"零點八", v:"0.8"}, {t:"12.9", v:"12.9"}]},
-                {name: "小數進階 (二位)", gems: 10, passScore: 80, qs: [{t:"4.25", v:"4.25"}, {t:"零點零五", v:"0.05"}, {t:"10.08", v:"10.08"}]}
+                {name: "基礎整數", gems: 5, passScore: 100, qs: [{t:"2500", v:"2500", h:""}, {t:"三千零五", v:"3005", h:""}]},
+                {name: "單位換算練習", gems: 10, passScore: 100, qs: [{t:"25公尺7公分 = ?公分", v:"2507", h:"1公尺=100公分"}]},
+                {name: "小數練習", gems: 8, passScore: 100, qs: [{t:"3.5", v:"3.5", h:""}]}
             ];
             saveData();
         }
@@ -555,24 +576,27 @@
         document.getElementById('list-gems').value = l.gems || 5;
         document.getElementById('list-pass-score').value = l.passScore || 100;
         const box = document.getElementById('editor-rows'); box.innerHTML = '';
-        l.qs.forEach(q => addEditRow(q.t, q.v));
+        l.qs.forEach(q => addEditRow(q.t, q.v, q.h));
         showPage('page-editor');
     }
 
-    function addEditRow(txt='', val='') {
+    function addEditRow(txt='', val='', hint='') {
         const div = document.createElement('div'); div.className='edit-row';
         div.innerHTML = `
-            <span style="font-weight:bold; color:#555;">題:</span>
-            <input type="text" class="inp-txt" placeholder="題目" value="${txt}" style="flex:2">
-            <span style="font-weight:bold; color:#555;">值:</span>
-            <input type="text" class="inp-val" placeholder="數值(可小數)" value="${val}" style="flex:1">
+            <span style="font-weight:bold; color:#555; width:30px;">題:</span>
+            <input type="text" class="inp-txt" placeholder="題目" value="${txt}" style="flex:2; min-width:120px;">
+            <span style="font-weight:bold; color:#555; width:30px;">值:</span>
+            <input type="text" class="inp-val" placeholder="數值" value="${val}" style="flex:1; min-width:60px;">
+            <span style="font-weight:bold; color:#555; width:40px;">提示:</span>
+            <input type="text" class="inp-hint" placeholder="提示(可空)" value="${hint || ''}" style="flex:1; min-width:80px;">
             <button class="btn-danger" onclick="this.parentElement.remove()">×</button>`;
         document.getElementById('editor-rows').appendChild(div);
     }
     
     function insertChar(char) {
         let activeEl = document.activeElement;
-        if(activeEl && activeEl.classList.contains('inp-txt')) {
+        // 允許插入到 題目(inp-txt) 或 提示(inp-hint)
+        if(activeEl && (activeEl.classList.contains('inp-txt') || activeEl.classList.contains('inp-hint'))) {
             let start = activeEl.selectionStart;
             let end = activeEl.selectionEnd;
             let val = activeEl.value;
@@ -580,6 +604,7 @@
             activeEl.focus();
             activeEl.selectionStart = activeEl.selectionEnd = start + char.length;
         } else {
+            // 預設加到最後一列的題目
             let rows = document.querySelectorAll('.inp-txt');
             if(rows.length > 0) {
                 let last = rows[rows.length-1];
@@ -606,7 +631,7 @@
                 for(let j=0; j<decDigits; j++) decPart += Math.floor(Math.random()*10);
                 valStr += "." + decPart;
             }
-            addEditRow(valStr, valStr);
+            addEditRow(valStr, valStr, "");
         }
     }
 
@@ -620,7 +645,8 @@
         rows.forEach(r => {
             const t = r.querySelector('.inp-txt').value.trim();
             const v = r.querySelector('.inp-val').value.trim(); 
-            if(t && v) qs.push({t, v});
+            const h = r.querySelector('.inp-hint').value.trim();
+            if(t && v) qs.push({t, v, h});
         });
 
         if(qs.length===0) return alert("請至少新增一題");
@@ -635,10 +661,10 @@
     function exportData() {
         const now = new Date();
         const dateStr = `${now.getFullYear()}${now.getMonth()+1}${now.getDate()}`;
-        const exportObj = { version: "2.1", student: { name: studentName, totalGems: totalGems }, lists: allLists, exchangeLog: exchangeLog };
+        const exportObj = { version: "2.2", student: { name: studentName, totalGems: totalGems }, lists: allLists, exchangeLog: exchangeLog };
         const blob = new Blob([JSON.stringify(exportObj)], {type: "application/json"});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-        a.download = `placevalue_v2.1_backup_${dateStr}.json`; 
+        a.download = `placevalue_v2.2_backup_${dateStr}.json`; 
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
     }
     function handleImport(inp) {
@@ -655,12 +681,13 @@
         }; r.readAsText(f);
     }
 
-    // --- 測驗核心邏輯 (固定百萬位 + 小數支援) ---
+    // --- 測驗核心邏輯 ---
     function startQuizInit(i) {
         currentList = allLists[i];
         quizData = currentList.qs.map(q => ({
             text: q.t,
             val: q.v.toString(), 
+            hint: q.h || "",
             isCorrect: false
         }));
         currentQIdx = 0;
@@ -684,6 +711,19 @@
         document.getElementById('pv-q-text').innerText = q.text;
         document.getElementById('quiz-msg').innerText = "";
         
+        // 提示處理
+        const btnHint = document.getElementById('btn-show-hint');
+        const hintBox = document.getElementById('pv-hint-box');
+        hintBox.style.display = 'none';
+        hintBox.innerText = "";
+        
+        if(q.hint && q.hint.length > 0) {
+            btnHint.style.display = 'inline-block';
+            hintBox.innerText = q.hint;
+        } else {
+            btnHint.style.display = 'none';
+        }
+        
         document.getElementById('btn-check').style.display = 'inline-block';
         document.getElementById('btn-next-q').style.display = 'none';
 
@@ -691,10 +731,14 @@
         // Focus first input (百萬位)
         setTimeout(() => {
             let inputs = document.querySelectorAll('.pv-input');
-            // 找第一個可以輸入的格子(雖然大家都可以，但通常想從頭或從題目對應的地方開始)
-            // 這裡直接 focus 最左邊 (百萬位)
             if(inputs.length > 0) inputs[0].focus();
         }, 300);
+    }
+
+    function showHint() {
+        const hintBox = document.getElementById('pv-hint-box');
+        hintBox.style.display = 'block';
+        speak("提示：" + hintBox.innerText);
     }
 
     function handleEnter(e) {
