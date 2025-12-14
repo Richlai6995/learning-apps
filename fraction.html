@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>分數變身闖關王 1.0</title>
+    <style>
+        :root {
+            --primary: #8e44ad; /* 紫色系 */
+            --secondary: #9b59b6;
+            --light: #f4ecf7;
+            --dark: #2c3e50;
+            --success: #27ae60;
+            --danger: #c0392b;
+            --warning: #f39c12;
+            --cell-size: 60px; 
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        h1 { color: var(--primary); margin: 10px 0; text-align: center; font-size: 1.8rem;}
+
+        /* --- 學員名牌 & 獎勵 --- */
+        .user-profile {
+            background-color: #fff3cd;
+            border: 2px dashed #f39c12;
+            border-radius: 10px;
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #d35400;
+            display: flex; align-items: center; gap: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .user-profile:active { transform: scale(0.98); }
+        
+        .stats-badge {
+            background: #fff;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex; align-items: center; gap: 5px;
+            color: #2c3e50;
+        }
+
+        .container {
+            width: 100%; max-width: 900px; background: white; border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px;
+            display: none;
+        }
+        .container.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
+
+        button {
+            border: none; border-radius: 6px; padding: 8px 15px; font-size: 1rem; font-weight: bold;
+            cursor: pointer; color: white; margin: 2px; transition: 0.2s;
+        }
+        .btn-primary { background-color: var(--primary); }
+        .btn-secondary { background-color: var(--secondary); }
+        .btn-success { background-color: var(--success); }
+        .btn-danger { background-color: var(--danger); }
+        .btn-warning { background-color: var(--warning); }
+        .btn-gray { background-color: #95a5a6; }
+        .btn-accent { background-color: #f39c12; }
+        .btn-block { width: 100%; padding: 12px; margin-top: 10px; }
+        
+        .btn-next-level {
+            background-color: #27ae60; color: white; font-size: 1.5rem; padding: 15px 30px;
+            border-radius: 50px; box-shadow: 0 6px #1e8449; margin-top: 20px;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: none; 
+        }
+        .btn-next-level:active { transform: translateY(6px); box-shadow: 0 0 #1e8449; }
+        @keyframes popIn { from {transform: scale(0);} to {transform: scale(1);} }
+
+        /* --- 列表與標籤 --- */
+        .list-item {
+            background: #fdf2ff; border: 1px solid #e1bee7; padding: 10px; margin-bottom: 8px;
+            border-radius: 6px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .gem-tag { color: #2980b9; font-weight: bold; background: #d6eaf8; padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; margin-left: 5px;}
+        .score-tag { color: #d35400; font-weight: bold; background: #fdebd0; padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; margin-left: 5px;}
+
+        /* --- 編輯器相關 --- */
+        .gen-controls { display: flex; gap: 5px; margin-bottom: 15px; align-items: center; flex-wrap: wrap; background: #f4ecf7; padding: 10px; border-radius: 8px;}
+        .gen-controls input { padding: 5px; width: 60px; text-align: center; border: 1px solid #ccc; border-radius: 4px;}
+        .edit-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; background: #fff; padding: 5px; border-radius: 5px; border:1px solid #eee; flex-wrap: wrap;}
+        .edit-row select { padding: 5px; border: 1px solid #ccc; border-radius: 4px; }
+        
+        .quiz-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 15px; background: #eee; padding: 10px; border-radius: 6px; }
+        
+        /* --- 分數練習專用 CSS --- */
+        .question-display {
+            text-align: center; font-size: 2.5rem; font-weight: bold; margin: 20px 0;
+            display: flex; justify-content: center; align-items: center; gap: 10px;
+        }
+        
+        /* 分數顯示組件 */
+        .fraction-display {
+            display: inline-flex; align-items: center; font-family: 'Times New Roman', serif;
+        }
+        .frac-whole { font-size: 2.5rem; margin-right: 5px; }
+        .frac-part { display: flex; flex-direction: column; align-items: center; font-size: 1.5rem; }
+        .frac-line { width: 100%; height: 2px; background: currentColor; margin: 2px 0; }
+        
+        /* 輸入區域 */
+        .input-area {
+            display: flex; justify-content: center; align-items: center; gap: 10px; margin: 20px 0;
+            background: #fff; padding: 20px; border-radius: 12px; border: 2px solid var(--primary);
+        }
+        .equals-sign { font-size: 2rem; font-weight: bold; color: var(--primary); }
+
+        /* 分數輸入框樣式 */
+        .frac-input-group { display: flex; align-items: center; }
+        .inp-whole { 
+            width: 60px; height: 60px; font-size: 1.8rem; text-align: center; 
+            border: 2px solid #ccc; border-radius: 8px; margin-right: 8px;
+        }
+        .frac-input-part { display: flex; flex-direction: column; gap: 5px; }
+        .inp-num, .inp-den {
+            width: 60px; height: 45px; font-size: 1.5rem; text-align: center;
+            border: 2px solid #ccc; border-radius: 8px;
+        }
+        .inp-sep { width: 60px; height: 2px; background: #333; }
+
+        input:focus { border-color: var(--primary); background: #f4ecf7; outline: none; }
+        .correct { border-color: var(--success); background-color: #d5f5e3; color: var(--success); }
+        .wrong { border-color: var(--danger); background-color: #fadbd8; animation: shake 0.4s; }
+
+        /* --- 數線顯示區 --- */
+        .number-line-box {
+            width: 100%; height: 120px; background: #fff; 
+            border: 1px dashed #ccc; border-radius: 8px; margin-top: 15px;
+            overflow-x: auto; display: none; /* 預設隱藏，答對或提示時顯示 */
+            position: relative;
+        }
+        .number-line-svg { min-width: 100%; height: 100%; }
+
+        /* 按鈕群組 */
+        .quiz-actions { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+        .quiz-actions button { flex: 1; max-width: 150px; padding: 12px; }
+
+        /* --- 獎勵與共用 --- */
+        .shop-balance {
+            background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+            color: white; padding: 20px; border-radius: 15px; text-align: center;
+            margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .shop-balance h3 { color: white; margin: 0 0 10px 0; font-weight: normal; font-size: 1rem; opacity: 0.9; }
+        .balance-row { display: flex; justify-content: center; gap: 20px; font-size: 1.5rem; font-weight: bold; }
+        
+        .exchange-form { background: #f8f9fa; padding: 15px; border-radius: 12px; border: 1px solid #eee; }
+        .exchange-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        .exchange-input { flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1.1rem; text-align: center; }
+        .exchange-select { padding: 5px; border: 2px solid #ddd; border-radius: 8px; font-size: 1.1rem; background: white; }
+        
+        .log-list { max-height: 200px; overflow-y: auto; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px; font-size: 0.9rem; color: #666; }
+        .log-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; }
+
+        .reward-popup {
+            background: #fff8e1; border: 3px solid #f1c40f; padding: 20px;
+            border-radius: 15px; margin-top: 20px; font-weight: bold; color: #d35400;
+            font-size: 1.5rem; text-align: center;
+            box-shadow: 0 5px 15px rgba(241, 196, 15, 0.4);
+            animation: bounceIn 0.8s;
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); opacity: 1; }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); }
+        }
+
+        #particle-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 9999; overflow: hidden; display: none;
+        }
+        .particle {
+            position: absolute; font-size: 2rem;
+            animation: fall linear forwards;
+        }
+        @keyframes fall {
+            0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+        }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        
+        .tabs { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 15px; }
+        .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #777; font-weight: bold; }
+        .tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+
+        .version-tag {
+            margin-top: 30px; color: var(--primary); font-size: 1rem; text-align: center;
+            font-family: monospace; border-top: 1px dashed #eee; padding-top: 10px; font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="particle-container"></div>
+
+    <div id="page-home" class="container active">
+        <h1>🔢 分數變身闖關王 1.0</h1>
+        
+        <div class="user-profile" onclick="changeName()">
+            <div>🎓 <span id="display-name">設定學員姓名</span> ✎</div>
+            <div class="stats-badge">👑 <span id="stat-crowns">0</span></div>
+            <div class="stats-badge">💎 <span id="stat-gems">0</span></div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('quiz')">選擇題庫</div>
+            <div class="tab" onclick="switchTab('rank')">英雄榜</div>
+        </div>
+
+        <div id="tab-quiz">
+            <button class="btn-accent btn-block" style="margin-bottom:15px; box-shadow:0 4px #d35400;" onclick="showPage('page-shop')">🎁 獎勵兌換商店</button>
+            <div id="lists-container"></div>
+            <button class="btn-secondary btn-block" onclick="createNewList()">+ 新增/生成題庫</button>
+            <div style="margin-top:15px; border-top:1px dashed #ccc; padding-top:10px; display:flex; gap:5px;">
+                <button class="btn-gray" style="flex:1" onclick="exportData()">匯出備份</button>
+                <button class="btn-gray" style="flex:1" onclick="document.getElementById('import-file').click()">匯入</button>
+                <input type="file" id="import-file" style="display:none" accept=".json" onchange="handleImport(this)">
+            </div>
+        </div>
+
+        <div id="tab-rank" style="display:none;">
+            <div id="rank-container"></div>
+            <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
+        </div>
+
+        <div class="version-tag">版本：v1.0 (含數線教學)</div>
+    </div>
+
+    <div id="page-shop" class="container">
+        <h2>🎁 獎勵兌換商店</h2>
+        <div class="shop-balance">
+            <h3>目前持有</h3>
+            <div class="balance-row">
+                <span>👑 <span id="shop-crowns">0</span></span>
+                <span>💎 <span id="shop-gems">0</span></span>
+            </div>
+        </div>
+        <div class="exchange-form">
+            <div style="text-align:center; margin-bottom:10px; color:#555; font-weight:bold;">我要兌換...</div>
+            <div class="exchange-row">
+                <input type="text" id="gift-name" class="exchange-input" placeholder="輸入獎品名稱">
+            </div>
+            <div style="text-align:center; margin-bottom:10px; color:#555; font-weight:bold;">需要花費</div>
+            <div class="exchange-row">
+                <input type="number" id="gift-cost" class="exchange-input" placeholder="數量" min="1">
+                <select id="gift-currency" class="exchange-select">
+                    <option value="gems">💎 寶石</option>
+                    <option value="crowns">👑 皇冠</option>
+                </select>
+            </div>
+            <button class="btn-primary btn-block" onclick="processExchange()">確認兌換</button>
+        </div>
+        <div style="margin-top:20px;">
+            <h4>📜 兌換紀錄</h4>
+            <div id="exchange-log" class="log-list"></div>
+        </div>
+        <button class="btn-gray btn-block" style="margin-top:20px;" onclick="showPage('page-home')">返回首頁</button>
+    </div>
+
+    <div id="page-editor" class="container">
+        <h2>✏️ 編輯分數題庫</h2>
+        <div style="margin-bottom:15px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background:#eee; padding:15px; border-radius:10px;">
+            <div style="flex:100%">名稱: <input type="text" id="list-name" style="padding:5px; width:70%;"></div>
+            <div>💎 寶石: <input type="number" id="list-gems" value="5" style="padding:5px; width:60px;"></div>
+            <div>🎯 分數: <input type="number" id="list-pass-score" value="100" style="padding:5px; width:60px;"></div>
+        </div>
+
+        <div class="gen-controls">
+            <span><strong>自動生成:</strong></span>
+            題數<input type="number" id="gen-count" value="5">
+            類型<select id="gen-type"><option value="improper_to_mixed">假分數 ➡ 帶分數</option><option value="mixed_to_improper">帶分數 ➡ 假分數</option></select>
+            <button class="btn-warning" onclick="autoGenerate()">生成</button>
+        </div>
+        
+        <div style="max-height: 300px; overflow-y: auto;">
+            <div id="editor-rows"></div>
+        </div>
+        <button class="btn-gray" onclick="addEditRow()">+ 手動增加</button>
+        <div style="margin-top:15px; display:flex; gap:10px;">
+            <button class="btn-gray" style="flex:1" onclick="showPage('page-home')">取消</button>
+            <button class="btn-primary" style="flex:1" onclick="saveList()">儲存</button>
+        </div>
+    </div>
+
+    <div id="page-quiz" class="container">
+        <div class="quiz-header">
+            <span id="q-info">題目 1/5</span>
+            <span id="q-timer">00:00</span>
+            <span id="q-mode">分數練習</span>
+        </div>
+
+        <div class="question-display" id="q-display-area">
+            </div>
+        
+        <div style="text-align:center; color:#777; margin-bottom:5px;">請填寫答案：</div>
+
+        <div class="input-area" id="input-area">
+            </div>
+
+        <div id="number-line-container" class="number-line-box">
+            </div>
+
+        <div style="text-align: center; margin-top:20px;">
+            <div id="quiz-msg" style="height:24px; color:#e67e22; font-weight:bold; margin-bottom:10px;"></div>
+            
+            <div class="quiz-actions" id="quiz-actions">
+                <button id="btn-reset" class="btn-gray" onclick="resetInput()">🔄 重填</button>
+                <button id="btn-check" class="btn-success" onclick="checkAnswer()">提交答案</button>
+            </div>
+            
+            <button id="btn-next-q" class="btn-next-level" onclick="nextQuestion()">下一題 ➡</button>
+        </div>
+        
+        <button class="btn-danger" style="float:right; margin-top:20px;" onclick="quitQuiz()">退出</button>
+    </div>
+
+    <div id="page-result" class="container">
+        <div style="text-align: center;">
+            <h2>測驗結果</h2>
+            <div style="font-size: 3rem; color: var(--primary); font-weight: bold;" id="res-score">100</div>
+            <div id="res-detail" style="font-size: 1.2rem; margin: 10px;">答對 5 / 5 題</div>
+            <div id="res-time" style="color:#777;">耗時 01:20</div>
+            
+            <div id="reward-area"></div>
+
+            <div style="margin-top:20px;">
+                你的名字: <input type="text" id="player-name" style="padding:5px; font-size:1.2rem; text-align:center;" readonly>
+                <button class="btn-warning" onclick="saveRank()">登記榜單</button>
+            </div>
+            <button class="btn-gray btn-block" onclick="showPage('page-home')">回首頁</button>
+        </div>
+    </div>
+
+<script>
+    // --- 全域變數 ---
+    let studentName = "小小數學家"; 
+    let totalGems = 0;
+    let allLists = [], currentList = null, quizData = [], currentQIdx = 0;
+    let timerInt, startTime, rankData = [], exchangeLog = [];
+
+    const STORAGE_KEY_LISTS = 'frac_game_lists_v1';
+    const STORAGE_KEY_RANK = 'frac_game_rank_v1';
+    const STORAGE_KEY_USER = 'frac_game_user_v1';
+    const STORAGE_KEY_GEMS = 'frac_game_gems_v1';
+    const STORAGE_KEY_EXCHANGE = 'frac_game_exchange_v1';
+
+    // 語音
+    function speak(text) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            let cleanText = text.replace(/<[^>]*>/g, '').replace(/=/g, '等於');
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = 'zh-TW'; utterance.rate = 1.0; 
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    window.onload = function() {
+        if(localStorage.getItem(STORAGE_KEY_LISTS)) {
+            allLists = JSON.parse(localStorage.getItem(STORAGE_KEY_LISTS));
+        } else {
+            // 預設題庫
+            allLists = [
+                {
+                    name: "假分數變帶分數 (初級)", gems: 5, passScore: 100, 
+                    qs: [{type: 'improper_to_mixed', n: 7, d: 2}, {type: 'improper_to_mixed', n: 13, d: 4}]
+                },
+                {
+                    name: "帶分數變假分數 (初級)", gems: 5, passScore: 100, 
+                    qs: [{type: 'mixed_to_improper', w: 3, n: 1, d: 2}, {type: 'mixed_to_improper', w: 2, n: 3, d: 5}]
+                }
+            ];
+            saveData();
+        }
+        if(localStorage.getItem(STORAGE_KEY_RANK)) rankData = JSON.parse(localStorage.getItem(STORAGE_KEY_RANK));
+        if(localStorage.getItem(STORAGE_KEY_USER)) studentName = localStorage.getItem(STORAGE_KEY_USER);
+        if(localStorage.getItem(STORAGE_KEY_GEMS)) totalGems = parseInt(localStorage.getItem(STORAGE_KEY_GEMS)) || 0;
+        if(localStorage.getItem(STORAGE_KEY_EXCHANGE)) exchangeLog = JSON.parse(localStorage.getItem(STORAGE_KEY_EXCHANGE));
+
+        updateProfile();
+        renderLists();
+        renderExchangeLog();
+    };
+
+    function saveData() { localStorage.setItem(STORAGE_KEY_LISTS, JSON.stringify(allLists)); }
+    function saveStudentData() {
+        localStorage.setItem(STORAGE_KEY_USER, studentName);
+        localStorage.setItem(STORAGE_KEY_GEMS, totalGems);
+        localStorage.setItem(STORAGE_KEY_EXCHANGE, JSON.stringify(exchangeLog));
+        updateProfile();
+    }
+    
+    // --- UI 切換與共用功能 (同 numeric.html) ---
+    function changeName() { let n = prompt("名字：", studentName); if(n&&n.trim()){studentName=n.trim(); saveStudentData();}}
+    function updateProfile() {
+        document.getElementById('display-name').innerText = studentName;
+        document.getElementById('player-name').value = studentName; 
+        let crowns = Math.floor(totalGems/100); let remainGems = totalGems%100;
+        document.getElementById('stat-crowns').innerText = crowns; document.getElementById('stat-gems').innerText = remainGems;
+        if(document.getElementById('shop-crowns')) { document.getElementById('shop-crowns').innerText = crowns; document.getElementById('shop-gems').innerText = remainGems; }
+    }
+    function showPage(pid) {
+        document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
+        document.getElementById(pid).classList.add('active');
+        if(pid === 'page-home') renderLists();
+        if(pid === 'page-shop') { updateProfile(); renderExchangeLog(); }
+    }
+    function switchTab(t) {
+        document.getElementById('tab-quiz').style.display = t==='quiz'?'block':'none';
+        document.getElementById('tab-rank').style.display = t==='rank'?'block':'none';
+        if(t==='rank') renderRank();
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+
+    // --- 商店兌換 (同 numeric.html) ---
+    function processExchange() {
+        const giftName = document.getElementById('gift-name').value.trim();
+        const costVal = parseInt(document.getElementById('gift-cost').value);
+        const currency = document.getElementById('gift-currency').value;
+        if (!giftName || isNaN(costVal) || costVal <= 0) { alert("請輸入正確資訊"); return; }
+        let costInGems = currency === 'crowns' ? costVal * 100 : costVal;
+        if (totalGems >= costInGems) {
+            if(confirm(`兌換「${giftName}」花費 ${costVal} ${currency === 'crowns' ? '皇冠' : '寶石'}?`)) {
+                totalGems -= costInGems;
+                exchangeLog.unshift({date: new Date().toLocaleString(), item: giftName, cost: `${costVal} ${currency==='crowns'?'👑':'💎'}`});
+                saveStudentData(); renderExchangeLog();
+                document.getElementById('gift-name').value = ''; document.getElementById('gift-cost').value = '';
+                triggerRewardAnimation(currency === 'crowns' ? 'crown' : 'gem'); speak(`兌換成功！`);
+            }
+        } else { alert("餘額不足！"); }
+    }
+    function renderExchangeLog() {
+        const div = document.getElementById('exchange-log'); if(!div) return; div.innerHTML = '';
+        exchangeLog.forEach(log => { div.innerHTML += `<div class="log-item"><span>📅 ${log.date} - ${log.item}</span><span>-${log.cost}</span></div>`; });
+    }
+
+    // --- 題庫列表 ---
+    function renderLists() {
+        const c = document.getElementById('lists-container'); c.innerHTML='';
+        if(allLists.length===0) c.innerHTML='<p style="text-align:center">無題庫</p>';
+        allLists.forEach((l,i) => {
+            c.innerHTML += `
+                <div class="list-item">
+                    <div><strong>${l.name}</strong> (${l.qs.length}題)<span class="gem-tag">💎+${l.gems||5}</span></div>
+                    <div>
+                        <button class="btn-primary" onclick="startQuizInit(${i})">開始</button>
+                        <button class="btn-gray" onclick="editList(${i})">編輯</button>
+                        <button class="btn-danger" onclick="delList(${i})">刪</button>
+                    </div>
+                </div>`;
+        });
+    }
+
+    // --- 編輯器 (分數專用) ---
+    let editingId = null;
+    function createNewList() {
+        editingId = null;
+        document.getElementById('list-name').value = "新分數練習";
+        document.getElementById('editor-rows').innerHTML = '';
+        showPage('page-editor');
+    }
+    function editList(i) {
+        editingId = i; const l = allLists[i];
+        document.getElementById('list-name').value = l.name;
+        document.getElementById('list-gems').value = l.gems || 5;
+        document.getElementById('list-pass-score').value = l.passScore || 100;
+        const box = document.getElementById('editor-rows'); box.innerHTML = '';
+        l.qs.forEach(q => addEditRow(q));
+        showPage('page-editor');
+    }
+    
+    function addEditRow(q = null) {
+        // q format: {type: 'improper_to_mixed', n: 7, d: 2} or {type: 'mixed_to_improper', w:3, n:1, d:2}
+        const div = document.createElement('div'); div.className='edit-row';
+        let type = q ? q.type : 'improper_to_mixed';
+        let w = q && q.w ? q.w : '';
+        let n = q && q.n ? q.n : '';
+        let d = q && q.d ? q.d : '';
+
+        div.innerHTML = `
+            <select class="inp-type" onchange="updateRowInput(this)" style="margin-right:5px;">
+                <option value="improper_to_mixed" ${type==='improper_to_mixed'?'selected':''}>假➡帶</option>
+                <option value="mixed_to_improper" ${type==='mixed_to_improper'?'selected':''}>帶➡假</option>
+            </select>
+            <span class="inputs-container">
+                ${generateRowInputs(type, w, n, d)}
+            </span>
+            <button class="btn-danger" onclick="this.parentElement.remove()" style="margin-left:auto;">×</button>
+        `;
+        document.getElementById('editor-rows').appendChild(div);
+    }
+
+    function generateRowInputs(type, w, n, d) {
+        if(type === 'improper_to_mixed') {
+            return `分子:<input type="number" class="inp-n" value="${n}" style="width:50px"> 分母:<input type="number" class="inp-d" value="${d}" style="width:50px">`;
+        } else {
+            return `整數:<input type="number" class="inp-w" value="${w}" style="width:40px"> 分子:<input type="number" class="inp-n" value="${n}" style="width:50px"> 分母:<input type="number" class="inp-d" value="${d}" style="width:50px">`;
+        }
+    }
+
+    window.updateRowInput = function(sel) {
+        const container = sel.nextElementSibling;
+        container.innerHTML = generateRowInputs(sel.value, '', '', '');
+    }
+
+    function autoGenerate() {
+        const count = parseInt(document.getElementById('gen-count').value);
+        const type = document.getElementById('gen-type').value;
+        
+        for(let i=0; i<count; i++) {
+            // 限制整數在 1-9，分母 2-9
+            let den = Math.floor(Math.random() * 8) + 2; // 2 to 9
+            let whole = Math.floor(Math.random() * 9) + 1; // 1 to 9
+            let numPart = Math.floor(Math.random() * (den - 1)) + 1; // 1 to den-1
+            
+            let improperNum = whole * den + numPart;
+            
+            let q = {};
+            if(type === 'improper_to_mixed') {
+                q = {type: type, n: improperNum, d: den};
+            } else {
+                q = {type: type, w: whole, n: numPart, d: den};
+            }
+            addEditRow(q);
+        }
+    }
+
+    function saveList() {
+        const name = document.getElementById('list-name').value;
+        const gems = parseInt(document.getElementById('list-gems').value);
+        const passScore = parseInt(document.getElementById('list-pass-score').value);
+        
+        const rows = document.querySelectorAll('.edit-row');
+        const qs = [];
+        rows.forEach(r => {
+            const type = r.querySelector('.inp-type').value;
+            const n = parseInt(r.querySelector('.inp-n').value);
+            const d = parseInt(r.querySelector('.inp-d').value);
+            
+            if(type === 'improper_to_mixed') {
+                if(!isNaN(n) && !isNaN(d)) qs.push({type, n, d});
+            } else {
+                const w = parseInt(r.querySelector('.inp-w').value);
+                if(!isNaN(w) && !isNaN(n) && !isNaN(d)) qs.push({type, w, n, d});
+            }
+        });
+
+        if(qs.length===0) return alert("至少新增一題");
+        const data = {name, gems, passScore, qs};
+        if(editingId === null) allLists.push(data); else allLists[editingId] = data;
+        saveData(); showPage('page-home');
+    }
+    function delList(i) { if(confirm("刪除?")) { allLists.splice(i,1); saveData(); renderLists(); } }
+    
+    // 匯入匯出
+    function exportData() {
+        const blob = new Blob([JSON.stringify({v:"1.0", s:studentName, g:totalGems, l:allLists, h:exchangeLog})], {type: "application/json"});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `fraction_backup.json`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }
+    function handleImport(inp) {
+        const f = inp.files[0]; if(!f) return;
+        const r = new FileReader();
+        r.onload = (e) => {
+            try {
+                const d = JSON.parse(e.target.result);
+                if(d.l) allLists = d.l; if(d.s) {studentName=d.s; totalGems=d.g; exchangeLog=d.h||[];}
+                saveData(); saveStudentData(); renderLists(); alert("匯入成功");
+            } catch(e){alert("格式錯誤");}
+        }; r.readAsText(f);
+    }
+
+    // --- 測驗邏輯 ---
+    function startQuizInit(i) {
+        currentList = allLists[i];
+        quizData = currentList.qs.map(q => ({...q, isCorrect: false}));
+        currentQIdx = 0; startTime = Date.now(); clearInterval(timerInt); timerInt = setInterval(updTime, 1000);
+        showPage('page-quiz');
+        speak(`${currentList.name}，開始！`);
+        loadQuestion();
+    }
+    function updTime() { document.getElementById('q-timer').innerText = new Date((Math.floor((Date.now()-startTime)/1000))*1000).toISOString().substr(14,5); }
+    function quitQuiz() { if(confirm("退出?")) { clearInterval(timerInt); showPage('page-home'); } }
+
+    function loadQuestion() {
+        const q = quizData[currentQIdx];
+        document.getElementById('q-info').innerText = `題目 ${currentQIdx+1} / ${quizData.length}`;
+        document.getElementById('quiz-msg').innerText = "";
+        document.getElementById('quiz-actions').style.display = 'flex';
+        document.getElementById('btn-next-q').style.display = 'none';
+        document.getElementById('number-line-container').style.display = 'none'; // 隱藏數線
+
+        const displayArea = document.getElementById('q-display-area');
+        const inputArea = document.getElementById('input-area');
+        
+        // 渲染題目與輸入格
+        if(q.type === 'improper_to_mixed') {
+            // 題目：假分數
+            displayArea.innerHTML = getFractionHTML('', q.n, q.d);
+            // 輸入：帶分數 (整數, 分子, 分母)
+            inputArea.innerHTML = `
+                <span class="equals-sign">=</span>
+                <div class="frac-input-group">
+                    <input type="tel" class="inp-whole pv-input" id="ans-w" placeholder="整" onkeydown="handleEnter(event)">
+                    <div class="frac-input-part">
+                        <input type="tel" class="inp-num pv-input" id="ans-n" placeholder="子" onkeydown="handleEnter(event)">
+                        <div class="inp-sep"></div>
+                        <input type="tel" class="inp-den pv-input" id="ans-d" placeholder="母" onkeydown="handleEnter(event)">
+                    </div>
+                </div>
+            `;
+        } else {
+            // 題目：帶分數
+            displayArea.innerHTML = getFractionHTML(q.w, q.n, q.d);
+            // 輸入：假分數 (分子, 分母)
+            inputArea.innerHTML = `
+                <span class="equals-sign">=</span>
+                <div class="frac-input-group">
+                    <div class="frac-input-part">
+                        <input type="tel" class="inp-num pv-input" id="ans-n" placeholder="子" onkeydown="handleEnter(event)">
+                        <div class="inp-sep"></div>
+                        <input type="tel" class="inp-den pv-input" id="ans-d" placeholder="母" onkeydown="handleEnter(event)">
+                    </div>
+                </div>
+            `;
+        }
+
+        setTimeout(() => { 
+            const firstInp = document.querySelector('.pv-input');
+            if(firstInp) firstInp.focus(); 
+        }, 300);
+    }
+
+    function getFractionHTML(w, n, d) {
+        let html = '<div class="fraction-display">';
+        if(w) html += `<div class="frac-whole">${w}</div>`;
+        html += `<div class="frac-part"><div class="frac-num">${n}</div><div class="frac-line"></div><div class="frac-den">${d}</div></div>`;
+        html += '</div>';
+        return html;
+    }
+
+    function handleEnter(e) { if(e.key === 'Enter') checkAnswer(); }
+    
+    function resetInput() {
+        document.querySelectorAll('.pv-input').forEach(i => { i.value=''; i.classList.remove('wrong'); i.classList.remove('correct'); });
+        document.querySelector('.pv-input').focus();
+    }
+
+    function checkAnswer() {
+        const q = quizData[currentQIdx];
+        let isCorrect = true;
+
+        const ansW = document.getElementById('ans-w');
+        const ansN = document.getElementById('ans-n');
+        const ansD = document.getElementById('ans-d');
+
+        if(q.type === 'improper_to_mixed') {
+            // 計算正確答案
+            let correctW = Math.floor(q.n / q.d);
+            let correctN = q.n % q.d;
+            let correctD = q.d;
+
+            if(parseInt(ansW.value) !== correctW) { ansW.classList.add('wrong'); isCorrect = false; } else { ansW.classList.add('correct'); }
+            if(parseInt(ansN.value) !== correctN) { ansN.classList.add('wrong'); isCorrect = false; } else { ansN.classList.add('correct'); }
+            if(parseInt(ansD.value) !== correctD) { ansD.classList.add('wrong'); isCorrect = false; } else { ansD.classList.add('correct'); }
+        } else {
+            // 帶分數轉假分數
+            let correctN = (q.w * q.d) + q.n;
+            let correctD = q.d;
+            
+            if(parseInt(ansN.value) !== correctN) { ansN.classList.add('wrong'); isCorrect = false; } else { ansN.classList.add('correct'); }
+            if(parseInt(ansD.value) !== correctD) { ansD.classList.add('wrong'); isCorrect = false; } else { ansD.classList.add('correct'); }
+        }
+
+        if(isCorrect) {
+            quizData[currentQIdx].isCorrect = true;
+            document.getElementById('quiz-msg').innerText = "答對了！看看數線上的位置！";
+            speak("答對了");
+            document.getElementById('quiz-actions').style.display = 'none';
+            document.getElementById('btn-next-q').style.display = 'inline-block';
+            
+            // 繪製數線
+            let targetWhole = q.type === 'improper_to_mixed' ? Math.floor(q.n/q.d) : q.w;
+            let targetPart = q.type === 'improper_to_mixed' ? (q.n%q.d) : q.n;
+            let den = q.d;
+            drawNumberLine(targetWhole, targetPart, den);
+        } else {
+            document.getElementById('quiz-msg').innerText = "再試試看！";
+            speak("算錯囉");
+        }
+    }
+
+    // --- 數線繪製 (SVG) ---
+    function drawNumberLine(whole, num, den) {
+        const container = document.getElementById('number-line-container');
+        container.style.display = 'block';
+        
+        // 設定範圍：顯示 0 到 10 (題目設定不超過10)
+        // 為了讓顯示清楚，我們可以設定每個整數寬度為 80px
+        const unitWidth = 80; 
+        const padding = 30;
+        const totalWidth = unitWidth * 11 + (padding * 2); // 0-10 是 10 格，不，是 11 個點
+        
+        // 創建 SVG
+        let svgNS = "http://www.w3.org/2000/svg";
+        let svg = document.createElementNS(svgNS, "svg");
+        svg.setAttribute("width", totalWidth);
+        svg.setAttribute("height", "100%");
+        
+        // 主線
+        let line = document.createElementNS(svgNS, "line");
+        line.setAttribute("x1", padding); line.setAttribute("y1", 60);
+        line.setAttribute("x2", totalWidth - padding); line.setAttribute("y2", 60);
+        line.setAttribute("stroke", "#333"); line.setAttribute("stroke-width", "2");
+        svg.appendChild(line);
+
+        // 畫刻度
+        for(let i=0; i<=10; i++) {
+            let x = padding + (i * unitWidth);
+            
+            // 大刻度 (整數)
+            let tick = document.createElementNS(svgNS, "line");
+            tick.setAttribute("x1", x); tick.setAttribute("y1", 50);
+            tick.setAttribute("x2", x); tick.setAttribute("y2", 70);
+            tick.setAttribute("stroke", "#333"); tick.setAttribute("stroke-width", "2");
+            svg.appendChild(tick);
+            
+            // 數字
+            let text = document.createElementNS(svgNS, "text");
+            text.setAttribute("x", x); text.setAttribute("y", 90);
+            text.setAttribute("text-anchor", "middle");
+            text.setAttribute("font-size", "14px");
+            text.textContent = i;
+            svg.appendChild(text);
+
+            // 小刻度 (分數) - 只畫到 9 之後
+            if(i < 10) {
+                for(let j=1; j<den; j++) {
+                    let subX = x + (j * (unitWidth / den));
+                    let subTick = document.createElementNS(svgNS, "line");
+                    subTick.setAttribute("x1", subX); subTick.setAttribute("y1", 55);
+                    subTick.setAttribute("x2", subX); subTick.setAttribute("y2", 65);
+                    subTick.setAttribute("stroke", "#999"); subTick.setAttribute("stroke-width", "1");
+                    svg.appendChild(subTick);
+                }
+            }
+        }
+
+        // 標示答案位置
+        let targetX = padding + (whole * unitWidth) + (num * (unitWidth / den));
+        
+        // 畫圓點
+        let circle = document.createElementNS(svgNS, "circle");
+        circle.setAttribute("cx", targetX); circle.setAttribute("cy", 60);
+        circle.setAttribute("r", 6);
+        circle.setAttribute("fill", "#e74c3c");
+        svg.appendChild(circle);
+
+        // 畫箭頭標示
+        let arrowText = document.createElementNS(svgNS, "text");
+        arrowText.setAttribute("x", targetX); arrowText.setAttribute("y", 30);
+        arrowText.setAttribute("text-anchor", "middle");
+        arrowText.setAttribute("fill", "#e74c3c");
+        arrowText.setAttribute("font-weight", "bold");
+        arrowText.setAttribute("font-size", "16px");
+        arrowText.textContent = `${whole}又${num}/${den}`;
+        svg.appendChild(arrowText);
+
+        container.innerHTML = '';
+        container.appendChild(svg);
+        
+        // 自動捲動到答案位置
+        setTimeout(() => {
+            container.scrollLeft = targetX - (container.clientWidth / 2);
+        }, 100);
+    }
+
+    function nextQuestion() {
+        if(currentQIdx < quizData.length - 1) { currentQIdx++; loadQuestion(); } else { showResult(); }
+    }
+
+    function showResult() {
+        clearInterval(timerInt);
+        let correct = quizData.filter(x => x.isCorrect).length;
+        let score = Math.round((correct/quizData.length)*100);
+        showPage('page-result');
+        document.getElementById('res-score').innerText = score;
+        document.getElementById('res-detail').innerText = `答對 ${correct} / ${quizData.length}`;
+        document.getElementById('res-time').innerText = `耗時 ${document.getElementById('q-timer').innerText}`;
+        
+        const reward = document.getElementById('reward-area'); reward.innerHTML = '';
+        if(score >= currentList.passScore) {
+            totalGems += (currentList.gems||5); saveStudentData();
+            reward.innerHTML = `<div class="reward-popup">🎉 恭喜！獲得 ${currentList.gems} 寶石 💎</div>`;
+            triggerRewardAnimation('gem'); speak("太棒了，全部完成！");
+        } else { speak("測驗結束，再接再厲"); }
+    }
+
+    function saveRank() {
+        rankData.push({name: studentName, score: parseInt(document.getElementById('res-score').innerText), list: currentList.name, date: new Date().toLocaleDateString()});
+        rankData.sort((a,b)=>b.score-a.score); rankData=rankData.slice(0,20);
+        localStorage.setItem(STORAGE_KEY_RANK, JSON.stringify(rankData));
+        alert("已登記"); switchTab('rank'); showPage('page-home');
+    }
+    function clearRank() { if(confirm("清空?")) { rankData=[]; localStorage.removeItem(STORAGE_KEY_RANK); renderRank(); } }
+    function renderRank() {
+        const b = document.getElementById('rank-container'); b.innerHTML='';
+        rankData.forEach((r,i)=> b.innerHTML+=`<div style="display:flex;justify-content:space-between;border-bottom:1px solid #eee;padding:10px;"><span>#${i+1} ${r.name}</span><span>${r.score}分</span></div>`);
+    }
+
+    function triggerRewardAnimation(type) {
+        const c = document.getElementById('particle-container'); c.style.display='block'; c.innerHTML='';
+        for(let i=0; i<30; i++) {
+            let p = document.createElement('div'); p.innerText = type==='crown'?'👑':'💎'; p.className='particle';
+            p.style.left=Math.random()*100+'vw'; p.style.animationDuration=(Math.random()*2+1)+'s';
+            c.appendChild(p);
+        }
+        setTimeout(()=>{c.style.display='none'}, 3000);
+    }
+</script>
+
+</body>
+</html>
