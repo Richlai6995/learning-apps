@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>位數闖關王 2.2 (提示功能版)</title>
+    <title>位數闖關王 2.3 (重填功能版)</title>
     <style>
         :root {
             --primary: #16a085;
@@ -185,6 +185,19 @@
             font-size: 3rem; font-weight: bold; color: var(--dark); padding-bottom: 10px;
         }
 
+        /* 按鈕群組 */
+        .quiz-actions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .quiz-actions button {
+            flex: 1;
+            max-width: 150px;
+            padding: 12px;
+        }
+
         /* --- 獎勵與共用 --- */
         .shop-balance {
             background: linear-gradient(135deg, #16a085 0%, #2ecc71 100%);
@@ -247,7 +260,7 @@
     <div id="particle-container"></div>
 
     <div id="page-home" class="container active">
-        <h1>🔢 位數闖關王 2.2</h1>
+        <h1>🔢 位數闖關王 2.3</h1>
         
         <div class="user-profile" onclick="changeName()">
             <div>🎓 <span id="display-name">設定學員姓名</span> ✎</div>
@@ -276,7 +289,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v2.2 (新增提示功能)</div>
+        <div class="version-tag">版本：v2.3 (新增重填功能)</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -371,7 +384,12 @@
 
         <div style="text-align: center; margin-top:20px;">
             <div id="quiz-msg" style="height:24px; color:#e67e22; font-weight:bold; margin-bottom:10px;"></div>
-            <button id="btn-check" class="btn-success btn-block" onclick="checkAnswer()">提交答案</button>
+            
+            <div class="quiz-actions" id="quiz-actions">
+                <button id="btn-reset" class="btn-gray" onclick="resetInput()">🔄 重填</button>
+                <button id="btn-check" class="btn-success" onclick="checkAnswer()">提交答案</button>
+            </div>
+            
             <button id="btn-next-q" class="btn-next-level" onclick="nextQuestion()">下一題 ➡</button>
         </div>
         
@@ -661,10 +679,10 @@
     function exportData() {
         const now = new Date();
         const dateStr = `${now.getFullYear()}${now.getMonth()+1}${now.getDate()}`;
-        const exportObj = { version: "2.2", student: { name: studentName, totalGems: totalGems }, lists: allLists, exchangeLog: exchangeLog };
+        const exportObj = { version: "2.3", student: { name: studentName, totalGems: totalGems }, lists: allLists, exchangeLog: exchangeLog };
         const blob = new Blob([JSON.stringify(exportObj)], {type: "application/json"});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-        a.download = `placevalue_v2.2_backup_${dateStr}.json`; 
+        a.download = `placevalue_v2.3_backup_${dateStr}.json`; 
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
     }
     function handleImport(inp) {
@@ -724,7 +742,8 @@
             btnHint.style.display = 'none';
         }
         
-        document.getElementById('btn-check').style.display = 'inline-block';
+        // 顯示提交區，隱藏下一題
+        document.getElementById('quiz-actions').style.display = 'flex';
         document.getElementById('btn-next-q').style.display = 'none';
 
         renderBoard(q.val);
@@ -739,6 +758,19 @@
         const hintBox = document.getElementById('pv-hint-box');
         hintBox.style.display = 'block';
         speak("提示：" + hintBox.innerText);
+    }
+    
+    function resetInput() {
+        const inputs = document.querySelectorAll('.pv-input');
+        inputs.forEach(inp => {
+            if(!inp.disabled) {
+                inp.value = '';
+                inp.classList.remove('wrong');
+                inp.classList.remove('correct');
+            }
+        });
+        document.getElementById('quiz-msg').innerText = "";
+        if(inputs.length > 0) inputs[0].focus();
     }
 
     function handleEnter(e) {
@@ -843,7 +875,7 @@
             quizData[currentQIdx].isCorrect = true;
             document.getElementById('quiz-msg').innerText = "太棒了！全對！";
             speak("答對了！");
-            document.getElementById('btn-check').style.display = 'none';
+            document.getElementById('quiz-actions').style.display = 'none';
             document.getElementById('btn-next-q').style.display = 'inline-block';
             if(currentQIdx === quizData.length - 1) {
                  document.getElementById('btn-next-q').innerText = "查看成績 🏆";
