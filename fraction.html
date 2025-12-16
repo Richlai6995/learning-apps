@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>分數變身闖關王 1.2 (數線協助版)</title>
+    <title>分數變身闖關王 1.3 (防偷看版)</title>
     <style>
         :root {
             --primary: #8e44ad; /* 紫色系 */
@@ -225,7 +225,7 @@
     <div id="particle-container"></div>
 
     <div id="page-home" class="container active">
-        <h1>🔢 分數變身闖關王 1.2</h1>
+        <h1>🔢 分數變身闖關王 1.3</h1>
         
         <div class="user-profile" onclick="changeName()">
             <div>🎓 <span id="display-name">設定學員姓名</span> ✎</div>
@@ -254,7 +254,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v1.2 (新增數線顯示按鈕)</div>
+        <div class="version-tag">版本：v1.3 (防偷看版)</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -682,18 +682,14 @@
     function showNumberLineHint() {
         const q = quizData[currentQIdx];
         let w, n, d;
-        // 計算出正確答案的座標
         if (q.type === 'improper_to_mixed') {
-            w = Math.floor(q.n / q.d);
-            n = q.n % q.d;
-            d = q.d;
+            w = Math.floor(q.n / q.d); n = q.n % q.d; d = q.d;
         } else {
-            w = q.w;
-            n = q.n;
-            d = q.d;
+            w = q.w; n = q.n; d = q.d;
         }
-        drawNumberLine(w, n, d);
-        speak("數線已顯示");
+        // Hint mode: showLabel = false
+        drawNumberLine(w, n, d, false);
+        speak("數線已顯示，請觀察紅點位置");
     }
 
     function checkAnswer() {
@@ -726,12 +722,13 @@
             speak("答對了");
             document.getElementById('quiz-actions').style.display = 'none';
             document.getElementById('btn-next-q').style.display = 'inline-block';
-            document.getElementById('btn-show-line').style.display = 'none'; // 隱藏按鈕
+            document.getElementById('btn-show-line').style.display = 'none'; 
             
             let targetWhole = q.type === 'improper_to_mixed' ? Math.floor(q.n/q.d) : q.w;
             let targetPart = q.type === 'improper_to_mixed' ? (q.n%q.d) : q.n;
             let den = q.d;
-            drawNumberLine(targetWhole, targetPart, den);
+            // Success mode: showLabel = true
+            drawNumberLine(targetWhole, targetPart, den, true);
         } else {
             document.getElementById('quiz-msg').innerText = "再試試看！";
             speak("算錯囉");
@@ -739,7 +736,7 @@
     }
 
     // --- 數線繪製 (SVG) ---
-    function drawNumberLine(whole, num, den) {
+    function drawNumberLine(whole, num, den, showLabel = true) {
         const container = document.getElementById('number-line-container');
         container.style.display = 'block';
         
@@ -802,14 +799,17 @@
         circle.setAttribute("fill", "#e74c3c");
         svg.appendChild(circle);
 
-        let arrowText = document.createElementNS(svgNS, "text");
-        arrowText.setAttribute("x", targetX); arrowText.setAttribute("y", 35);
-        arrowText.setAttribute("text-anchor", "middle");
-        arrowText.setAttribute("fill", "#e74c3c");
-        arrowText.setAttribute("font-weight", "bold");
-        arrowText.setAttribute("font-size", "18px");
-        arrowText.textContent = `${whole}又${num}/${den}`;
-        svg.appendChild(arrowText);
+        // Only show text if showLabel is true
+        if(showLabel) {
+            let arrowText = document.createElementNS(svgNS, "text");
+            arrowText.setAttribute("x", targetX); arrowText.setAttribute("y", 35);
+            arrowText.setAttribute("text-anchor", "middle");
+            arrowText.setAttribute("fill", "#e74c3c");
+            arrowText.setAttribute("font-weight", "bold");
+            arrowText.setAttribute("font-size", "18px");
+            arrowText.textContent = `${whole}又${num}/${den}`;
+            svg.appendChild(arrowText);
+        }
 
         container.innerHTML = '';
         container.appendChild(svg);
