@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>分數變身闖關王 1.1</title>
+    <title>分數變身闖關王 1.2 (數線協助版)</title>
     <style>
         :root {
             --primary: #8e44ad; /* 紫色系 */
@@ -82,6 +82,14 @@
         .btn-accent { background-color: #f39c12; }
         .btn-block { width: 100%; padding: 12px; margin-top: 10px; }
         
+        /* 輔助按鈕 */
+        .btn-tool {
+            background-color: #f39c12; color: #fff;
+            box-shadow: 0 4px #d35400;
+            margin-top: 15px;
+        }
+        .btn-tool:active { transform: translateY(4px); box-shadow: 0 0 #d35400; }
+
         .btn-next-level {
             background-color: #27ae60; color: white; font-size: 1.5rem; padding: 15px 30px;
             border-radius: 50px; box-shadow: 0 6px #1e8449; margin-top: 20px;
@@ -109,7 +117,7 @@
         /* --- 分數練習專用 CSS --- */
         .question-display {
             text-align: center; font-size: 2.5rem; font-weight: bold; margin: 20px 0;
-            display: flex; justify-content: center; align-items: center; gap: 10px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px;
         }
         
         /* 分數顯示組件 */
@@ -217,7 +225,7 @@
     <div id="particle-container"></div>
 
     <div id="page-home" class="container active">
-        <h1>🔢 分數變身闖關王 1.1</h1>
+        <h1>🔢 分數變身闖關王 1.2</h1>
         
         <div class="user-profile" onclick="changeName()">
             <div>🎓 <span id="display-name">設定學員姓名</span> ✎</div>
@@ -246,7 +254,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v1.1 (全數線分割版)</div>
+        <div class="version-tag">版本：v1.2 (新增數線顯示按鈕)</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -315,7 +323,11 @@
         <div class="question-display" id="q-display-area">
             </div>
         
-        <div style="text-align:center; color:#777; margin-bottom:5px;">請填寫答案：</div>
+        <div style="text-align: center;">
+            <button id="btn-show-line" class="btn-tool" onclick="showNumberLineHint()">📏 顯示數線協助</button>
+        </div>
+
+        <div style="text-align:center; color:#777; margin:10px 0 5px 0;">請填寫答案：</div>
 
         <div class="input-area" id="input-area">
             </div>
@@ -413,7 +425,7 @@
         updateProfile();
     }
     
-    // --- UI 切換與共用功能 (同 numeric.html) ---
+    // --- UI 切換與共用功能 ---
     function changeName() { let n = prompt("名字：", studentName); if(n&&n.trim()){studentName=n.trim(); saveStudentData();}}
     function updateProfile() {
         document.getElementById('display-name').innerText = studentName;
@@ -436,7 +448,7 @@
         event.target.classList.add('active');
     }
 
-    // --- 商店兌換 (同 numeric.html) ---
+    // --- 商店兌換 ---
     function processExchange() {
         const giftName = document.getElementById('gift-name').value.trim();
         const costVal = parseInt(document.getElementById('gift-cost').value);
@@ -475,7 +487,7 @@
         });
     }
 
-    // --- 編輯器 (分數專用) ---
+    // --- 編輯器 ---
     let editingId = null;
     function createNewList() {
         editingId = null;
@@ -494,7 +506,6 @@
     }
     
     function addEditRow(q = null) {
-        // q format: {type: 'improper_to_mixed', n: 7, d: 2} or {type: 'mixed_to_improper', w:3, n:1, d:2}
         const div = document.createElement('div'); div.className='edit-row';
         let type = q ? q.type : 'improper_to_mixed';
         let w = q && q.w ? q.w : '';
@@ -532,10 +543,9 @@
         const type = document.getElementById('gen-type').value;
         
         for(let i=0; i<count; i++) {
-            // 限制整數在 1-9，分母 2-9
-            let den = Math.floor(Math.random() * 8) + 2; // 2 to 9
-            let whole = Math.floor(Math.random() * 9) + 1; // 1 to 9
-            let numPart = Math.floor(Math.random() * (den - 1)) + 1; // 1 to den-1
+            let den = Math.floor(Math.random() * 8) + 2; 
+            let whole = Math.floor(Math.random() * 9) + 1; 
+            let numPart = Math.floor(Math.random() * (den - 1)) + 1; 
             
             let improperNum = whole * den + numPart;
             
@@ -612,16 +622,16 @@
         document.getElementById('quiz-msg').innerText = "";
         document.getElementById('quiz-actions').style.display = 'flex';
         document.getElementById('btn-next-q').style.display = 'none';
-        document.getElementById('number-line-container').style.display = 'none'; // 隱藏數線
+        
+        // 預設隱藏數線
+        document.getElementById('number-line-container').style.display = 'none'; 
+        document.getElementById('btn-show-line').style.display = 'inline-block'; // 顯示按鈕
 
         const displayArea = document.getElementById('q-display-area');
         const inputArea = document.getElementById('input-area');
         
-        // 渲染題目與輸入格
         if(q.type === 'improper_to_mixed') {
-            // 題目：假分數
             displayArea.innerHTML = getFractionHTML('', q.n, q.d);
-            // 輸入：帶分數 (整數, 分子, 分母)
             inputArea.innerHTML = `
                 <span class="equals-sign">=</span>
                 <div class="frac-input-group">
@@ -634,9 +644,7 @@
                 </div>
             `;
         } else {
-            // 題目：帶分數
             displayArea.innerHTML = getFractionHTML(q.w, q.n, q.d);
-            // 輸入：假分數 (分子, 分母)
             inputArea.innerHTML = `
                 <span class="equals-sign">=</span>
                 <div class="frac-input-group">
@@ -670,6 +678,24 @@
         document.querySelector('.pv-input').focus();
     }
 
+    // --- 數線顯示邏輯 ---
+    function showNumberLineHint() {
+        const q = quizData[currentQIdx];
+        let w, n, d;
+        // 計算出正確答案的座標
+        if (q.type === 'improper_to_mixed') {
+            w = Math.floor(q.n / q.d);
+            n = q.n % q.d;
+            d = q.d;
+        } else {
+            w = q.w;
+            n = q.n;
+            d = q.d;
+        }
+        drawNumberLine(w, n, d);
+        speak("數線已顯示");
+    }
+
     function checkAnswer() {
         const q = quizData[currentQIdx];
         let isCorrect = true;
@@ -679,7 +705,6 @@
         const ansD = document.getElementById('ans-d');
 
         if(q.type === 'improper_to_mixed') {
-            // 計算正確答案
             let correctW = Math.floor(q.n / q.d);
             let correctN = q.n % q.d;
             let correctD = q.d;
@@ -688,7 +713,6 @@
             if(parseInt(ansN.value) !== correctN) { ansN.classList.add('wrong'); isCorrect = false; } else { ansN.classList.add('correct'); }
             if(parseInt(ansD.value) !== correctD) { ansD.classList.add('wrong'); isCorrect = false; } else { ansD.classList.add('correct'); }
         } else {
-            // 帶分數轉假分數
             let correctN = (q.w * q.d) + q.n;
             let correctD = q.d;
             
@@ -702,8 +726,8 @@
             speak("答對了");
             document.getElementById('quiz-actions').style.display = 'none';
             document.getElementById('btn-next-q').style.display = 'inline-block';
+            document.getElementById('btn-show-line').style.display = 'none'; // 隱藏按鈕
             
-            // 繪製數線
             let targetWhole = q.type === 'improper_to_mixed' ? Math.floor(q.n/q.d) : q.w;
             let targetPart = q.type === 'improper_to_mixed' ? (q.n%q.d) : q.n;
             let den = q.d;
@@ -719,8 +743,7 @@
         const container = document.getElementById('number-line-container');
         container.style.display = 'block';
         
-        // 設定範圍：顯示 0 到 10
-        const unitWidth = 100; // 加寬間距，讓小格子更清楚
+        const unitWidth = 100; 
         const padding = 30;
         const totalWidth = unitWidth * 11 + (padding * 2);
         
@@ -729,7 +752,6 @@
         svg.setAttribute("width", totalWidth);
         svg.setAttribute("height", "100%");
         
-        // 標示每小格單位
         let infoText = document.createElementNS(svgNS, "text");
         infoText.setAttribute("x", padding); infoText.setAttribute("y", 20);
         infoText.setAttribute("font-size", "14px");
@@ -737,25 +759,21 @@
         infoText.textContent = `💡 每 1 小格 = 1/${den}`;
         svg.appendChild(infoText);
 
-        // 主線
         let line = document.createElementNS(svgNS, "line");
         line.setAttribute("x1", padding); line.setAttribute("y1", 60);
         line.setAttribute("x2", totalWidth - padding); line.setAttribute("y2", 60);
         line.setAttribute("stroke", "#333"); line.setAttribute("stroke-width", "2");
         svg.appendChild(line);
 
-        // 畫刻度
         for(let i=0; i<=10; i++) {
             let x = padding + (i * unitWidth);
             
-            // 大刻度 (整數)
             let tick = document.createElementNS(svgNS, "line");
             tick.setAttribute("x1", x); tick.setAttribute("y1", 50);
             tick.setAttribute("x2", x); tick.setAttribute("y2", 70);
-            tick.setAttribute("stroke", "#333"); tick.setAttribute("stroke-width", "3"); // 整數刻度加粗
+            tick.setAttribute("stroke", "#333"); tick.setAttribute("stroke-width", "3");
             svg.appendChild(tick);
             
-            // 數字
             let text = document.createElementNS(svgNS, "text");
             text.setAttribute("x", x); text.setAttribute("y", 90);
             text.setAttribute("text-anchor", "middle");
@@ -764,7 +782,6 @@
             text.textContent = i;
             svg.appendChild(text);
 
-            // 小刻度 (分數) - 每一大格都畫
             if(i < 10) {
                 for(let j=1; j<den; j++) {
                     let subX = x + (j * (unitWidth / den));
@@ -777,17 +794,14 @@
             }
         }
 
-        // 標示答案位置
         let targetX = padding + (whole * unitWidth) + (num * (unitWidth / den));
         
-        // 畫圓點
         let circle = document.createElementNS(svgNS, "circle");
         circle.setAttribute("cx", targetX); circle.setAttribute("cy", 60);
         circle.setAttribute("r", 6);
         circle.setAttribute("fill", "#e74c3c");
         svg.appendChild(circle);
 
-        // 畫箭頭標示
         let arrowText = document.createElementNS(svgNS, "text");
         arrowText.setAttribute("x", targetX); arrowText.setAttribute("y", 35);
         arrowText.setAttribute("text-anchor", "middle");
@@ -800,7 +814,6 @@
         container.innerHTML = '';
         container.appendChild(svg);
         
-        // 自動捲動到答案位置
         setTimeout(() => {
             let scrollPos = targetX - (container.clientWidth / 2);
             if(scrollPos < 0) scrollPos = 0;
