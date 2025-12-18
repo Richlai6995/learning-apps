@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>乘法闖關王 4.5 (全功能獎勵版)</title>
+    <title>乘法闖關王 4.6 (極速優化版)</title>
     <style>
         :root {
             --primary: #8e44ad;
@@ -153,6 +153,11 @@
 
         .game-input.wrong, .carry-input.wrong { background: #fadbd8; border-color: var(--danger); animation: shake 0.4s; }
         
+        /* 移除 input 的上下箭頭 */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+
         .multiplication-line { border-bottom: 3px solid #333; }
         .operator { color: var(--primary); }
 
@@ -228,7 +233,7 @@
     <div id="particle-container"></div>
 
     <div id="page-home" class="container active">
-        <h1>✖️ 乘法闖關王 4.5</h1>
+        <h1>✖️ 乘法闖關王 4.6</h1>
         
         <div class="user-profile" onclick="changeName()">
             <div>🎓 <span id="display-name">設定學員姓名</span> ✎</div>
@@ -257,7 +262,7 @@
             <button class="btn-gray btn-block" onclick="clearRank()">清空榜單</button>
         </div>
 
-        <div class="version-tag">版本：v4.5 (全功能獎勵版)</div>
+        <div class="version-tag">版本：v4.6 (優化輸入體驗版)</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -965,32 +970,108 @@
     function createStepInputs(step, q) {
         let msgArea = document.getElementById('teach-msg');
         let oldBtn = msgArea.querySelector('button'); if(oldBtn) oldBtn.remove();
+        
+        // 收集所有需要的 inputs 引用，用於設定跳轉順序
+        let inputsOrder = [];
 
+        // 1. 如果有進位 (輔助記號)，通常在最左邊或上面，先加入
+        let needsCarry = (step.type==='mul' && !step.isLastInRow && step.writeCarry > 0) || (step.type==='add' && step.writeCarry > 0);
+        
+        if(needsCarry) {
+            let carryCell = document.getElementById(`c-${step.carryRow}-${step.carryCol}`);
+            if(carryCell) { 
+                carryCell.innerHTML = ''; 
+                let cinp = createInput('inp-carry', 'carry-input', step, q); 
+                carryCell.appendChild(cinp);
+                inputsOrder.push(cinp); // 進位優先
+            }
+        }
+
+        // 2. 如果是乘法且是該行最後一步 (例如 9x9=81)，會有十位數和個位數
         if(step.type === 'mul' && step.isLastInRow && step.totalProd >= 10) {
             let tenCell = document.getElementById(`c-${step.ansRow}-${step.ansCol-1}`);
-            if(tenCell) { tenCell.innerHTML = ''; let inpTen = createInput('inp-ans-ten', 'game-input', step, q); tenCell.appendChild(inpTen); }
+            if(tenCell) { 
+                tenCell.innerHTML = ''; 
+                let inpTen = createInput('inp-ans-ten', 'game-input', step, q); 
+                tenCell.appendChild(inpTen);
+                inputsOrder.push(inpTen); // 十位數 (左邊)
+            }
+            
             let unitCell = document.getElementById(`c-${step.ansRow}-${step.ansCol}`);
-            if(unitCell) { unitCell.innerHTML = ''; let inpUnit = createInput('inp-ans-unit', 'game-input', step, q); unitCell.appendChild(inpUnit); inpUnit.focus(); }
+            if(unitCell) { 
+                unitCell.innerHTML = ''; 
+                let inpUnit = createInput('inp-ans-unit', 'game-input', step, q); 
+                unitCell.appendChild(inpUnit); 
+                inputsOrder.push(inpUnit); // 個位數 (右邊)
+            }
         } else {
+            // 普通情況：只有一個結果格
             let ansCell = document.getElementById(`c-${step.ansRow}-${step.ansCol}`);
-            if(ansCell) { ansCell.innerHTML = ''; let inp = createInput('inp-ans', 'game-input', step, q); ansCell.appendChild(inp); inp.focus(); }
+            if(ansCell) { 
+                ansCell.innerHTML = ''; 
+                let inp = createInput('inp-ans', 'game-input', step, q); 
+                ansCell.appendChild(inp); 
+                inputsOrder.push(inp);
+            }
         }
 
-        if( (step.type==='mul' && !step.isLastInRow && step.writeCarry > 0) || (step.type==='add' && step.writeCarry > 0) ) {
-            let carryCell = document.getElementById(`c-${step.carryRow}-${step.carryCol}`);
-            if(carryCell) { carryCell.innerHTML = ''; let cinp = createInput('inp-carry', 'carry-input', step, q); carryCell.appendChild(cinp); }
-        }
+        // 3. 設定自動跳轉邏輯
+        setupInputNavigation(inputsOrder, step, q);
 
-        let btn = document.createElement('button'); btn.className = 'btn-warning'; btn.innerText = 'OK'; btn.style.marginLeft = "10px";
+        // 隱藏原本的 OK 按鈕，改為自動觸發
+        let btn = document.createElement('button'); 
+        btn.className = 'btn-warning'; 
+        btn.innerText = 'OK'; 
+        btn.style.marginLeft = "10px";
+        btn.style.display = "none"; // 隱藏按鈕，依靠自動跳轉
         btn.onclick = () => checkStepAnswer(step, q, false); 
-        if(msgArea.innerText === "") msgArea.style.minHeight = "40px"; msgArea.appendChild(btn);
+        if(msgArea.innerText === "") msgArea.style.minHeight = "40px"; 
+        msgArea.appendChild(btn);
     }
 
     function createInput(id, className, step, q) {
-        let inp = document.createElement('input'); inp.type = 'tel'; inp.className = className; inp.id = id;
-        inp.onkeydown = (e) => { if(e.key === 'Enter') checkStepAnswer(step, q, false); };
-        inp.oninput = () => { inp.classList.remove('wrong'); checkStepAnswer(step, q, true); };
+        let inp = document.createElement('input'); 
+        inp.type = 'tel'; // 使用 tel 鍵盤便於手機輸入數字
+        inp.className = className; 
+        inp.id = id;
+        inp.maxLength = 1; // 限制只能輸入 1 個字元
         return inp;
+    }
+
+    function setupInputNavigation(inputs, step, q) {
+        if (inputs.length === 0) return;
+
+        // 聚焦第一個輸入框 (最左邊或輔助記號)
+        inputs[0].focus();
+
+        inputs.forEach((inp, index) => {
+            inp.oninput = function() {
+                // 移除非數字
+                this.value = this.value.replace(/[^0-9]/g, '');
+                
+                // 移除錯誤紅框 (如果有的話)
+                this.classList.remove('wrong');
+
+                if (this.value.length === 1) {
+                    if (index < inputs.length - 1) {
+                        // 如果不是最後一個，跳到下一個
+                        inputs[index + 1].focus();
+                    } else {
+                        // 如果是最後一個，執行檢查
+                        checkStepAnswer(step, q, true);
+                    }
+                }
+            };
+
+            // 支援 Backspace 刪除並回到上一格
+            inp.onkeydown = function(e) {
+                if (e.key === 'Backspace' && this.value === '') {
+                    if (index > 0) {
+                        inputs[index - 1].focus();
+                    }
+                }
+            };
+        });
     }
 
     function checkStepAnswer(step, q, isAuto) {
@@ -1002,25 +1083,30 @@
         let needsCarry = (step.type==='mul' && !step.isLastInRow && step.writeCarry > 0) || (step.type==='add' && step.writeCarry > 0);
         if(needsCarry) { if(!iCarry || iCarry.value==='') allFilled = false; }
 
-        if(isAuto && !allFilled) return; 
+        if(isAuto && !allFilled) return; // 自動模式下，未填完不報錯，僅等待
 
         if(step.type === 'mul' && step.isLastInRow && step.totalProd >= 10) {
             let tenVal = Math.floor(step.totalProd / 10); let unitVal = step.totalProd % 10;
-            if(parseInt(iTen.value) !== tenVal) { if(!isAuto) iTen.classList.add('wrong'); allCorrect = false; } else { iTen.classList.remove('wrong'); if(isAuto) iTen.classList.add('correct'); }
-            if(parseInt(iUnit.value) !== unitVal) { if(!isAuto) iUnit.classList.add('wrong'); allCorrect = false; } else { iUnit.classList.remove('wrong'); if(isAuto) iUnit.classList.add('correct'); }
+            if(parseInt(iTen.value) !== tenVal) { if(!isAuto || iTen.value.length>0) iTen.classList.add('wrong'); allCorrect = false; } else { iTen.classList.remove('wrong'); if(isAuto) iTen.classList.add('correct'); }
+            if(parseInt(iUnit.value) !== unitVal) { if(!isAuto || iUnit.value.length>0) iUnit.classList.add('wrong'); allCorrect = false; } else { iUnit.classList.remove('wrong'); if(isAuto) iUnit.classList.add('correct'); }
         } else {
-            if(parseInt(iAns.value) !== step.writeAns) { if(!isAuto) iAns.classList.add('wrong'); allCorrect = false; } else { iAns.classList.remove('wrong'); if(isAuto) iAns.classList.add('correct'); }
+            if(parseInt(iAns.value) !== step.writeAns) { if(!isAuto || iAns.value.length>0) iAns.classList.add('wrong'); allCorrect = false; } else { iAns.classList.remove('wrong'); if(isAuto) iAns.classList.add('correct'); }
         }
 
         if(needsCarry) {
-            if(parseInt(iCarry.value) !== step.writeCarry) { if(!isAuto) iCarry.classList.add('wrong'); allCorrect = false; } else { iCarry.classList.remove('wrong'); if(isAuto) iCarry.classList.add('correct'); }
+            if(parseInt(iCarry.value) !== step.writeCarry) { if(!isAuto || iCarry.value.length>0) iCarry.classList.add('wrong'); allCorrect = false; } else { iCarry.classList.remove('wrong'); if(isAuto) iCarry.classList.add('correct'); }
         }
 
         if(allCorrect) {
             if(!isAuto) { if(quizSettings.voice) speak("答對了！"); else speak("叮咚"); } else { speak("叮咚"); }
             if(iTen) iTen.disabled = true; if(iUnit) iUnit.disabled = true; if(iAns) iAns.disabled = true; if(iCarry) iCarry.disabled = true;
             setTimeout(() => { q.stepIdx++; renderTeachGrid(q); }, 500);
-        } else { if(!isAuto) { if(quizSettings.voice) speak("算錯囉"); else speak("嗶嗶"); } }
+        } else { 
+            // 如果填滿了但錯誤，才報錯
+            if(allFilled) {
+                if(quizSettings.voice) speak("算錯囉"); else speak("嗶嗶"); 
+            }
+        }
     }
 
     function toggleHelp() {
