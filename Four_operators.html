@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>四則運算觀念建立系統 (總題庫版)</title>
+    <title>四則運算觀念建立系統 (完整版 v3.1)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -97,14 +97,22 @@
             position: absolute; top: 5px; left: 5px; 
             font-size: 0.85rem; background: rgba(255,255,255,0.9); padding: 3px 8px; border-radius: 4px;
             font-weight: bold; color: #d35400; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            z-index: 2;
         }
         .bar-container { display: flex; align-items: center; margin-bottom: 10px; transition: 1s; width: 100%; }
         .bar { height: 35px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1rem; font-weight: bold; transition: width 0.8s ease-in-out; box-shadow: 0 2px 0 rgba(0,0,0,0.1);}
         .bar-a { background-color: var(--primary); }
         .bar-b { background-color: var(--success); }
-        .grid-objects { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; padding: 10px; }
-        .obj-group { border: 2px solid #ccc; padding: 5px; border-radius: 8px; margin: 4px; background: white; transition: 0.5s; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); }
-        .dot { width: 14px; height: 14px; background-color: var(--danger); border-radius: 50%; display: inline-block; margin: 2px; }
+        
+        /* 通用物件群組樣式 */
+        .obj-group { 
+            border: 2px solid #ccc; padding: 5px; border-radius: 8px; margin: 4px; 
+            background: white; transition: 0.5s; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); 
+        }
+        .dot { 
+            width: 14px; height: 14px; background-color: var(--danger); 
+            border-radius: 50%; display: inline-block; margin: 2px; 
+        }
 
         /* --- 題目顯示 --- */
         .problem-text { font-size: 1.4rem; line-height: 1.5; margin-bottom: 10px; font-weight: bold; color: #2c3e50; text-align: left; padding: 0 5px;}
@@ -178,7 +186,7 @@
                 <input type="file" id="import-data" style="display:none" accept=".json" onchange="handleDataImport(this)">
             </div>
         </div>
-        <div style="text-align:center; font-size:0.8rem; color:#aaa; margin-top:10px;">v3.0 總題庫版</div>
+        <div style="text-align:center; font-size:0.8rem; color:#aaa; margin-top:10px;">v3.1 分裝除法修正版</div>
     </div>
 
     <div id="page-setting" class="container">
@@ -502,39 +510,92 @@
             if(confirm("確定結束？")) { clearInterval(quizState.interval); window.speechSynthesis.cancel(); showPage('page-home'); }
         }
 
-        // --- 動畫 ---
+        // --- 觀念動畫 (優化修正版：除法為分裝/包含) ---
         function playAnimation(q) {
             const stage = document.getElementById('anim-stage');
             const content = document.getElementById('anim-content');
             stage.style.display = 'block'; content.innerHTML = '';
-            let n1 = parseFloat(q.n1)||5, n2 = parseFloat(q.n2)||2;
-            let d1 = Math.min(n1, 12), d2 = Math.min(n2, 6); // 限制繪製數量
+            
+            // 取得數字
+            let n1 = parseFloat(q.n1)||10; // 被除數 (總數)
+            let n2 = parseFloat(q.n2)||2;  // 除數 (每組數量)
 
+            // 乘法動畫
             if(q.op === 'mul') {
+                let count = n2 > 8 ? 8 : n2; // 限制顯示組數
                 content.style.flexDirection = 'column';
-                for(let i=0; i<d2; i++) {
+                for(let i=0; i<count; i++) {
                     let g = document.createElement('div'); g.className='obj-group';
-                    for(let j=0; j<(d1>10?5:d1); j++) { let d=document.createElement('span'); d.className='dot'; g.appendChild(d); }
-                    if(d1>10) g.innerHTML+=`<span style="font-size:0.8rem">...${n1}</span>`;
+                    let dotCount = n1 > 10 ? 5 : n1;
+                    for(let j=0; j<dotCount; j++) { let d=document.createElement('span'); d.className='dot'; g.appendChild(d); }
+                    if(n1 > 10) g.innerHTML += `<span style="font-size:0.8rem; margin-left:5px;">...共${n1}</span>`;
                     g.style.opacity='0'; content.appendChild(g);
                     setTimeout(()=>g.style.opacity='1', i*200);
                 }
-                stage.querySelector('.concept-note').innerText = `乘法：${n1} 的 ${n2} 倍`;
-            } else if(q.op === 'div') {
-                stage.querySelector('.concept-note').innerText = `除法：${n1} 分成 ${n2} 份`;
-                for(let i=0; i<d2; i++) {
-                    let b = document.createElement('div'); b.className='obj-group'; b.style.minWidth='45px'; b.style.textAlign='center';
-                    b.innerHTML = `<div style="font-size:0.8rem;border-bottom:1px solid #ddd;">${i+1}</div><span style="color:var(--primary);font-weight:bold;font-size:1.2rem;">?</span>`;
-                    content.appendChild(b);
+                stage.querySelector('.concept-note').innerText = `乘法：${n1} 的 ${n2} 倍 (累加)`;
+            } 
+            // 除法動畫 (分裝 Grouping)
+            else if(q.op === 'div') {
+                let groupCount = Math.floor(n1 / n2); // 算出可以分幾組 (例如 48/8 = 6)
+                stage.querySelector('.concept-note').innerText = `除法：總數 ${n1}，每 ${n2} 個裝一組`;
+                
+                content.style.flexDirection = 'row';
+                content.style.flexWrap = 'wrap';
+                content.style.alignContent = 'center';
+                content.style.justifyContent = 'center';
+
+                let displayCount = groupCount > 12 ? 12 : groupCount; 
+
+                for(let i=0; i < displayCount; i++) {
+                    let box = document.createElement('div'); 
+                    box.className='obj-group'; 
+                    box.style.display = 'flex';
+                    box.style.flexWrap = 'wrap';
+                    box.style.width = '60px'; 
+                    box.style.justifyContent = 'center';
+                    box.style.margin = '5px';
+                    box.style.position = 'relative';
+
+                    // 在箱子裡畫出 n2 個點 (或是數字)
+                    if(n2 <= 9) {
+                        for(let j=0; j<n2; j++) {
+                            let d=document.createElement('span'); 
+                            d.className='dot'; d.style.width='10px'; d.style.height='10px'; d.style.background='#e74c3c';
+                            box.appendChild(d); 
+                        }
+                    } else {
+                        box.innerHTML = `<span style="font-size:1.2rem; font-weight:bold; color:#e74c3c;">${n2}</span>`;
+                    }
+
+                    let label = document.createElement('div');
+                    label.style.width='100%'; label.style.textAlign='center'; label.style.fontSize='0.7rem'; label.style.color='#777';
+                    label.innerText = (i+1);
+                    box.appendChild(label);
+
+                    box.style.opacity='0'; box.style.transform='scale(0.5)'; box.style.transition='all 0.3s';
+                    content.appendChild(box);
+                    setTimeout(() => { box.style.opacity='1'; box.style.transform='scale(1)'; }, i * 300);
                 }
-                setTimeout(()=>Array.from(content.children).forEach(b=>b.querySelector('span').innerText=Math.floor(n1/n2)), 600);
-            } else if(q.op === 'add') {
-                stage.querySelector('.concept-note').innerText = `加法：合併`;
+
+                if(groupCount > displayCount) {
+                    let more = document.createElement('div'); more.style.alignSelf = 'center'; more.innerText = `...共 ${groupCount} 組`;
+                    content.appendChild(more);
+                } else {
+                    setTimeout(() => {
+                         stage.querySelector('.concept-note').innerText = `除法：${n1} 每 ${n2} 個一份，共 ${groupCount} 份`;
+                    }, displayCount * 300);
+                }
+            } 
+            // 加法動畫
+            else if(q.op === 'add') {
+                stage.querySelector('.concept-note').innerText = `加法：合併在一起`;
                 content.innerHTML = `<div class="bar-container" style="justify-content:center;"><div class="bar bar-a" style="width:0%;">${n1}</div><div class="bar bar-b" style="width:0%;margin-left:5px;">${n2}</div></div>`;
                 let sum = n1+n2;
                 setTimeout(()=>{content.querySelector('.bar-a').style.width=(n1/sum*90)+'%'; content.querySelector('.bar-b').style.width=(n2/sum*90)+'%';},100);
-            } else if(q.op === 'sub') {
-                stage.querySelector('.concept-note').innerText = `減法：比較/扣除`;
+            } 
+            // 減法動畫
+            else if(q.op === 'sub') {
+                stage.querySelector('.concept-note').innerText = `減法：比較差距 / 拿走`;
                 content.style.flexDirection = 'column';
                 let max = Math.max(n1, n2);
                 content.innerHTML = `<div class="bar-container"><div class="bar bar-a" style="width:10px">${n1}</div></div><div class="bar-container"><div class="bar bar-b" style="width:10px;opacity:0.6;">${n2}</div></div>`;
