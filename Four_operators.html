@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>四則運算觀念建立系統 (完整版 v3.1)</title>
+    <title>四則運算觀念建立系統 (v3.2 隱藏提示版)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -95,16 +95,15 @@
         @keyframes popIn { from {transform: scale(0.9); opacity:0;} to {transform: scale(1); opacity:1;} }
         .concept-note {
             position: absolute; top: 5px; left: 5px; 
-            font-size: 0.85rem; background: rgba(255,255,255,0.9); padding: 3px 8px; border-radius: 4px;
-            font-weight: bold; color: #d35400; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            z-index: 2;
+            font-size: 0.9rem; background: rgba(255,255,255,0.95); padding: 4px 10px; border-radius: 4px;
+            font-weight: bold; color: #d35400; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 2; border-left: 4px solid #d35400;
         }
         .bar-container { display: flex; align-items: center; margin-bottom: 10px; transition: 1s; width: 100%; }
         .bar { height: 35px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1rem; font-weight: bold; transition: width 0.8s ease-in-out; box-shadow: 0 2px 0 rgba(0,0,0,0.1);}
         .bar-a { background-color: var(--primary); }
         .bar-b { background-color: var(--success); }
         
-        /* 通用物件群組樣式 */
         .obj-group { 
             border: 2px solid #ccc; padding: 5px; border-radius: 8px; margin: 4px; 
             background: white; transition: 0.5s; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); 
@@ -186,7 +185,7 @@
                 <input type="file" id="import-data" style="display:none" accept=".json" onchange="handleDataImport(this)">
             </div>
         </div>
-        <div style="text-align:center; font-size:0.8rem; color:#aaa; margin-top:10px;">v3.1 分裝除法修正版</div>
+        <div style="text-align:center; font-size:0.8rem; color:#aaa; margin-top:10px;">v3.2 隱藏提示版</div>
     </div>
 
     <div id="page-setting" class="container">
@@ -268,7 +267,7 @@
                     <div style="background:#fff; border:1px solid #ddd; padding:10px; border-radius:4px; margin-bottom:10px;">
                         <h5 style="margin:0 0 5px 0;">✍️ 手動新增</h5>
                         <textarea id="ed-text" class="editor-input" style="width:100%; height:50px; margin-bottom:5px;" placeholder="題目..."></textarea>
-                        <input type="text" id="ed-hint" class="editor-input" style="width:100%; margin-bottom:5px;" placeholder="提示...">
+                        <input type="text" id="ed-hint" class="editor-input" style="width:100%; margin-bottom:5px;" placeholder="提示..."></textarea>
                         <div class="editor-row" style="margin-bottom:5px;">
                             <select id="ed-op" class="editor-input" style="flex:1;">
                                 <option value="add">加 (+)</option>
@@ -510,7 +509,7 @@
             if(confirm("確定結束？")) { clearInterval(quizState.interval); window.speechSynthesis.cancel(); showPage('page-home'); }
         }
 
-        // --- 觀念動畫 (優化修正版：除法為分裝/包含) ---
+        // --- 觀念動畫 (隱藏提示版) ---
         function playAnimation(q) {
             const stage = document.getElementById('anim-stage');
             const content = document.getElementById('anim-content');
@@ -532,12 +531,12 @@
                     g.style.opacity='0'; content.appendChild(g);
                     setTimeout(()=>g.style.opacity='1', i*200);
                 }
-                stage.querySelector('.concept-note').innerText = `乘法：${n1} 的 ${n2} 倍 (累加)`;
+                stage.querySelector('.concept-note').innerText = `觀念：${n1} 重複出現 ${n2} 次 (累加)`;
             } 
             // 除法動畫 (分裝 Grouping)
             else if(q.op === 'div') {
                 let groupCount = Math.floor(n1 / n2); // 算出可以分幾組 (例如 48/8 = 6)
-                stage.querySelector('.concept-note').innerText = `除法：總數 ${n1}，每 ${n2} 個裝一組`;
+                stage.querySelector('.concept-note').innerText = `觀念：總數 ${n1}，每 ${n2} 個裝一組`;
                 
                 content.style.flexDirection = 'row';
                 content.style.flexWrap = 'wrap';
@@ -582,20 +581,20 @@
                     content.appendChild(more);
                 } else {
                     setTimeout(() => {
-                         stage.querySelector('.concept-note').innerText = `除法：${n1} 每 ${n2} 個一份，共 ${groupCount} 份`;
+                         stage.querySelector('.concept-note').innerText = `觀念：${n1} 每 ${n2} 個一份，共 ${groupCount} 份`;
                     }, displayCount * 300);
                 }
             } 
             // 加法動畫
             else if(q.op === 'add') {
-                stage.querySelector('.concept-note').innerText = `加法：合併在一起`;
+                stage.querySelector('.concept-note').innerText = `觀念：兩邊合併在一起`;
                 content.innerHTML = `<div class="bar-container" style="justify-content:center;"><div class="bar bar-a" style="width:0%;">${n1}</div><div class="bar bar-b" style="width:0%;margin-left:5px;">${n2}</div></div>`;
                 let sum = n1+n2;
                 setTimeout(()=>{content.querySelector('.bar-a').style.width=(n1/sum*90)+'%'; content.querySelector('.bar-b').style.width=(n2/sum*90)+'%';},100);
             } 
             // 減法動畫
             else if(q.op === 'sub') {
-                stage.querySelector('.concept-note').innerText = `減法：比較差距 / 拿走`;
+                stage.querySelector('.concept-note').innerText = `觀念：比較差距 / 拿走`;
                 content.style.flexDirection = 'column';
                 let max = Math.max(n1, n2);
                 content.innerHTML = `<div class="bar-container"><div class="bar bar-a" style="width:10px">${n1}</div></div><div class="bar-container"><div class="bar bar-b" style="width:10px;opacity:0.6;">${n2}</div></div>`;
