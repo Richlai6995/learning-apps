@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>四則運算觀念建立系統</title>
+    <style>
+        :root {
+            --primary: #2980b9;
+            --secondary: #3498db;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --success: #27ae60;
+            --danger: #c0392b;
+            --warning: #f39c12;
+            --op-add: #e74c3c;
+            --op-sub: #8e44ad;
+            --op-mul: #2980b9;
+            --op-div: #16a085;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 { color: var(--primary); margin: 5px 0; text-align: center; font-size: 1.6rem;}
+        
+        .container {
+            width: 100%; max-width: 800px; background: white; border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); padding: 15px; margin-bottom: 20px;
+            display: none; flex-direction: column; 
+        }
+        .container.active { display: flex; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
+
+        /* --- 按鈕樣式 --- */
+        button {
+            border: none; border-radius: 8px; padding: 10px 15px; font-size: 1rem; font-weight: bold;
+            cursor: pointer; color: white; margin: 3px; transition: 0.2s;
+        }
+        button:active { transform: scale(0.96); }
+        .btn-block { width: 100%; padding: 12px; margin-top: 5px; }
+        .btn-primary { background-color: var(--primary); }
+        .btn-success { background-color: var(--success); }
+        .btn-danger { background-color: var(--danger); }
+        .btn-warning { background-color: var(--warning); }
+        .btn-gray { background-color: #95a5a6; }
+        .btn-outline { background: transparent; border: 2px solid #ccc; color: #555; }
+        
+        /* --- 運算符號選擇區 --- */
+        .operator-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .op-card {
+            background: white; border: 2px solid #eee; border-radius: 15px;
+            height: 120px; display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            cursor: pointer; transition: all 0.3s;
+            box-shadow: 0 4px 0 #ddd;
+        }
+        .op-card:active { transform: translateY(4px); box-shadow: none; }
+        .op-card span { font-size: 3rem; font-weight: bold; }
+        .op-card div { font-size: 1rem; margin-top: 5px; }
+
+        .op-add { color: var(--op-add); border-color: #fadbd8; background: #fdedec; }
+        .op-sub { color: var(--op-sub); border-color: #ebdef0; background: #f4ecf7; }
+        .op-mul { color: var(--op-mul); border-color: #d6eaf8; background: #ebf5fb; }
+        .op-div { color: var(--op-div); border-color: #d0ece7; background: #e8f8f5; }
+
+        .op-card:hover { filter: brightness(0.95); }
+
+        /* --- 動畫演示區 --- */
+        .concept-stage {
+            background: #fff8e1; border: 2px dashed #f39c12; border-radius: 10px;
+            min-height: 150px; margin: 15px 0; padding: 10px;
+            position: relative; overflow: hidden;
+            display: none; /* 預設隱藏，觸發時顯示 */
+        }
+        .concept-note {
+            position: absolute; top: 5px; left: 5px; 
+            font-size: 0.8rem; background: rgba(255,255,255,0.8); padding: 2px 5px; border-radius: 4px;
+        }
+
+        /* 加法/減法 條狀圖 */
+        .bar-container { display: flex; align-items: center; margin-bottom: 10px; transition: 1s; }
+        .bar { height: 30px; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.9rem; font-weight: bold; transition: width 1s ease-in-out;}
+        .bar-a { background-color: var(--primary); }
+        .bar-b { background-color: var(--success); }
+        .bracket { border-bottom: 2px solid #333; border-left: 2px solid #333; border-right: 2px solid #333; height: 10px; margin-top: 5px; position: relative; }
+        .bracket::after { content: '?'; position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); }
+
+        /* 乘法/除法 物件圖 */
+        .grid-objects { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; padding: 10px; }
+        .obj-group { border: 2px solid #ccc; padding: 5px; border-radius: 8px; margin: 2px; background: white; transition: 0.5s; }
+        .dot { width: 12px; height: 12px; background-color: var(--danger); border-radius: 50%; display: inline-block; margin: 1px; }
+
+        /* --- 題目顯示 --- */
+        .problem-text { font-size: 1.3rem; line-height: 1.5; margin-bottom: 10px; font-weight: bold; color: #2c3e50; }
+        .hint-box { 
+            background: #eafaf1; color: #27ae60; padding: 10px; border-radius: 6px; 
+            margin-bottom: 10px; font-size: 0.95rem; display: none; border-left: 4px solid #27ae60;
+        }
+
+        /* --- 編輯器 --- */
+        .editor-row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+        .editor-input { flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .pool-list { max-height: 400px; overflow-y: auto; border: 1px solid #eee; margin-top: 10px; }
+        .pool-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .pool-item:nth-child(even) { background: #f9f9f9; }
+        .tag-op { padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; color: white; margin-right: 5px;}
+
+        /* --- 獎勵與個人 --- */
+        .user-panel {
+            background: #fff3cd; border: 2px solid #f39c12; border-radius: 50px;
+            padding: 5px 20px; margin-bottom: 15px; font-weight: bold; color: #d35400;
+            display: flex; gap: 15px; align-items: center; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="page-home" class="container active">
+        <h1>🧮 四則運算觀念練習</h1>
+        
+        <div style="display:flex; justify-content:center;">
+            <div class="user-panel" onclick="editUser()">
+                <span>🎓 <span id="u-name">學員</span></span>
+                <span>💎 <span id="u-gems">0</span></span>
+            </div>
+        </div>
+
+        <h3>選擇練習題庫</h3>
+        <div id="quiz-list" style="flex:1; overflow-y:auto; margin-bottom:10px;"></div>
+        
+        <div style="margin-top:auto; border-top: 1px dashed #ccc; padding-top: 10px;">
+            <button class="btn-secondary btn-block" onclick="showEditor()">✏️ 編輯 / 建立題庫</button>
+            <button class="btn-gray btn-block" onclick="importJsonBtn()">📥 匯入 JSON 題庫</button>
+            <input type="file" id="file-upload" style="display:none" accept=".json" onchange="handleFileImport(this)">
+            <button class="btn-gray btn-block" onclick="exportJson()">📤 匯出備份</button>
+        </div>
+        <div style="text-align:center; font-size:0.8rem; color:#aaa; margin-top:10px;">Four_operators.html v1.0</div>
+    </div>
+
+    <div id="page-setting" class="container">
+        <h2>📍 選擇模式</h2>
+        <div class="problem-text" id="setting-title"></div>
+        <div style="padding: 20px; background: #f8f9fa; border-radius: 8px; margin: 20px 0;">
+            <label style="display:block; margin-bottom:10px; cursor:pointer;">
+                <input type="radio" name="mode" value="teach" checked> 
+                <strong>📖 教學模式</strong>
+                <p style="font-size:0.9rem; color:#666; margin:5px 0 0 20px;">
+                    提供提示按鈕，答對後會出現動畫演示觀念 (加減乘除的圖解)。
+                </p>
+            </label>
+            <hr>
+            <label style="display:block; margin-top:10px; cursor:pointer;">
+                <input type="radio" name="mode" value="test"> 
+                <strong>🏆 測驗模式</strong>
+                <p style="font-size:0.9rem; color:#666; margin:5px 0 0 20px;">
+                    無提示，無動畫，專注於快速判斷與解題，賺取寶石。
+                </p>
+            </label>
+            
+            <div style="margin-top:15px;">
+                篩選符號: 
+                <select id="filter-op" style="padding:5px;">
+                    <option value="all">全部 (混合)</option>
+                    <option value="add">只練加法 (+)</option>
+                    <option value="sub">只練減法 (-)</option>
+                    <option value="mul">只練乘法 (×)</option>
+                    <option value="div">只練除法 (÷)</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn-primary btn-block" onclick="startQuiz()">開始練習</button>
+        <button class="btn-gray btn-block" onclick="showPage('page-home')">返回</button>
+    </div>
+
+    <div id="page-quiz" class="container">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span id="q-progress" style="font-weight:bold; color:#7f8c8d;">1 / 10</span>
+            <span id="q-timer" style="font-family:monospace; font-size:1.2rem;">00:00</span>
+            <button id="btn-hint" class="btn-warning" style="font-size:0.9rem; padding:5px 10px;" onclick="showHint()">💡 提示</button>
+        </div>
+
+        <div id="quiz-content" style="flex:1;">
+            <div id="q-text" class="problem-text">題目文字載入中...</div>
+            
+            <div id="q-hint" class="hint-box"></div>
+
+            <div id="anim-stage" class="concept-stage">
+                <div class="concept-note">觀念演示</div>
+                <div id="anim-content" style="width:100%; height:100%; display:flex; justify-content:center; align-items:center;"></div>
+            </div>
+
+            <div style="text-align:center; margin:10px 0; font-size:1.1rem; color:#555;">請問這題要用哪一種運算？</div>
+
+            <div class="operator-grid">
+                <div class="op-card op-add" onclick="checkAnswer('add')">
+                    <span>+</span><div>加法</div>
+                </div>
+                <div class="op-card op-sub" onclick="checkAnswer('sub')">
+                    <span>-</span><div>減法</div>
+                </div>
+                <div class="op-card op-mul" onclick="checkAnswer('mul')">
+                    <span>×</span><div>乘法</div>
+                </div>
+                <div class="op-card op-div" onclick="checkAnswer('div')">
+                    <span>÷</span><div>除法</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="feedback-msg" style="text-align:center; font-weight:bold; height:30px; margin-top:10px; color:var(--primary);"></div>
+
+        <button id="btn-next" class="btn-success btn-block" style="display:none; margin-top:20px;" onclick="nextQuestion()">下一題 ➡</button>
+        <button class="btn-danger" style="margin-top:20px;" onclick="quitQuiz()">中途結束</button>
+    </div>
+
+    <div id="page-editor" class="container">
+        <h2>✏️ 編輯題庫</h2>
+        <div style="background:#eee; padding:10px; border-radius:6px; margin-bottom:10px;">
+            <input type="text" id="edit-list-name" placeholder="題庫名稱" class="editor-input" style="width:100%">
+        </div>
+        
+        <div style="background:#f9f9f9; padding:10px; border:1px solid #ddd; border-radius:6px;">
+            <h4>➕ 新增題目</h4>
+            <textarea id="ed-text" class="editor-input" style="width:100%; height:60px; margin-bottom:5px;" placeholder="輸入問題 (例如: 蘋果一顆10元，買5顆多少錢?)"></textarea>
+            <input type="text" id="ed-hint" class="editor-input" style="width:100%; margin-bottom:5px;" placeholder="輸入提示 (例如: 算出總價是倍數關係)">
+            
+            <div class="editor-row">
+                <select id="ed-op" class="editor-input" style="flex:1;">
+                    <option value="" disabled selected>選擇正確符號</option>
+                    <option value="add">加法 (+)</option>
+                    <option value="sub">減法 (-)</option>
+                    <option value="mul">乘法 (×)</option>
+                    <option value="div">除法 (÷)</option>
+                </select>
+            </div>
+            <div class="editor-row">
+                <input type="number" id="ed-n1" class="editor-input" placeholder="數字 A (用於動畫)">
+                <input type="number" id="ed-n2" class="editor-input" placeholder="數字 B (用於動畫)">
+            </div>
+            <div style="font-size:0.8rem; color:#888;">* 數字 A 與 B 用於生成教學動畫 (例如乘法: A=10, B=5 表示 10 出現 5 次)</div>
+            <button class="btn-primary btn-block" onclick="addQuestionToPool()">加入題庫</button>
+        </div>
+
+        <div style="margin-top:15px;">
+            <strong>目前題目列表 (<span id="pool-count">0</span>)</strong>
+            <div id="editor-pool-list" class="pool-list"></div>
+        </div>
+
+        <div style="margin-top:20px; display:flex; gap:10px;">
+            <button class="btn-success" style="flex:1" onclick="saveList()">儲存並返回</button>
+            <button class="btn-gray" style="flex:1" onclick="showPage('page-home')">取消</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 資料結構 ---
+        let user = { name: "小小學員", gems: 0 };
+        let currentList = null;
+        let quizState = {
+            questions: [],
+            idx: 0,
+            mode: 'teach',
+            correct: 0,
+            timer: 0,
+            interval: null
+        };
+        
+        // 預設題庫
+        let allLists = [
+            {
+                id: 1, name: "生活應用基礎題 (範例)", 
+                qs: [
+                    { text: "一罐飲料12元，買5罐要多少錢？", hint: "想知道總共多少錢，是重複加5次同樣的錢", op: "mul", n1: 12, n2: 5 },
+                    { text: "有15顆糖果，平分給3位小朋友，每人拿幾顆？", hint: "把總數平均分給每一個人", op: "div", n1: 15, n2: 3 },
+                    { text: "哥哥有50元，買筆記本花了30元，還剩多少元？", hint: "原有的錢扣掉花掉的錢", op: "sub", n1: 50, n2: 30 },
+                    { text: "小明上午跑了200公尺，下午跑了300公尺，今天共跑了幾公尺？", hint: "把兩次跑的距離合起來", op: "add", n1: 200, n2: 300 }
+                ]
+            }
+        ];
+
+        // --- 初始化 ---
+        window.onload = function() {
+            loadData();
+            renderHome();
+        };
+
+        function loadData() {
+            const savedLists = localStorage.getItem('fo_lists');
+            if(savedLists) allLists = JSON.parse(savedLists);
+            const savedUser = localStorage.getItem('fo_user');
+            if(savedUser) user = JSON.parse(savedUser);
+            updateUserUI();
+        }
+
+        function saveData() {
+            localStorage.setItem('fo_lists', JSON.stringify(allLists));
+            localStorage.setItem('fo_user', JSON.stringify(user));
+        }
+
+        // --- 頁面切換 ---
+        function showPage(pid) {
+            document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
+            document.getElementById(pid).classList.add('active');
+            if(pid === 'page-home') renderHome();
+        }
+
+        function updateUserUI() {
+            document.getElementById('u-name').innerText = user.name;
+            document.getElementById('u-gems').innerText = user.gems;
+        }
+
+        function editUser() {
+            const n = prompt("輸入你的名字", user.name);
+            if(n) { user.name = n; saveData(); updateUserUI(); }
+        }
+
+        // --- 首頁渲染 ---
+        function renderHome() {
+            const listDiv = document.getElementById('quiz-list');
+            listDiv.innerHTML = '';
+            allLists.forEach((list, idx) => {
+                const div = document.createElement('div');
+                div.className = 'pool-item';
+                div.innerHTML = `
+                    <div style="cursor:pointer;" onclick="prepareQuiz(${idx})">
+                        <strong>${list.name}</strong> 
+                        <span style="font-size:0.8rem; color:#666;">(${list.qs.length}題)</span>
+                    </div>
+                    <div>
+                        <button class="btn-outline" style="font-size:0.8rem;" onclick="editList(${idx})">編輯</button>
+                        <button class="btn-danger" style="font-size:0.8rem; padding:5px 8px;" onclick="delList(${idx})">×</button>
+                    </div>
+                `;
+                listDiv.appendChild(div);
+            });
+        }
+
+        // --- 測驗流程 ---
+        function prepareQuiz(idx) {
+            currentList = allLists[idx];
+            document.getElementById('setting-title').innerText = `目前選擇：${currentList.name}`;
+            showPage('page-setting');
+        }
+
+        function startQuiz() {
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+            const filter = document.getElementById('filter-op').value;
+            
+            // 篩選題目
+            let qPool = currentList.qs;
+            if(filter !== 'all') {
+                qPool = qPool.filter(q => q.op === filter);
+            }
+
+            if(qPool.length === 0) return alert("此分類下沒有題目！");
+
+            quizState = {
+                questions: shuffle([...qPool]), // 隨機排序
+                idx: 0,
+                mode: mode,
+                correct: 0,
+                timer: 0,
+                interval: setInterval(() => {
+                    quizState.timer++;
+                    let m = Math.floor(quizState.timer/60).toString().padStart(2,'0');
+                    let s = (quizState.timer%60).toString().padStart(2,'0');
+                    document.getElementById('q-timer').innerText = `${m}:${s}`;
+                }, 1000)
+            };
+
+            showPage('page-quiz');
+            document.getElementById('btn-hint').style.display = (mode === 'teach') ? 'inline-block' : 'none';
+            renderQuestion();
+        }
+
+        function shuffle(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        function renderQuestion() {
+            const q = quizState.questions[quizState.idx];
+            document.getElementById('q-progress').innerText = `${quizState.idx + 1} / ${quizState.questions.length}`;
+            document.getElementById('q-text').innerText = q.text;
+            document.getElementById('q-hint').style.display = 'none';
+            document.getElementById('q-hint').innerText = q.hint || "此題無提示";
+            document.getElementById('anim-stage').style.display = 'none'; // 隱藏動畫
+            document.getElementById('feedback-msg').innerText = "";
+            document.getElementById('btn-next').style.display = 'none';
+            
+            // 重置按鈕狀態
+            document.querySelectorAll('.op-card').forEach(c => {
+                c.style.opacity = '1';
+                c.style.pointerEvents = 'auto';
+                c.style.border = '2px solid #eee';
+            });
+        }
+
+        function showHint() {
+            document.getElementById('q-hint').style.display = 'block';
+        }
+
+        function checkAnswer(selectedOp) {
+            const q = quizState.questions[quizState.idx];
+            const isCorrect = (selectedOp === q.op);
+
+            if(isCorrect) {
+                document.getElementById('feedback-msg').innerText = "✅ 答對了！";
+                document.getElementById('feedback-msg').style.color = "var(--success)";
+                quizState.correct++;
+                
+                // 鎖定所有按鈕
+                document.querySelectorAll('.op-card').forEach(c => c.style.pointerEvents = 'none');
+                
+                // 標記正確
+                const card = document.querySelector(`.op-${selectedOp}`);
+                card.style.border = "4px solid var(--success)";
+                
+                // 淡出錯誤的
+                document.querySelectorAll('.op-card').forEach(c => {
+                    if(!c.classList.contains(`op-${selectedOp}`)) c.style.opacity = '0.3';
+                });
+
+                // 教學模式下，答對顯示動畫
+                if(quizState.mode === 'teach') {
+                    playAnimation(q);
+                }
+
+                document.getElementById('btn-next').style.display = 'block';
+
+            } else {
+                document.getElementById('feedback-msg').innerText = "❌ 再想一想...";
+                document.getElementById('feedback-msg').style.color = "var(--danger)";
+                // 懲罰：該按鈕變暗
+                const card = document.querySelector(`.op-${selectedOp}`);
+                card.style.opacity = '0.5';
+                card.style.pointerEvents = 'none';
+                
+                if(quizState.mode === 'teach') {
+                    showHint(); // 答錯自動提示
+                }
+            }
+        }
+
+        function nextQuestion() {
+            quizState.idx++;
+            if(quizState.idx >= quizState.questions.length) {
+                endQuiz();
+            } else {
+                renderQuestion();
+            }
+        }
+
+        function endQuiz() {
+            clearInterval(quizState.interval);
+            let score = Math.round((quizState.correct / quizState.questions.length) * 100);
+            let gemsEarned = (score === 100) ? 5 : (score >= 60 ? 2 : 0);
+            
+            // 測驗模式獎勵加倍
+            if(quizState.mode === 'test') gemsEarned *= 2;
+            
+            user.gems += gemsEarned;
+            saveData();
+            
+            alert(`測驗結束！\n得分: ${score}\n獲得寶石: ${gemsEarned} 💎`);
+            showPage('page-home');
+        }
+
+        function quitQuiz() {
+            if(confirm("確定要結束測驗嗎？")) {
+                clearInterval(quizState.interval);
+                showPage('page-home');
+            }
+        }
+
+        // --- 核心：觀念動畫演示 ---
+        function playAnimation(q) {
+            const stage = document.getElementById('anim-stage');
+            const content = document.getElementById('anim-content');
+            stage.style.display = 'block';
+            content.innerHTML = '';
+
+            let n1 = parseFloat(q.n1) || 10;
+            let n2 = parseFloat(q.n2) || 2;
+            
+            // 限制動畫數量以免瀏覽器卡頓
+            let displayN1 = n1 > 20 ? 20 : n1; 
+            let displayN2 = n2 > 10 ? 10 : n2;
+
+            if(q.op === 'mul') {
+                // 乘法：重複出現組別
+                content.style.flexDirection = 'column';
+                for(let i=0; i<displayN2; i++) {
+                    let group = document.createElement('div');
+                    group.className = 'obj-group';
+                    // 內容物
+                    for(let j=0; j< (displayN1 > 10 ? 5 : displayN1); j++) {
+                        let d = document.createElement('span'); d.className='dot';
+                        group.appendChild(d);
+                    }
+                    if(displayN1 > 10) group.innerHTML += `<span style="font-size:0.8rem">...共${n1}</span>`;
+                    
+                    // 延遲顯示動畫
+                    group.style.opacity = '0';
+                    content.appendChild(group);
+                    setTimeout(() => group.style.opacity = '1', i * 300);
+                }
+                stage.querySelector('.concept-note').innerText = `乘法：${n1} 的東西，買了 ${n2} 份 (累計)`;
+            } 
+            else if(q.op === 'div') {
+                // 除法：總數分發
+                stage.querySelector('.concept-note').innerText = `除法：總共 ${n1}，平分給 ${n2} 個對象`;
+                // 建立籃子
+                let baskets = [];
+                for(let i=0; i<displayN2; i++) {
+                    let b = document.createElement('div');
+                    b.className = 'obj-group';
+                    b.style.minWidth = '40px'; b.style.minHeight = '40px'; b.style.textAlign='center';
+                    b.innerHTML = `<div style="font-size:0.8rem; border-bottom:1px solid #ddd;">${i+1}</div>`;
+                    content.appendChild(b);
+                    baskets.push(b);
+                }
+                // 模擬分配(視覺上用文字或少量點代表)
+                setTimeout(() => {
+                    baskets.forEach(b => {
+                        let span = document.createElement('span');
+                        span.style.color = 'var(--primary)'; span.style.fontWeight='bold';
+                        span.innerText = Math.floor(n1/n2);
+                        b.appendChild(span);
+                    });
+                }, 500);
+            }
+            else if(q.op === 'add') {
+                // 加法：合併
+                stage.querySelector('.concept-note').innerText = `加法：A (${n1}) 和 B (${n2}) 合起來`;
+                // 比例條
+                let total = n1 + n2;
+                let w1 = (n1/total) * 80; 
+                let w2 = (n2/total) * 80;
+                
+                let box = document.createElement('div');
+                box.className = 'bar-container';
+                box.style.width = '100%'; box.style.justifyContent = 'center';
+                
+                box.innerHTML = `
+                    <div class="bar bar-a" style="width:0%;">${n1}</div>
+                    <div style="width:5px;"></div>
+                    <div class="bar bar-b" style="width:0%;">${n2}</div>
+                `;
+                content.appendChild(box);
+                
+                // 動畫: 變長 -> 合併
+                setTimeout(() => {
+                    box.children[0].style.width = w1 + '%';
+                    box.children[2].style.width = w2 + '%';
+                }, 100);
+                setTimeout(() => {
+                   box.children[1].style.width = '0px'; // 去除間隙
+                }, 1000);
+            }
+            else if(q.op === 'sub') {
+                // 減法：比較差額
+                stage.querySelector('.concept-note').innerText = `減法：A (${n1}) 和 B (${n2}) 差多少？`;
+                content.style.flexDirection = 'column';
+                
+                let max = Math.max(n1, n2);
+                let w1 = (n1/max) * 90;
+                let w2 = (n2/max) * 90;
+
+                content.innerHTML = `
+                    <div class="bar-container" style="width:100%;"><div class="bar bar-a" style="width:${w1}%">${n1}</div></div>
+                    <div class="bar-container" style="width:100%;"><div class="bar bar-b" style="width:${w2}%">${n2}</div></div>
+                `;
+                
+                // 畫出差異線
+                let diffW = Math.abs(w1 - w2);
+                let spacer = Math.min(w1, w2);
+                let bracket = document.createElement('div');
+                bracket.style.display = 'flex'; bracket.style.width = '100%';
+                bracket.innerHTML = `<div style="width:${spacer}%"></div><div style="width:${diffW}%"><div class="bracket"></div></div>`;
+                content.appendChild(bracket);
+            }
+        }
+
+        // --- 編輯器邏輯 ---
+        let editingListId = null;
+        let tempPool = [];
+
+        function showEditor() {
+            editingListId = null;
+            tempPool = [];
+            document.getElementById('edit-list-name').value = "新題庫";
+            renderEditorPool();
+            showPage('page-editor');
+        }
+
+        function editList(idx) {
+            editingListId = idx;
+            const l = allLists[idx];
+            document.getElementById('edit-list-name').value = l.name;
+            tempPool = JSON.parse(JSON.stringify(l.qs)); // Deep copy
+            renderEditorPool();
+            showPage('page-editor');
+        }
+
+        function delList(idx) {
+            if(confirm("確定刪除此題庫?")) {
+                allLists.splice(idx, 1);
+                saveData();
+                renderHome();
+            }
+        }
+
+        function addQuestionToPool() {
+            const text = document.getElementById('ed-text').value.trim();
+            const hint = document.getElementById('ed-hint').value.trim();
+            const op = document.getElementById('ed-op').value;
+            const n1 = document.getElementById('ed-n1').value;
+            const n2 = document.getElementById('ed-n2').value;
+
+            if(!text || !op) return alert("請輸入題目與選擇符號");
+            
+            tempPool.push({
+                text, hint, op, 
+                n1: parseFloat(n1)||10, 
+                n2: parseFloat(n2)||5 
+            });
+            
+            // 清空輸入
+            document.getElementById('ed-text').value = '';
+            document.getElementById('ed-hint').value = '';
+            renderEditorPool();
+        }
+
+        function renderEditorPool() {
+            const list = document.getElementById('editor-pool-list');
+            list.innerHTML = '';
+            document.getElementById('pool-count').innerText = tempPool.length;
+            
+            const opColors = { 'add': 'var(--op-add)', 'sub': 'var(--op-sub)', 'mul': 'var(--op-mul)', 'div': 'var(--op-div)' };
+            const opNames = { 'add': '+', 'sub': '-', 'mul': '×', 'div': '÷' };
+
+            tempPool.forEach((q, i) => {
+                const div = document.createElement('div');
+                div.className = 'pool-item';
+                div.innerHTML = `
+                    <div style="flex:1;">
+                        <span class="tag-op" style="background:${opColors[q.op]}">${opNames[q.op]}</span>
+                        ${q.text.substring(0, 20)}...
+                    </div>
+                    <button class="btn-danger" style="padding:2px 8px;" onclick="removeTempQ(${i})">×</button>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function removeTempQ(i) {
+            tempPool.splice(i, 1);
+            renderEditorPool();
+        }
+
+        function saveList() {
+            const name = document.getElementById('edit-list-name').value.trim();
+            if(!name || tempPool.length === 0) return alert("請輸入題庫名稱並至少加入一題");
+
+            const newList = {
+                id: Date.now(),
+                name: name,
+                qs: tempPool
+            };
+
+            if(editingListId !== null) {
+                allLists[editingListId] = newList;
+            } else {
+                allLists.push(newList);
+            }
+            saveData();
+            showPage('page-home');
+        }
+
+        // --- JSON 匯入/匯出 ---
+        function exportJson() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allLists));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", "math_quiz_backup.json");
+            dlAnchorElem.click();
+        }
+
+        function importJsonBtn() {
+            document.getElementById('file-upload').click();
+        }
+
+        function handleFileImport(input) {
+            const file = input.files[0];
+            if(!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    // 簡單格式檢查
+                    if(Array.isArray(json)) {
+                        allLists = allLists.concat(json);
+                        saveData();
+                        renderHome();
+                        alert("匯入成功！");
+                    } else {
+                        alert("格式錯誤，請匯入本系統匯出之 JSON 陣列格式。");
+                    }
+                } catch(err) {
+                    alert("檔案解析失敗");
+                }
+            };
+            reader.readAsText(file);
+            input.value = ''; // reset
+        }
+    </script>
+</body>
+</html>
