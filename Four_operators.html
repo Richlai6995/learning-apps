@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>四則運算觀念建立系統 (v3.2 隱藏提示版)</title>
+    <title>四則運算觀念建立系統 (v3.3 無劇透版)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -95,7 +95,7 @@
         @keyframes popIn { from {transform: scale(0.9); opacity:0;} to {transform: scale(1); opacity:1;} }
         .concept-note {
             position: absolute; top: 5px; left: 5px; 
-            font-size: 0.9rem; background: rgba(255,255,255,0.95); padding: 4px 10px; border-radius: 4px;
+            font-size: 0.95rem; background: rgba(255,255,255,0.95); padding: 4px 10px; border-radius: 4px;
             font-weight: bold; color: #d35400; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             z-index: 2; border-left: 4px solid #d35400;
         }
@@ -185,7 +185,7 @@
                 <input type="file" id="import-data" style="display:none" accept=".json" onchange="handleDataImport(this)">
             </div>
         </div>
-        <div style="text-align:center; font-size:0.8rem; color:#aaa; margin-top:10px;">v3.2 隱藏提示版</div>
+        <div style="text-align:center; font-size:0.8rem; color:#aaa; margin-top:10px;">v3.3 無劇透版</div>
     </div>
 
     <div id="page-setting" class="container">
@@ -509,19 +509,18 @@
             if(confirm("確定結束？")) { clearInterval(quizState.interval); window.speechSynthesis.cancel(); showPage('page-home'); }
         }
 
-        // --- 觀念動畫 (隱藏提示版) ---
+        // --- 觀念動畫 (v3.3 無劇透版) ---
         function playAnimation(q) {
             const stage = document.getElementById('anim-stage');
             const content = document.getElementById('anim-content');
             stage.style.display = 'block'; content.innerHTML = '';
             
-            // 取得數字
-            let n1 = parseFloat(q.n1)||10; // 被除數 (總數)
-            let n2 = parseFloat(q.n2)||2;  // 除數 (每組數量)
+            let n1 = parseFloat(q.n1)||10; 
+            let n2 = parseFloat(q.n2)||2;
 
             // 乘法動畫
             if(q.op === 'mul') {
-                let count = n2 > 8 ? 8 : n2; // 限制顯示組數
+                let count = n2 > 8 ? 8 : n2; 
                 content.style.flexDirection = 'column';
                 for(let i=0; i<count; i++) {
                     let g = document.createElement('div'); g.className='obj-group';
@@ -531,12 +530,12 @@
                     g.style.opacity='0'; content.appendChild(g);
                     setTimeout(()=>g.style.opacity='1', i*200);
                 }
-                stage.querySelector('.concept-note').innerText = `觀念：${n1} 重複出現 ${n2} 次 (累加)`;
+                stage.querySelector('.concept-note').innerText = `${n1} 的 ${n2} 倍 (累加)`;
             } 
-            // 除法動畫 (分裝 Grouping)
+            // 除法動畫
             else if(q.op === 'div') {
-                let groupCount = Math.floor(n1 / n2); // 算出可以分幾組 (例如 48/8 = 6)
-                stage.querySelector('.concept-note').innerText = `觀念：總數 ${n1}，每 ${n2} 個裝一組`;
+                let groupCount = Math.floor(n1 / n2);
+                stage.querySelector('.concept-note').innerText = `總數 ${n1}，每 ${n2} 個裝一組`;
                 
                 content.style.flexDirection = 'row';
                 content.style.flexWrap = 'wrap';
@@ -555,7 +554,6 @@
                     box.style.margin = '5px';
                     box.style.position = 'relative';
 
-                    // 在箱子裡畫出 n2 個點 (或是數字)
                     if(n2 <= 9) {
                         for(let j=0; j<n2; j++) {
                             let d=document.createElement('span'); 
@@ -581,20 +579,20 @@
                     content.appendChild(more);
                 } else {
                     setTimeout(() => {
-                         stage.querySelector('.concept-note').innerText = `觀念：${n1} 每 ${n2} 個一份，共 ${groupCount} 份`;
+                         stage.querySelector('.concept-note').innerText = `${n1} 每 ${n2} 個一份，共 ${groupCount} 份`;
                     }, displayCount * 300);
                 }
             } 
             // 加法動畫
             else if(q.op === 'add') {
-                stage.querySelector('.concept-note').innerText = `觀念：兩邊合併在一起`;
+                stage.querySelector('.concept-note').innerText = `將 ${n1} 和 ${n2} 合併在一起`;
                 content.innerHTML = `<div class="bar-container" style="justify-content:center;"><div class="bar bar-a" style="width:0%;">${n1}</div><div class="bar bar-b" style="width:0%;margin-left:5px;">${n2}</div></div>`;
                 let sum = n1+n2;
                 setTimeout(()=>{content.querySelector('.bar-a').style.width=(n1/sum*90)+'%'; content.querySelector('.bar-b').style.width=(n2/sum*90)+'%';},100);
             } 
             // 減法動畫
             else if(q.op === 'sub') {
-                stage.querySelector('.concept-note').innerText = `觀念：比較差距 / 拿走`;
+                stage.querySelector('.concept-note').innerText = `比較 ${n1} 和 ${n2} 的差距 / 拿走`;
                 content.style.flexDirection = 'column';
                 let max = Math.max(n1, n2);
                 content.innerHTML = `<div class="bar-container"><div class="bar bar-a" style="width:10px">${n1}</div></div><div class="bar-container"><div class="bar bar-b" style="width:10px;opacity:0.6;">${n2}</div></div>`;
