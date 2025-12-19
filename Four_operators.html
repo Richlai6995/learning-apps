@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>四則運算觀念建立系統 (v4.0 商店旗艦版)</title>
+    <title>四則運算觀念建立系統 (v4.1 自訂獎勵版)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -63,7 +63,7 @@
         .btn-warning { background-color: var(--warning); color: var(--warning-text); }
         .btn-gray { background-color: #95a5a6; color: white; }
         .btn-info { background-color: #17a2b8; color: white; }
-        .btn-accent { background-color: #9b59b6; color: white; } /* 商店按鈕色 */
+        .btn-accent { background-color: #9b59b6; color: white; } 
         .btn-outline { background: white; border: 2px solid #bdc3c7; color: #555; }
         
         /* --- 運算符號選擇區 --- */
@@ -131,6 +131,7 @@
             display: flex; gap: 15px; align-items: center; cursor: pointer;
         }
         .op-tag { color:white; padding:2px 6px; border-radius:4px; font-size:0.8rem; margin-right:5px; font-weight: bold; }
+        .gem-badge { background: #f1c40f; color: #7f6000; font-weight: bold; padding: 2px 8px; border-radius: 12px; font-size: 0.85rem; margin-left: 5px; }
 
         /* --- 商店樣式 --- */
         .shop-balance {
@@ -186,7 +187,7 @@
                 <input type="file" id="import-data" style="display:none" accept=".json" onchange="handleDataImport(this)">
             </div>
         </div>
-        <div style="text-align:center; font-size:0.8rem; color:#aaa; margin-top:10px;">v4.0 商店旗艦版</div>
+        <div style="text-align:center; font-size:0.8rem; color:#aaa; margin-top:10px;">v4.1 自訂獎勵版</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -215,6 +216,7 @@
     <div id="page-setting" class="container">
         <h2>📍 練習設定</h2>
         <div class="problem-text" id="setting-title" style="font-size:1.1rem; color:#555;"></div>
+        <div id="setting-reward-info" style="text-align:center; font-weight:bold; color:#d35400; margin-bottom:10px;"></div>
         
         <div style="padding: 10px; border-radius: 8px; margin: 10px 0;">
             <h4 style="margin:5px 0 10px 0; color:var(--primary);">1. 輔助功能開關</h4>
@@ -279,8 +281,12 @@
 
     <div id="page-editor" class="container" style="max-width: 1000px;">
         <h2>✏️ 編輯測驗卷</h2>
-        <div style="background:#eee; padding:10px; border-radius:6px; margin-bottom:10px;">
-            <input type="text" id="edit-list-name" placeholder="請輸入測驗卷名稱 (例如: 乘法特訓)" class="editor-input" style="width:100%; font-weight:bold;">
+        <div style="background:#eee; padding:10px; border-radius:6px; margin-bottom:10px; display:flex; gap:10px; align-items:center;">
+            <input type="text" id="edit-list-name" placeholder="請輸入測驗卷名稱" class="editor-input" style="flex:1; font-weight:bold;">
+            <div style="display:flex; align-items:center; background:white; padding:5px 10px; border-radius:4px; border:1px solid #ddd;">
+                <span>🏆 滿分獎勵: 💎</span>
+                <input type="number" id="edit-list-gems" class="editor-input" style="width:60px; margin-left:5px; padding:2px;" value="10">
+            </div>
         </div>
 
         <div class="editor-layout">
@@ -354,7 +360,7 @@
         };
 
         function loadData() {
-            const dLists = localStorage.getItem('fo_lists_v4');
+            const dLists = localStorage.getItem('fo_lists_v41');
             if(dLists) allLists = JSON.parse(dLists);
             
             const dPool = localStorage.getItem('fo_master_pool');
@@ -376,7 +382,7 @@
         }
 
         function saveData() {
-            localStorage.setItem('fo_lists_v4', JSON.stringify(allLists));
+            localStorage.setItem('fo_lists_v41', JSON.stringify(allLists));
             localStorage.setItem('fo_master_pool', JSON.stringify(masterPool));
             localStorage.setItem('fo_user', JSON.stringify(user));
             localStorage.setItem('fo_exchange_log', JSON.stringify(exchangeLog));
@@ -384,8 +390,7 @@
 
         // --- 語音 ---
         function speak(text) {
-            if(!quizState.settings.voice && document.getElementById('page-setting').style.display !== 'none') return; // 如果在設定頁沒開就不講，但在測驗中要看設定
-            // 簡單判斷：如果在測驗頁面且 voice設定為false，則不講。其他頁面(如商店)可選擇性講
+            if(!quizState.settings.voice && document.getElementById('page-setting').style.display !== 'none') return;
             if(document.getElementById('page-quiz').style.display === 'flex' && !quizState.settings.voice) return;
 
             window.speechSynthesis.cancel();
@@ -441,7 +446,7 @@
                 renderShop();
                 document.getElementById('gift-name').value = '';
                 document.getElementById('gift-cost').value = '';
-                spawnParticles('💎'); // 撒寶石特效
+                spawnParticles('💎'); 
                 speak(`兌換成功！獲得${name}`);
             }
         }
@@ -472,7 +477,9 @@
                 div.className = 'pool-item';
                 div.innerHTML = `
                     <div style="flex:1;">
-                        <div style="font-weight:bold; font-size:1.1rem;">${list.name}</div> 
+                        <div style="font-weight:bold; font-size:1.1rem;">
+                            ${list.name} <span class="gem-badge">💎${list.gems || 10}</span>
+                        </div> 
                         <div style="font-size:0.9rem; color:#7f8c8d;">共 ${list.qs.length} 題</div>
                     </div>
                     <div style="display:flex; gap:5px;">
@@ -489,6 +496,7 @@
         function prepareQuiz(idx) {
             currentList = allLists[idx];
             document.getElementById('setting-title').innerText = `目前選擇：${currentList.name}`;
+            document.getElementById('setting-reward-info').innerText = `🏆 通關獎勵：最高 ${currentList.gems || 10} 寶石`;
             showPage('page-setting');
         }
 
@@ -553,7 +561,7 @@
                 document.getElementById('feedback-msg').style.color = "var(--success)";
                 speak("答對了");
                 quizState.correct++;
-                spawnParticles('⭐'); // 小慶祝
+                spawnParticles('⭐'); 
                 document.querySelectorAll('.op-card').forEach(c => c.style.pointerEvents = 'none');
                 document.querySelector(`.op-${op}`).style.border = "4px solid var(--success)";
                 document.querySelectorAll('.op-card').forEach(c => { if(!c.classList.contains(`op-${op}`)) c.style.opacity = '0.3'; });
@@ -577,9 +585,16 @@
         function endQuiz() {
             clearInterval(quizState.interval);
             let score = Math.round((quizState.correct / quizState.questions.length) * 100);
-            let gems = score === 100 ? 5 : (score >= 60 ? 2 : 1);
+            
+            // 寶石計算邏輯 v4.1
+            let maxReward = currentList.gems || 10;
+            let gems = 0;
+            if (score === 100) gems = maxReward;
+            else if (score >= 60) gems = Math.floor(maxReward / 2) || 1;
+            else gems = 1; // 安慰獎
+
             user.gems += gems; saveData();
-            speak(`練習結束，得分${score}`);
+            speak(`練習結束，得分${score}，獲得${gems}顆寶石`);
             setTimeout(() => { alert(`得分: ${score}\n獲得寶石: ${gems} 💎`); showPage('page-home'); }, 500);
         }
 
@@ -654,11 +669,13 @@
         function createQuiz() {
             editingListId = null; tempQuizQs = [];
             document.getElementById('edit-list-name').value = "";
+            document.getElementById('edit-list-gems').value = 10; // 預設 10
             showPage('page-editor'); renderQuizQs(); renderPoolSource();
         }
         function editList(idx) {
             editingListId = idx; const l = allLists[idx];
             document.getElementById('edit-list-name').value = l.name;
+            document.getElementById('edit-list-gems').value = l.gems || 10;
             tempQuizQs = JSON.parse(JSON.stringify(l.qs));
             showPage('page-editor'); renderQuizQs(); renderPoolSource();
         }
@@ -704,8 +721,9 @@
 
         function saveList() {
             const name = document.getElementById('edit-list-name').value.trim();
+            const gems = parseInt(document.getElementById('edit-list-gems').value) || 10;
             if(!name || tempQuizQs.length === 0) return alert("請輸入名稱並至少加入一題");
-            const newList = { id: Date.now(), name: name, qs: tempQuizQs };
+            const newList = { id: Date.now(), name: name, qs: tempQuizQs, gems: gems };
             if(editingListId !== null) allLists[editingListId] = newList; else allLists.push(newList);
             saveData(); showPage('page-home');
         }
