@@ -130,8 +130,20 @@
         .problem-display {
             background: #fff; border: 2px solid var(--primary); border-radius: 8px; padding: 20px;
             margin-bottom: 20px; text-align: left; font-size: 1.5rem; line-height: 1.8;
-            min-height: 150px; display: flex; flex-direction: column; justify-content: center;
+            min-height: 150px; display: flex; flex-direction: column; justify-content: center; position: relative;
         }
+
+        /* 倒數計時器樣式 */
+        .countdown-timer {
+            position: absolute; top: -15px; right: -10px;
+            background: #e74c3c; color: white;
+            font-weight: bold; padding: 5px 15px; border-radius: 20px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+            font-size: 1.2rem;
+            animation: pulse 1s infinite;
+            display: none; /* 預設隱藏 */
+        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
         .blank-input {
             border: none; border-bottom: 3px solid var(--primary);
@@ -206,7 +218,7 @@
         </div>
 
         <div class="app-version">
-            Math Keyword Memory v2.2 (Safe Mode)<br>
+            Math Keyword Memory v3.0 (Countdown Mode)<br>
             <a href="#" onclick="hardReset()" style="color:#c0392b; text-decoration:underline;">⚠️ 系統異常? 點此強制重置</a>
         </div>
     </div>
@@ -214,8 +226,15 @@
     <div id="page-editor" class="container" style="max-width: 1200px;">
         <h2>✏️ 編輯測驗卷</h2>
         
-        <div style="margin-bottom:10px; background:#eee; padding:10px; border-radius:5px;">
-            測驗卷名稱: <input type="text" id="list-name" class="editor-input" style="width:70%; margin-left:5px;">
+        <div style="margin-bottom:10px; background:#eee; padding:10px; border-radius:5px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <div style="flex:2;">
+                名稱: <input type="text" id="list-name" class="editor-input" style="width:80%;">
+            </div>
+            <div style="flex:1; background:#fff; padding:5px; border-radius:4px; border:1px solid #ccc;">
+                ⏳ 閱讀限時(秒): 
+                <input type="number" id="list-timer" class="editor-input" style="width:60px; text-align:center;" placeholder="0" min="0">
+                <span style="font-size:0.8rem; color:#666;">(0=不限)</span>
+            </div>
         </div>
 
         <div class="editor-layout">
@@ -278,7 +297,10 @@
 
         <div id="phase-read" style="text-align:center;">
             <h3>👁️ 請仔細閱讀並記住數字</h3>
-            <div class="problem-display" id="read-text"></div>
+            <div class="problem-display">
+                <div id="read-timer" class="countdown-timer">10</div>
+                <div id="read-text"></div>
+            </div>
             <button class="btn-start-phase" onclick="goToAnswerPhase()">我記住了！開始答題 ➡</button>
         </div>
 
@@ -355,14 +377,16 @@
     let tempQs = [];
 
     // 測驗狀態
+    let currentList = null; // 當前進行的測驗卷物件(包含設定)
     let currentQuizList = [];
     let currentQIdx = 0;
     let activeInput = null;
     let earnedGemsInSession = 0;
+    let readTimerInterval = null; // 倒數計時器
 
-    const SK_LISTS = 'math_mem_lists_v2';
-    const SK_USER = 'math_mem_user_v2';
-    const SK_POOL = 'math_mem_pool_v2';
+    const SK_LISTS = 'math_mem_lists_v3'; // update key for new format
+    const SK_USER = 'math_mem_user_v3';
+    const SK_POOL = 'math_mem_pool_v3';
 
     window.onload = function() {
         loadData();
@@ -380,7 +404,7 @@
                     lists = parsed;
                 } else {
                     console.error("Lists format error, resetting...");
-                    lists = []; // 格式不對，重置
+                    lists = [];
                 }
             } else {
                 initDefaultList();
@@ -399,12 +423,10 @@
                 if(Array.isArray(parsed)) {
                     poolData = parsed;
                 } else {
-                    console.error("Pool format error, resetting...");
                     poolData = [];
                 }
             }
         } catch(e) {
-            console.error("Pool corrupt, resetting...", e);
             poolData = [];
         }
 
@@ -425,6 +447,7 @@
     function initDefaultList() {
         lists = [{
             name: "範例練習 (2題)",
+            timer: 0, // 預設不限時
             qs: [
                 { text: "一盒巧克力有24顆。小明有3盒，他把所有的巧克力平分給8位朋友，每位朋友可以分到多少顆巧克力？", keywords: ["24", "3", "8"] },
                 { text: "遊樂園門票一張200元，老師買了5張，付了1000元，請問找回多少元？", keywords: ["200", "5", "1000"] }
@@ -488,6 +511,7 @@
         editingId = null;
         tempQs = [];
         document.getElementById('list-name').value = "新的練習題庫";
+        document.getElementById('list-timer').value = ""; // 清空倒數設定
         document.getElementById('editor-text').value = "";
         document.getElementById('editor-keywords').value = "";
         
@@ -500,6 +524,7 @@
         editingId = i;
         tempQs = JSON.parse(JSON.stringify(lists[i].qs));
         document.getElementById('list-name').value = lists[i].name;
+        document.getElementById('list-timer').value = lists[i].timer || ""; // 載入倒數設定
         document.getElementById('editor-text').value = "";
         document.getElementById('editor-keywords').value = "";
         
@@ -592,8 +617,12 @@
 
     function saveList() {
         let name = document.getElementById('list-name').value || "未命名";
+        let timer = parseInt(document.getElementById('list-timer').value);
+        if(isNaN(timer) || timer < 0) timer = 0; // 確保 timer 至少為 0
+
         if(tempQs.length === 0) return alert("請至少加入一題");
-        let listObj = { name: name, qs: tempQs };
+        
+        let listObj = { name: name, timer: timer, qs: tempQs };
         
         if(editingId !== null) lists[editingId] = listObj;
         else lists.push(listObj);
@@ -607,8 +636,13 @@
         lists.forEach((l, i) => {
             let item = document.createElement('div');
             item.className = 'list-item';
+            // 顯示是否有設定倒數
+            let timerBadge = l.timer > 0 ? `<span style="background:#e74c3c; color:white; border-radius:10px; padding:2px 6px; font-size:0.8rem;">⏱️${l.timer}s</span>` : '';
+            
             item.innerHTML = `
-                <div><strong>${l.name}</strong> (${l.qs.length}題)</div>
+                <div>
+                    <strong>${l.name}</strong> (${l.qs.length}題) ${timerBadge}
+                </div>
                 <div>
                     <button class="btn-success" onclick="prepareQuiz(${i})">開始</button>
                     <button class="btn-info" onclick="editList(${i})">編輯</button>
@@ -625,7 +659,8 @@
 
     /* --- 練習邏輯 --- */
     function prepareQuiz(idx) {
-        currentQuizList = JSON.parse(JSON.stringify(lists[idx].qs));
+        currentList = lists[idx]; // 儲存當前測驗卷設定(含timer)
+        currentQuizList = JSON.parse(JSON.stringify(currentList.qs));
         showPage('page-mode');
     }
 
@@ -639,6 +674,9 @@
     }
 
     function loadQuestionPhase1() {
+        // 清除任何舊的計時器
+        if(readTimerInterval) { clearInterval(readTimerInterval); readTimerInterval = null; }
+
         let q = currentQuizList[currentQIdx];
         document.getElementById('q-info').innerText = `題目 ${currentQIdx+1} / ${currentQuizList.length}`;
         document.getElementById('q-score').innerText = `💎 ${earnedGemsInSession}`;
@@ -648,9 +686,32 @@
         
         document.getElementById('read-text').innerText = q.text;
         speak(q.text);
+
+        // 處理倒數計時邏輯
+        let timerDisplay = document.getElementById('read-timer');
+        let setTime = currentList.timer || 0;
+
+        if(setTime > 0) {
+            timerDisplay.style.display = 'block';
+            timerDisplay.innerText = setTime;
+            
+            readTimerInterval = setInterval(() => {
+                setTime--;
+                timerDisplay.innerText = setTime;
+                if(setTime <= 0) {
+                    clearInterval(readTimerInterval);
+                    goToAnswerPhase(); // 時間到，強制進入下一階段
+                }
+            }, 1000);
+        } else {
+            timerDisplay.style.display = 'none'; // 無限時
+        }
     }
 
     function goToAnswerPhase() {
+        // 進入答題階段，先切斷計時器
+        if(readTimerInterval) { clearInterval(readTimerInterval); readTimerInterval = null; }
+        
         window.speechSynthesis.cancel();
         document.getElementById('phase-read').style.display = 'none';
         document.getElementById('phase-answer').style.display = 'block';
@@ -738,7 +799,10 @@
     }
 
     function quitQuiz() {
-        if(confirm("確定要中途退出嗎？")) showPage('page-home');
+        if(confirm("確定要中途退出嗎？")) {
+            if(readTimerInterval) { clearInterval(readTimerInterval); }
+            showPage('page-home');
+        }
     }
 
     function finishQuiz() {
