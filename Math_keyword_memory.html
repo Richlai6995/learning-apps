@@ -87,28 +87,21 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
-        /* 編輯器佈局 */
         .editor-layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
         }
         @media (max-width: 768px) {
             .editor-layout { grid-template-columns: 1fr; }
         }
 
         .editor-column { display: flex; flex-direction: column; gap: 10px; }
-        .editor-input-area {
-            background: #f4f6f7; padding: 15px; border-radius: 8px; margin-bottom: 10px;
-        }
+        .editor-input-area { background: #f4f6f7; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
         
         .pool-area {
             background: var(--pool-bg); padding: 15px; border-radius: 8px; border: 2px solid #f39c12;
             max-height: 600px; display: flex; flex-direction: column;
         }
-        .pool-list {
-            overflow-y: auto; flex: 1; border-top: 1px solid #ddd; margin-top: 10px;
-        }
+        .pool-list { overflow-y: auto; flex: 1; border-top: 1px solid #ddd; margin-top: 10px; }
         .pool-item {
             background: white; border-bottom: 1px solid #ddd; padding: 8px; margin-bottom: 5px; cursor: pointer;
             border-radius: 4px; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: flex-start;
@@ -123,6 +116,9 @@
         .editor-input {
             width: 100%; padding: 8px; border: 1px solid #bdc3c7; border-radius: 5px; font-size: 1rem;
         }
+        .config-group {
+            display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: #fff; padding: 5px; border-radius: 4px; border: 1px solid #ccc; flex: 1;
+        }
 
         /* --- 測驗區域 --- */
         .quiz-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 15px; background: #eee; padding: 10px; border-radius: 6px; }
@@ -133,7 +129,6 @@
             min-height: 150px; display: flex; flex-direction: column; justify-content: center; position: relative;
         }
 
-        /* 倒數計時器樣式 */
         .countdown-timer {
             position: absolute; top: -15px; right: -10px;
             background: #e74c3c; color: white;
@@ -141,7 +136,7 @@
             box-shadow: 0 3px 8px rgba(0,0,0,0.2);
             font-size: 1.2rem;
             animation: pulse 1s infinite;
-            display: none; /* 預設隱藏 */
+            display: none;
         }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
@@ -218,7 +213,7 @@
         </div>
 
         <div class="app-version">
-            Math Keyword Memory v3.0 (Countdown Mode)<br>
+            Math Keyword Memory v4.0 (Rewards & Timer)<br>
             <a href="#" onclick="hardReset()" style="color:#c0392b; text-decoration:underline;">⚠️ 系統異常? 點此強制重置</a>
         </div>
     </div>
@@ -227,13 +222,18 @@
         <h2>✏️ 編輯測驗卷</h2>
         
         <div style="margin-bottom:10px; background:#eee; padding:10px; border-radius:5px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-            <div style="flex:2;">
-                名稱: <input type="text" id="list-name" class="editor-input" style="width:80%;">
+            <div style="flex:2; min-width: 200px;">
+                名稱: <input type="text" id="list-name" class="editor-input" style="width:70%;">
             </div>
-            <div style="flex:1; background:#fff; padding:5px; border-radius:4px; border:1px solid #ccc;">
-                ⏳ 閱讀限時(秒): 
+            
+            <div class="config-group">
+                <span style="font-size:0.9rem;">⏳限時(秒):</span>
                 <input type="number" id="list-timer" class="editor-input" style="width:60px; text-align:center;" placeholder="0" min="0">
-                <span style="font-size:0.8rem; color:#666;">(0=不限)</span>
+            </div>
+            
+            <div class="config-group">
+                <span style="font-size:0.9rem;">💎完成獎勵:</span>
+                <input type="number" id="list-reward" class="editor-input" style="width:60px; text-align:center;" value="10" min="1">
             </div>
         </div>
 
@@ -292,7 +292,7 @@
     <div id="page-quiz" class="container">
         <div class="quiz-header">
             <span id="q-info">題目 1/5</span>
-            <span id="q-score">💎 0</span>
+            <span id="q-mode-label" style="color:var(--primary);">進行中...</span>
         </div>
 
         <div id="phase-read" style="text-align:center;">
@@ -377,16 +377,16 @@
     let tempQs = [];
 
     // 測驗狀態
-    let currentList = null; // 當前進行的測驗卷物件(包含設定)
+    let currentList = null; 
     let currentQuizList = [];
     let currentQIdx = 0;
     let activeInput = null;
-    let earnedGemsInSession = 0;
-    let readTimerInterval = null; // 倒數計時器
+    let earnedGemsInSession = 0; // 改為紀錄最後是否獲得獎勵
+    let readTimerInterval = null; 
 
-    const SK_LISTS = 'math_mem_lists_v3'; // update key for new format
-    const SK_USER = 'math_mem_user_v3';
-    const SK_POOL = 'math_mem_pool_v3';
+    const SK_LISTS = 'math_mem_lists_v4'; 
+    const SK_USER = 'math_mem_user_v4';
+    const SK_POOL = 'math_mem_pool_v4';
 
     window.onload = function() {
         loadData();
@@ -403,14 +403,13 @@
                 if(Array.isArray(parsed)) {
                     lists = parsed;
                 } else {
-                    console.error("Lists format error, resetting...");
                     lists = [];
                 }
             } else {
                 initDefaultList();
             }
         } catch(e) {
-            console.error("Lists corrupt, resetting...", e);
+            console.error("Lists corrupt", e);
             lists = [];
             initDefaultList();
         }
@@ -420,11 +419,8 @@
             let rawPool = localStorage.getItem(SK_POOL);
             if(rawPool) {
                 let parsed = JSON.parse(rawPool);
-                if(Array.isArray(parsed)) {
-                    poolData = parsed;
-                } else {
-                    poolData = [];
-                }
+                if(Array.isArray(parsed)) poolData = parsed;
+                else poolData = [];
             }
         } catch(e) {
             poolData = [];
@@ -447,7 +443,8 @@
     function initDefaultList() {
         lists = [{
             name: "範例練習 (2題)",
-            timer: 0, // 預設不限時
+            timer: 0,
+            reward: 10,
             qs: [
                 { text: "一盒巧克力有24顆。小明有3盒，他把所有的巧克力平分給8位朋友，每位朋友可以分到多少顆巧克力？", keywords: ["24", "3", "8"] },
                 { text: "遊樂園門票一張200元，老師買了5張，付了1000元，請問找回多少元？", keywords: ["200", "5", "1000"] }
@@ -511,7 +508,8 @@
         editingId = null;
         tempQs = [];
         document.getElementById('list-name').value = "新的練習題庫";
-        document.getElementById('list-timer').value = ""; // 清空倒數設定
+        document.getElementById('list-timer').value = ""; 
+        document.getElementById('list-reward').value = "10"; // 預設 10
         document.getElementById('editor-text').value = "";
         document.getElementById('editor-keywords').value = "";
         
@@ -524,7 +522,8 @@
         editingId = i;
         tempQs = JSON.parse(JSON.stringify(lists[i].qs));
         document.getElementById('list-name').value = lists[i].name;
-        document.getElementById('list-timer').value = lists[i].timer || ""; // 載入倒數設定
+        document.getElementById('list-timer').value = lists[i].timer || "";
+        document.getElementById('list-reward').value = lists[i].reward || 10;
         document.getElementById('editor-text').value = "";
         document.getElementById('editor-keywords').value = "";
         
@@ -618,11 +617,14 @@
     function saveList() {
         let name = document.getElementById('list-name').value || "未命名";
         let timer = parseInt(document.getElementById('list-timer').value);
-        if(isNaN(timer) || timer < 0) timer = 0; // 確保 timer 至少為 0
+        if(isNaN(timer) || timer < 0) timer = 0;
+        
+        let reward = parseInt(document.getElementById('list-reward').value);
+        if(isNaN(reward) || reward < 0) reward = 10;
 
         if(tempQs.length === 0) return alert("請至少加入一題");
         
-        let listObj = { name: name, timer: timer, qs: tempQs };
+        let listObj = { name: name, timer: timer, reward: reward, qs: tempQs };
         
         if(editingId !== null) lists[editingId] = listObj;
         else lists.push(listObj);
@@ -636,12 +638,14 @@
         lists.forEach((l, i) => {
             let item = document.createElement('div');
             item.className = 'list-item';
-            // 顯示是否有設定倒數
             let timerBadge = l.timer > 0 ? `<span style="background:#e74c3c; color:white; border-radius:10px; padding:2px 6px; font-size:0.8rem;">⏱️${l.timer}s</span>` : '';
+            // 顯示獎勵寶石
+            let reward = l.reward || 10;
+            let gemBadge = `<span style="background:#2980b9; color:white; border-radius:10px; padding:2px 6px; font-size:0.8rem; margin-left:5px;">💎${reward}</span>`;
             
             item.innerHTML = `
                 <div>
-                    <strong>${l.name}</strong> (${l.qs.length}題) ${timerBadge}
+                    <strong>${l.name}</strong> (${l.qs.length}題) ${timerBadge} ${gemBadge}
                 </div>
                 <div>
                     <button class="btn-success" onclick="prepareQuiz(${i})">開始</button>
@@ -659,14 +663,14 @@
 
     /* --- 練習邏輯 --- */
     function prepareQuiz(idx) {
-        currentList = lists[idx]; // 儲存當前測驗卷設定(含timer)
+        currentList = lists[idx]; 
         currentQuizList = JSON.parse(JSON.stringify(currentList.qs));
         showPage('page-mode');
     }
 
     function startQuiz() {
         currentQIdx = 0;
-        earnedGemsInSession = 0;
+        earnedGemsInSession = 0; // 重置
         let allowHelp = document.getElementById('opt-allow-help').checked;
         document.getElementById('btn-help').style.display = allowHelp ? 'inline-block' : 'none';
         showPage('page-quiz');
@@ -674,12 +678,10 @@
     }
 
     function loadQuestionPhase1() {
-        // 清除任何舊的計時器
         if(readTimerInterval) { clearInterval(readTimerInterval); readTimerInterval = null; }
 
         let q = currentQuizList[currentQIdx];
         document.getElementById('q-info').innerText = `題目 ${currentQIdx+1} / ${currentQuizList.length}`;
-        document.getElementById('q-score').innerText = `💎 ${earnedGemsInSession}`;
         
         document.getElementById('phase-read').style.display = 'block';
         document.getElementById('phase-answer').style.display = 'none';
@@ -687,7 +689,6 @@
         document.getElementById('read-text').innerText = q.text;
         speak(q.text);
 
-        // 處理倒數計時邏輯
         let timerDisplay = document.getElementById('read-timer');
         let setTime = currentList.timer || 0;
 
@@ -700,16 +701,15 @@
                 timerDisplay.innerText = setTime;
                 if(setTime <= 0) {
                     clearInterval(readTimerInterval);
-                    goToAnswerPhase(); // 時間到，強制進入下一階段
+                    goToAnswerPhase(); 
                 }
             }, 1000);
         } else {
-            timerDisplay.style.display = 'none'; // 無限時
+            timerDisplay.style.display = 'none';
         }
     }
 
     function goToAnswerPhase() {
-        // 進入答題階段，先切斷計時器
         if(readTimerInterval) { clearInterval(readTimerInterval); readTimerInterval = null; }
         
         window.speechSynthesis.cancel();
@@ -783,7 +783,8 @@
             speak("有錯誤喔，請再檢查一下");
         } else if(allCorrect) {
             speak("太棒了！答對了！");
-            earnedGemsInSession += 5; 
+            // 移除單題給分，改為最後給總分
+            // earnedGemsInSession += 5; 
             spawnParticles('💎');
             setTimeout(nextQuestion, 1500);
         }
@@ -799,7 +800,7 @@
     }
 
     function quitQuiz() {
-        if(confirm("確定要中途退出嗎？")) {
+        if(confirm("確定要中途退出嗎？(將無法獲得獎勵)")) {
             if(readTimerInterval) { clearInterval(readTimerInterval); }
             showPage('page-home');
         }
@@ -807,10 +808,15 @@
 
     function finishQuiz() {
         showPage('page-result');
+        
+        // 結算獎勵：根據設定的獎勵值給予
+        let reward = currentList.reward !== undefined ? parseInt(currentList.reward) : 10;
+        earnedGemsInSession = reward;
+
         totalGems += earnedGemsInSession;
         saveUser();
         
-        document.getElementById('result-msg').innerHTML = `恭喜完成！<br>獲得 ${earnedGemsInSession} 顆寶石 💎`;
+        document.getElementById('result-msg').innerHTML = `恭喜完成練習！<br>獲得 <span style="color:#2980b9; font-weight:bold; font-size:2rem;">${earnedGemsInSession}</span> 顆寶石 💎`;
         if(earnedGemsInSession > 0) spawnParticles('👑');
     }
 
@@ -870,19 +876,18 @@
             try {
                 let json = JSON.parse(e.target.result);
                 if(Array.isArray(json)) {
-                    // 基本檢查每個項目是否包含 text 和 keywords
                     let validQs = json.filter(q => q.text && Array.isArray(q.keywords));
                     if(validQs.length > 0) {
                         poolData = poolData.concat(validQs);
                         savePool();
-                        alert(`成功匯入 ${validQs.length} 題到總題庫！\n(忽略無效題目 ${json.length - validQs.length} 題)`);
+                        alert(`成功匯入 ${validQs.length} 題到總題庫！`);
                     } else {
-                        alert("匯入失敗：沒有有效的題目格式");
+                        alert("匯入失敗：沒有有效的題目");
                     }
                 } else {
-                    alert("匯入失敗：檔案內容必須是陣列 (Array)");
+                    alert("匯入失敗：格式錯誤");
                 }
-            } catch(ex) { alert("檔案解析錯誤：請確認 JSON 格式正確"); }
+            } catch(ex) { alert("檔案解析錯誤"); }
         };
         r.readAsText(f);
         input.value = "";
@@ -894,8 +899,8 @@
         r.onload = e => {
             try {
                 let json = JSON.parse(e.target.result);
-                if(json.lists && Array.isArray(json.lists)) lists = json.lists;
-                if(json.pool && Array.isArray(json.pool)) poolData = json.pool; 
+                if(json.lists) lists = json.lists;
+                if(json.pool) poolData = json.pool; 
                 if(json.user) {
                     studentName = json.user.name;
                     totalGems = json.user.gems;
