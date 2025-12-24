@@ -205,7 +205,10 @@
             </div>
         </div>
 
-        <div class="app-version">Math Keyword Memory v2.1 (Fixes)</div>
+        <div class="app-version">
+            Math Keyword Memory v2.2 (Safe Mode)<br>
+            <a href="#" onclick="hardReset()" style="color:#c0392b; text-decoration:underline;">⚠️ 系統異常? 點此強制重置</a>
+        </div>
     </div>
 
     <div id="page-editor" class="container" style="max-width: 1200px;">
@@ -364,33 +367,76 @@
     window.onload = function() {
         loadData();
         updateUI();
-        renderLists(); // 修正1: 啟動時立刻渲染列表
+        renderLists(); 
     };
 
     function loadData() {
-        if(localStorage.getItem(SK_LISTS)) {
-            lists = JSON.parse(localStorage.getItem(SK_LISTS));
-        } else {
-            lists = [{
-                name: "範例練習 (2題)",
-                qs: [
-                    { text: "一盒巧克力有24顆。小明有3盒，他把所有的巧克力平分給8位朋友，每位朋友可以分到多少顆巧克力？", keywords: ["24", "3", "8"] },
-                    { text: "遊樂園門票一張200元，老師買了5張，付了1000元，請問找回多少元？", keywords: ["200", "5", "1000"] }
-                ]
-            }];
-            saveData();
+        // 安全載入 Lists
+        try {
+            let rawLists = localStorage.getItem(SK_LISTS);
+            if(rawLists) {
+                let parsed = JSON.parse(rawLists);
+                if(Array.isArray(parsed)) {
+                    lists = parsed;
+                } else {
+                    console.error("Lists format error, resetting...");
+                    lists = []; // 格式不對，重置
+                }
+            } else {
+                initDefaultList();
+            }
+        } catch(e) {
+            console.error("Lists corrupt, resetting...", e);
+            lists = [];
+            initDefaultList();
         }
         
-        if(localStorage.getItem(SK_POOL)) {
-            poolData = JSON.parse(localStorage.getItem(SK_POOL));
+        // 安全載入 Pool
+        try {
+            let rawPool = localStorage.getItem(SK_POOL);
+            if(rawPool) {
+                let parsed = JSON.parse(rawPool);
+                if(Array.isArray(parsed)) {
+                    poolData = parsed;
+                } else {
+                    console.error("Pool format error, resetting...");
+                    poolData = [];
+                }
+            }
+        } catch(e) {
+            console.error("Pool corrupt, resetting...", e);
+            poolData = [];
         }
 
-        let u = localStorage.getItem(SK_USER);
-        if(u) {
-            let data = JSON.parse(u);
-            studentName = data.name;
-            totalGems = data.gems;
-            exchangeLog = data.log || [];
+        // 載入使用者資料
+        try {
+            let u = localStorage.getItem(SK_USER);
+            if(u) {
+                let data = JSON.parse(u);
+                studentName = data.name || "小小學員";
+                totalGems = data.gems || 0;
+                exchangeLog = data.log || [];
+            }
+        } catch(e) {
+            console.error("User data corrupt", e);
+        }
+    }
+
+    function initDefaultList() {
+        lists = [{
+            name: "範例練習 (2題)",
+            qs: [
+                { text: "一盒巧克力有24顆。小明有3盒，他把所有的巧克力平分給8位朋友，每位朋友可以分到多少顆巧克力？", keywords: ["24", "3", "8"] },
+                { text: "遊樂園門票一張200元，老師買了5張，付了1000元，請問找回多少元？", keywords: ["200", "5", "1000"] }
+            ]
+        }];
+        saveData();
+    }
+
+    function hardReset() {
+        if(confirm("確定要重置所有資料嗎？這將刪除所有題庫和寶石。")) {
+            localStorage.clear();
+            location.reload();
         }
     }
 
@@ -561,7 +607,6 @@
         lists.forEach((l, i) => {
             let item = document.createElement('div');
             item.className = 'list-item';
-            // 修正2: 移除單一項目的匯出按鈕，改為[開始][編輯][刪除]
             item.innerHTML = `
                 <div><strong>${l.name}</strong> (${l.qs.length}題)</div>
                 <div>
@@ -761,13 +806,19 @@
             try {
                 let json = JSON.parse(e.target.result);
                 if(Array.isArray(json)) {
-                    poolData = poolData.concat(json);
-                    savePool();
-                    alert(`成功匯入 ${json.length} 題到總題庫！\n請進入「建立新測驗卷」或「編輯」頁面使用。`);
+                    // 基本檢查每個項目是否包含 text 和 keywords
+                    let validQs = json.filter(q => q.text && Array.isArray(q.keywords));
+                    if(validQs.length > 0) {
+                        poolData = poolData.concat(validQs);
+                        savePool();
+                        alert(`成功匯入 ${validQs.length} 題到總題庫！\n(忽略無效題目 ${json.length - validQs.length} 題)`);
+                    } else {
+                        alert("匯入失敗：沒有有效的題目格式");
+                    }
                 } else {
-                    alert("JSON 格式錯誤，必須是 Array");
+                    alert("匯入失敗：檔案內容必須是陣列 (Array)");
                 }
-            } catch(ex) { alert("JSON 解析錯誤"); }
+            } catch(ex) { alert("檔案解析錯誤：請確認 JSON 格式正確"); }
         };
         r.readAsText(f);
         input.value = "";
@@ -779,8 +830,8 @@
         r.onload = e => {
             try {
                 let json = JSON.parse(e.target.result);
-                if(json.lists) lists = json.lists;
-                if(json.pool) poolData = json.pool; 
+                if(json.lists && Array.isArray(json.lists)) lists = json.lists;
+                if(json.pool && Array.isArray(json.pool)) poolData = json.pool; 
                 if(json.user) {
                     studentName = json.user.name;
                     totalGems = json.user.gems;
@@ -788,7 +839,7 @@
                 }
                 saveData(); savePool(); saveUser(); renderLists();
                 alert("備份還原成功");
-            } catch(ex) { alert("檔案錯誤"); }
+            } catch(ex) { alert("檔案解析錯誤"); }
         };
         r.readAsText(f);
         input.value = "";
