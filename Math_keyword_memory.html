@@ -6,13 +6,14 @@
     <title>應用題數字記憶練習系統</title>
     <style>
         :root {
-            --primary: #8e44ad; /* 改為紫色系區別於計算練習 */
+            --primary: #8e44ad;
             --secondary: #9b59b6;
             --light: #f4ecf7;
             --dark: #2c3e50;
             --success: #27ae60;
             --danger: #c0392b;
             --warning: #f39c12;
+            --pool-bg: #fff8e1;
         }
 
         * { box-sizing: border-box; }
@@ -34,7 +35,7 @@
         
         .app-version { font-size: 0.8rem; color: #95a5a6; margin-top: auto; padding: 20px; width: 100%; text-align: center; }
 
-        /* --- 學員名牌 & 獎勵 --- */
+        /* --- 學員名牌 --- */
         .user-profile {
             background-color: #fff;
             border: 2px dashed var(--primary);
@@ -57,7 +58,8 @@
         }
 
         .container {
-            width: 100%; max-width: 900px; background: white; border-radius: 12px;
+            width: 100%; max-width: 1100px;
+            background: white; border-radius: 12px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px;
             display: none; flex-direction: column; 
         }
@@ -80,13 +82,39 @@
 
         /* --- 列表與編輯 --- */
         .list-item {
-            background: #fdfefe; border: 1px solid #ddd; padding: 10px; margin-bottom: 8px;
-            border-radius: 6px; display: flex; justify-content: space-between; align-items: center;
+            background: #fdfefe; border: 1px solid #ddd; padding: 15px; margin-bottom: 10px;
+            border-radius: 8px; display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
+        /* 編輯器佈局 */
+        .editor-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .editor-layout { grid-template-columns: 1fr; }
+        }
+
+        .editor-column { display: flex; flex-direction: column; gap: 10px; }
         .editor-input-area {
             background: #f4f6f7; padding: 15px; border-radius: 8px; margin-bottom: 10px;
         }
+        
+        .pool-area {
+            background: var(--pool-bg); padding: 15px; border-radius: 8px; border: 2px solid #f39c12;
+            max-height: 600px; display: flex; flex-direction: column;
+        }
+        .pool-list {
+            overflow-y: auto; flex: 1; border-top: 1px solid #ddd; margin-top: 10px;
+        }
+        .pool-item {
+            background: white; border-bottom: 1px solid #ddd; padding: 8px; margin-bottom: 5px; cursor: pointer;
+            border-radius: 4px; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: flex-start;
+        }
+        .pool-item:hover { background: #fdf2e9; }
+
         .editor-label { font-weight: bold; color: #555; margin-bottom: 5px; display:block;}
         .editor-textarea { 
             width: 100%; padding: 8px; border: 1px solid #bdc3c7; border-radius: 5px; 
@@ -105,7 +133,6 @@
             min-height: 150px; display: flex; flex-direction: column; justify-content: center;
         }
 
-        /* 填空題樣式 */
         .blank-input {
             border: none; border-bottom: 3px solid var(--primary);
             background: #f4ecf7; text-align: center; font-size: 1.5rem;
@@ -117,7 +144,6 @@
         .blank-input.correct { background: #d5f5e3; border-bottom: 3px solid #27ae60; color: #27ae60; pointer-events: none; }
         .blank-input.wrong { background: #fadbd8; border-bottom: 3px solid #c0392b; animation: shake 0.4s; }
 
-        /* 鍵盤 */
         .keypad {
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; max-width: 400px; margin-left: auto; margin-right: auto;
         }
@@ -127,7 +153,6 @@
         }
         .keypad button:active { transform: translateY(4px); box-shadow: none; }
         
-        /* 商店與特效 */
         .shop-balance {
             background: linear-gradient(135deg, #f39c12 0%, #d35400 100%);
             color: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px;
@@ -166,45 +191,69 @@
         <h3>📂 選擇練習題庫</h3>
         <div id="lists-container"></div>
         
-        <button class="btn-primary btn-block" onclick="createNewList()">+ 建立新題庫</button>
+        <button class="btn-primary btn-block" onclick="createNewList()">+ 建立新測驗卷</button>
         
-        <div style="margin-top:20px; border-top:1px dashed #ccc; padding-top:10px; display:flex; gap:5px;">
-            <button class="btn-info" style="flex:1" onclick="document.getElementById('import-json').click()">📥 匯入題目 (JSON)</button>
-            <input type="file" id="import-json" style="display:none" accept=".json" onchange="handleImportToPool(this)">
-            <button class="btn-gray" style="flex:1" onclick="exportData()">匯出備份</button>
-            <button class="btn-gray" style="flex:1" onclick="document.getElementById('import-file').click()">匯入備份</button>
-            <input type="file" id="import-file" style="display:none" accept=".json" onchange="handleBackupImport(this)">
+        <div style="margin-top:20px; border-top:1px dashed #ccc; padding-top:10px; display:flex; flex-direction: column; gap:5px;">
+            <div style="text-align:center; font-size:0.9rem; color:#666; margin-bottom:5px;">👇 先在這裡匯入 100 題 JSON 到總題庫</div>
+            <button class="btn-info btn-block" onclick="document.getElementById('import-json-pool').click()">📥 匯入題目到「總題庫」(JSON)</button>
+            <input type="file" id="import-json-pool" style="display:none" accept=".json" onchange="handleImportToPool(this)">
+            
+            <div style="display:flex; gap:5px; margin-top:10px;">
+                <button class="btn-gray" style="flex:1" onclick="exportData()">匯出備份</button>
+                <button class="btn-gray" style="flex:1" onclick="document.getElementById('import-file').click()">匯入備份</button>
+                <input type="file" id="import-file" style="display:none" accept=".json" onchange="handleBackupImport(this)">
+            </div>
         </div>
 
-        <div class="app-version">Math Keyword Memory v1.0</div>
+        <div class="app-version">Math Keyword Memory v2.1 (Fixes)</div>
     </div>
 
-    <div id="page-editor" class="container">
-        <h2>✏️ 編輯題目</h2>
-        <div style="margin-bottom:10px;">
-            題庫名稱: <input type="text" id="list-name" class="editor-input" style="width:70%;">
-        </div>
-
-        <div class="editor-input-area">
-            <div class="editor-label">1. 應用題題目:</div>
-            <textarea id="editor-text" class="editor-textarea" placeholder="例如：一盒巧克力有24顆。小明有3盒..."></textarea>
-            
-            <div class="editor-label" style="margin-top:10px;">2. 要隱藏記憶的關鍵字 (用逗號分隔):</div>
-            <div style="display:flex; gap:5px;">
-                <input type="text" id="editor-keywords" class="editor-input" placeholder="例如: 24, 3, 8">
-                <button class="btn-info" onclick="autoDetectNumbers()">⚡ 自動抓數字</button>
-            </div>
-            <small style="color:#666;">這些數字會在練習時變成空格，請確認輸入正確。</small>
-            
-            <button onclick="addCurrentToList()" class="btn-success btn-block" style="margin-top:15px;">⬇️ 加入下方列表</button>
-        </div>
-
-        <div style="font-weight:bold;">已加入的題目:</div>
-        <div id="editor-rows" style="max-height: 250px; overflow-y: auto; border:1px solid #ddd; padding:5px; margin-bottom:10px;"></div>
+    <div id="page-editor" class="container" style="max-width: 1200px;">
+        <h2>✏️ 編輯測驗卷</h2>
         
-        <div style="display:flex; gap:10px;">
+        <div style="margin-bottom:10px; background:#eee; padding:10px; border-radius:5px;">
+            測驗卷名稱: <input type="text" id="list-name" class="editor-input" style="width:70%; margin-left:5px;">
+        </div>
+
+        <div class="editor-layout">
+            <div class="editor-column">
+                <div class="editor-input-area">
+                    <h3 style="margin-top:0; color:#2c3e50;">🖐️ 手動新增</h3>
+                    <div class="editor-label">題目內容:</div>
+                    <textarea id="editor-text" class="editor-textarea" placeholder="例如：一盒巧克力有24顆..."></textarea>
+                    
+                    <div class="editor-label" style="margin-top:10px;">隱藏關鍵字 (數字):</div>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" id="editor-keywords" class="editor-input" placeholder="例如: 24, 3, 8">
+                        <button class="btn-info" onclick="autoDetectNumbers()">⚡ 自動抓</button>
+                    </div>
+                    
+                    <button onclick="addCurrentToList()" class="btn-success btn-block" style="margin-top:15px;">⬇️ 加入本卷</button>
+                </div>
+
+                <div style="font-weight:bold;">已加入本卷的題目 (<span id="count-current">0</span>題):</div>
+                <div id="editor-rows" style="flex:1; overflow-y: auto; border:1px solid #ddd; padding:5px; background:white; min-height:200px; max-height:400px; border-radius:5px;"></div>
+            </div>
+
+            <div class="editor-column">
+                <div class="pool-area">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h3 style="margin:0; color:#d35400;">📚 總題庫來源</h3>
+                        <span style="font-size:0.8rem; color:#666;" id="pool-count">0題</span>
+                    </div>
+                    <div style="margin-bottom:5px; font-size:0.8rem; color:#666;">點擊 ➕ 將題目加入左側測驗卷</div>
+                    
+                    <div id="pool-list-container" class="pool-list">
+                        </div>
+                    
+                    <button class="btn-danger btn-block" style="margin-top:10px; font-size:0.9rem;" onclick="clearPool()">🗑️ 清空總題庫</button>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:15px;">
             <button class="btn-gray" style="flex:1" onclick="showPage('page-home')">取消</button>
-            <button class="btn-primary" style="flex:1" onclick="saveList()">💾 儲存題庫</button>
+            <button class="btn-primary" style="flex:1" onclick="saveList()">💾 儲存測驗卷</button>
         </div>
     </div>
 
@@ -295,6 +344,7 @@
     let studentName = "小小學員";
     let totalGems = 0;
     let lists = [];
+    let poolData = []; 
     let exchangeLog = [];
     
     // 編輯器暫存
@@ -304,24 +354,25 @@
     // 測驗狀態
     let currentQuizList = [];
     let currentQIdx = 0;
-    let activeInput = null; // 目前焦點在依個填空框
+    let activeInput = null;
     let earnedGemsInSession = 0;
 
-    const SK_LISTS = 'math_mem_lists_v1';
-    const SK_USER = 'math_mem_user_v1';
+    const SK_LISTS = 'math_mem_lists_v2';
+    const SK_USER = 'math_mem_user_v2';
+    const SK_POOL = 'math_mem_pool_v2';
 
     window.onload = function() {
         loadData();
         updateUI();
+        renderLists(); // 修正1: 啟動時立刻渲染列表
     };
 
     function loadData() {
         if(localStorage.getItem(SK_LISTS)) {
             lists = JSON.parse(localStorage.getItem(SK_LISTS));
         } else {
-            // 預設範例題庫
             lists = [{
-                name: "範例題庫",
+                name: "範例練習 (2題)",
                 qs: [
                     { text: "一盒巧克力有24顆。小明有3盒，他把所有的巧克力平分給8位朋友，每位朋友可以分到多少顆巧克力？", keywords: ["24", "3", "8"] },
                     { text: "遊樂園門票一張200元，老師買了5張，付了1000元，請問找回多少元？", keywords: ["200", "5", "1000"] }
@@ -330,6 +381,10 @@
             saveData();
         }
         
+        if(localStorage.getItem(SK_POOL)) {
+            poolData = JSON.parse(localStorage.getItem(SK_POOL));
+        }
+
         let u = localStorage.getItem(SK_USER);
         if(u) {
             let data = JSON.parse(u);
@@ -340,6 +395,7 @@
     }
 
     function saveData() { localStorage.setItem(SK_LISTS, JSON.stringify(lists)); }
+    function savePool() { localStorage.setItem(SK_POOL, JSON.stringify(poolData)); }
     function saveUser() { 
         localStorage.setItem(SK_USER, JSON.stringify({name: studentName, gems: totalGems, log: exchangeLog}));
         updateUI();
@@ -388,7 +444,21 @@
         document.getElementById('list-name').value = "新的練習題庫";
         document.getElementById('editor-text').value = "";
         document.getElementById('editor-keywords').value = "";
+        
         renderEditorRows();
+        renderPoolInEditor();
+        showPage('page-editor');
+    }
+
+    function editList(i) {
+        editingId = i;
+        tempQs = JSON.parse(JSON.stringify(lists[i].qs));
+        document.getElementById('list-name').value = lists[i].name;
+        document.getElementById('editor-text').value = "";
+        document.getElementById('editor-keywords').value = "";
+        
+        renderEditorRows();
+        renderPoolInEditor();
         showPage('page-editor');
     }
 
@@ -396,7 +466,6 @@
         let txt = document.getElementById('editor-text').value;
         let nums = txt.match(/\d+/g);
         if(nums) {
-            // 去除重複並填入
             let unique = [...new Set(nums)];
             document.getElementById('editor-keywords').value = unique.join(", ");
         } else {
@@ -418,22 +487,61 @@
         renderEditorRows();
     }
 
+    function addFromPool(poolIndex) {
+        let q = poolData[poolIndex];
+        tempQs.push(JSON.parse(JSON.stringify(q)));
+        renderEditorRows();
+    }
+
     function renderEditorRows() {
         let div = document.getElementById('editor-rows');
+        document.getElementById('count-current').innerText = tempQs.length;
         div.innerHTML = "";
         tempQs.forEach((q, idx) => {
             let row = document.createElement('div');
             row.style.borderBottom = "1px solid #eee";
-            row.style.padding = "5px";
+            row.style.padding = "8px";
             row.style.display = "flex"; row.style.justifyContent="space-between";
             row.innerHTML = `
-                <div style="font-size:0.9rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:80%;">
-                    ${q.text} <br> <span style="color:var(--primary)">隱藏: ${q.keywords.join(", ")}</span>
+                <div style="font-size:0.9rem; overflow:hidden; width:85%;">
+                    ${q.text} <br> <span style="color:var(--primary); font-size:0.8rem;">隱藏: ${q.keywords.join(", ")}</span>
                 </div>
-                <button class="btn-danger" onclick="tempQs.splice(${idx},1); renderEditorRows()">刪</button>
+                <button class="btn-danger" style="padding:2px 8px;" onclick="tempQs.splice(${idx},1); renderEditorRows()">×</button>
             `;
             div.appendChild(row);
         });
+    }
+
+    function renderPoolInEditor() {
+        const container = document.getElementById('pool-list-container');
+        container.innerHTML = '';
+        document.getElementById('pool-count').innerText = `${poolData.length}題`;
+        
+        if(poolData.length === 0) {
+            container.innerHTML = '<div style="padding:10px; color:#999; text-align:center;">題庫是空的，請先在首頁匯入 JSON</div>';
+            return;
+        }
+
+        poolData.forEach((q, idx) => {
+            const div = document.createElement('div');
+            div.className = 'pool-item';
+            div.innerHTML = `
+                <div style="flex:1; padding-right: 5px;">
+                    <div style="white-space: normal; line-height: 1.3;">${q.text}</div>
+                    <div style="color:var(--primary); font-size:0.8rem; margin-top:2px;">[${q.keywords.join(",")}]</div>
+                </div>
+                <button class="btn-success" style="padding:2px 8px; font-size:1.2rem;" onclick="addFromPool(${idx})">＋</button>
+            `;
+            container.appendChild(div);
+        });
+    }
+    
+    function clearPool() {
+        if(confirm("確定要清空總題庫嗎？")) {
+            poolData = [];
+            savePool();
+            renderPoolInEditor();
+        }
     }
 
     function saveList() {
@@ -453,12 +561,13 @@
         lists.forEach((l, i) => {
             let item = document.createElement('div');
             item.className = 'list-item';
+            // 修正2: 移除單一項目的匯出按鈕，改為[開始][編輯][刪除]
             item.innerHTML = `
                 <div><strong>${l.name}</strong> (${l.qs.length}題)</div>
                 <div>
                     <button class="btn-success" onclick="prepareQuiz(${i})">開始</button>
-                    <button class="btn-info" onclick="exportOneList(${i})">匯出</button>
-                    <button class="btn-danger" onclick="deleteList(${i})">刪</button>
+                    <button class="btn-info" onclick="editList(${i})">編輯</button>
+                    <button class="btn-danger" onclick="deleteList(${i})">刪除</button>
                 </div>
             `;
             c.appendChild(item);
@@ -466,29 +575,25 @@
     }
 
     function deleteList(i) {
-        if(confirm("確定刪除?")) { lists.splice(i,1); saveData(); renderLists(); }
+        if(confirm("確定刪除此測驗卷?")) { lists.splice(i,1); saveData(); renderLists(); }
     }
 
-    /* --- 練習邏輯 (Core Game Loop) --- */
+    /* --- 練習邏輯 --- */
     function prepareQuiz(idx) {
-        currentQuizList = JSON.parse(JSON.stringify(lists[idx].qs)); // Deep copy
+        currentQuizList = JSON.parse(JSON.stringify(lists[idx].qs));
         showPage('page-mode');
     }
 
     function startQuiz() {
         currentQIdx = 0;
         earnedGemsInSession = 0;
-        
-        // 檢查求救按鈕設定
         let allowHelp = document.getElementById('opt-allow-help').checked;
         document.getElementById('btn-help').style.display = allowHelp ? 'inline-block' : 'none';
-
         showPage('page-quiz');
         loadQuestionPhase1();
     }
 
     function loadQuestionPhase1() {
-        // 階段一：閱讀
         let q = currentQuizList[currentQIdx];
         document.getElementById('q-info').innerText = `題目 ${currentQIdx+1} / ${currentQuizList.length}`;
         document.getElementById('q-score').innerText = `💎 ${earnedGemsInSession}`;
@@ -508,27 +613,17 @@
         let q = currentQuizList[currentQIdx];
         let html = q.text;
         
-        // 將關鍵字替換為 Input
-        // 為了避免替換部分數字 (如 24 被替換成 2 和 4)，先按長度排序
         let sortedKeys = [...q.keywords].sort((a,b) => b.length - a.length);
-        
-        // 使用一個暫時的標記來避免重複替換
         let index = 0;
         let map = {};
         
         sortedKeys.forEach(k => {
-            // 使用正則表達式做全字匹配或單純替換
-            // 這裡簡單使用 replaceAll，但要注意如果關鍵字重複出現，會全部變成空格
-            // 題目設計者應自行決定
             let uuid = `__BLANK_${index}__`;
             map[uuid] = k;
-            // 這裡簡單 replace，只替換第一次出現或全部出現? 
-            // 為了應用題邏輯，通常是全部替換
             html = html.split(k).join(uuid); 
             index++;
         });
 
-        // 將標記轉回 Input HTML
         Object.keys(map).forEach(uuid => {
             let ans = map[uuid];
             let inputHtml = `<input type="text" class="blank-input" readonly onclick="focusInput(this)" data-ans="${ans}">`;
@@ -536,8 +631,6 @@
         });
 
         document.getElementById('answer-area').innerHTML = html;
-        
-        // 自動聚焦第一個空格
         let firstInput = document.querySelector('.blank-input');
         if(firstInput) focusInput(firstInput);
     }
@@ -582,11 +675,9 @@
 
         if(hasError) {
             speak("有錯誤喔，請再檢查一下");
-        }
-
-        if(allCorrect) {
+        } else if(allCorrect) {
             speak("太棒了！答對了！");
-            earnedGemsInSession += 5; // 每題5鑽
+            earnedGemsInSession += 5; 
             spawnParticles('💎');
             setTimeout(nextQuestion, 1500);
         }
@@ -626,7 +717,7 @@
         setTimeout(() => { con.style.display='none'; }, 3000);
     }
 
-    /* --- 匯入匯出與商店 (共用邏輯) --- */
+    /* --- 匯入匯出與商店 --- */
     function processExchange() {
         let item = document.getElementById('gift-name').value;
         let cost = parseInt(document.getElementById('gift-cost').value);
@@ -653,13 +744,8 @@
     }
 
     function exportData() {
-        let data = { lists: lists, user: {name: studentName, gems: totalGems, log: exchangeLog} };
-        downloadJson(data, "Math_Memory_Backup.json");
-    }
-
-    function exportOneList(i) {
-        let data = [lists[i].qs]; // 匯出題目 Array
-        downloadJson(data, `List_${lists[i].name}.json`);
+        let data = { lists: lists, pool: poolData, user: {name: studentName, gems: totalGems, log: exchangeLog} };
+        downloadJson(data, "Math_Memory_Full_Backup.json");
     }
 
     function downloadJson(obj, fname) {
@@ -674,17 +760,14 @@
         r.onload = e => {
             try {
                 let json = JSON.parse(e.target.result);
-                // 假設匯入格式為 [{text, keywords}, ...]
                 if(Array.isArray(json)) {
-                    // 將其轉換為新的題庫
-                    lists.push({ name: "匯入的題庫 " + new Date().toLocaleTimeString(), qs: json });
-                    saveData();
-                    renderLists();
-                    alert("匯入成功！已建立新題庫。");
+                    poolData = poolData.concat(json);
+                    savePool();
+                    alert(`成功匯入 ${json.length} 題到總題庫！\n請進入「建立新測驗卷」或「編輯」頁面使用。`);
                 } else {
-                    alert("格式錯誤");
+                    alert("JSON 格式錯誤，必須是 Array");
                 }
-            } catch(ex) { alert("JSON 錯誤"); }
+            } catch(ex) { alert("JSON 解析錯誤"); }
         };
         r.readAsText(f);
         input.value = "";
@@ -697,12 +780,13 @@
             try {
                 let json = JSON.parse(e.target.result);
                 if(json.lists) lists = json.lists;
+                if(json.pool) poolData = json.pool; 
                 if(json.user) {
                     studentName = json.user.name;
                     totalGems = json.user.gems;
                     exchangeLog = json.user.log || [];
                 }
-                saveData(); saveUser(); renderLists();
+                saveData(); savePool(); saveUser(); renderLists();
                 alert("備份還原成功");
             } catch(ex) { alert("檔案錯誤"); }
         };
