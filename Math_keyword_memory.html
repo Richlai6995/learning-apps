@@ -140,6 +140,13 @@
         }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
+        /* Q&A 模式樣式 */
+        .qa-row {
+            display: flex; align-items: center; margin-bottom: 15px; background: #fff; padding: 10px; border-radius: 8px;
+            border: 1px solid #ddd; justify-content: space-between;
+        }
+        .qa-question { font-weight: bold; font-size: 1.2rem; color: #2c3e50; flex: 1; text-align: left; padding-right: 10px;}
+        
         .blank-input {
             border: none; border-bottom: 3px solid var(--primary);
             background: #f4ecf7; text-align: center; font-size: 1.5rem;
@@ -178,6 +185,15 @@
         }
         .settings-panel label { display: block; margin-bottom: 8px; cursor: pointer; font-size: 1.1rem; }
         .settings-panel input[type="checkbox"] { transform: scale(1.3); margin-right: 10px; }
+        
+        /* 提問模式編輯區域 */
+        .q-edit-row {
+            display: flex; align-items: center; gap: 5px; margin-bottom: 5px;
+            background: #fff; padding: 5px; border-radius: 4px; border: 1px solid #eee;
+        }
+        .q-edit-badge {
+            background: var(--primary); color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; min-width: 30px; text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -201,7 +217,7 @@
         <button class="btn-primary btn-block" onclick="createNewList()">+ 建立新測驗卷</button>
         
         <div style="margin-top:20px; border-top:1px dashed #ccc; padding-top:10px; display:flex; flex-direction: column; gap:5px;">
-            <div style="text-align:center; font-size:0.9rem; color:#666; margin-bottom:5px;">👇 先在這裡匯入 100 題 JSON 到總題庫</div>
+            <div style="text-align:center; font-size:0.9rem; color:#666; margin-bottom:5px;">👇 先在這裡匯入 JSON 到總題庫</div>
             <button class="btn-info btn-block" onclick="document.getElementById('import-json-pool').click()">📥 匯入題目到「總題庫」(JSON)</button>
             <input type="file" id="import-json-pool" style="display:none" accept=".json" onchange="handleImportToPool(this)">
             
@@ -213,7 +229,7 @@
         </div>
 
         <div class="app-version">
-            Math Keyword Memory v4.0 (Rewards & Timer)<br>
+            Math Keyword Memory v5.0 (QA Mode)<br>
             <a href="#" onclick="hardReset()" style="color:#c0392b; text-decoration:underline;">⚠️ 系統異常? 點此強制重置</a>
         </div>
     </div>
@@ -247,7 +263,12 @@
                     <div class="editor-label" style="margin-top:10px;">隱藏關鍵字 (數字):</div>
                     <div style="display:flex; gap:5px;">
                         <input type="text" id="editor-keywords" class="editor-input" placeholder="例如: 24, 3, 8">
-                        <button class="btn-info" onclick="autoDetectNumbers()">⚡ 自動抓</button>
+                        <button class="btn-info" onclick="autoDetectNumbers()">⚡ 自動抓並產生提問</button>
+                    </div>
+
+                    <div id="q-inputs-container" style="margin-top:15px; display:none; border-top:1px dashed #ccc; padding-top:10px;">
+                        <div class="editor-label" style="color:var(--primary);">📝 設定提問問題 (選填，若填寫將開啟提問模式):</div>
+                        <div id="q-inputs-list"></div>
                     </div>
                     
                     <button onclick="addCurrentToList()" class="btn-success btn-block" style="margin-top:15px;">⬇️ 加入本卷</button>
@@ -305,7 +326,7 @@
         </div>
 
         <div id="phase-answer" style="display:none; text-align:center;">
-            <h3>🖊️ 請填入消失的數字</h3>
+            <h3 id="answer-title">🖊️ 請填入消失的數字</h3>
             <div class="problem-display" id="answer-area" style="background:#fff8e1;"></div>
             
             <div style="margin-bottom:10px; display:flex; justify-content:center; gap:10px;">
@@ -381,12 +402,12 @@
     let currentQuizList = [];
     let currentQIdx = 0;
     let activeInput = null;
-    let earnedGemsInSession = 0; // 改為紀錄最後是否獲得獎勵
+    let earnedGemsInSession = 0; 
     let readTimerInterval = null; 
 
-    const SK_LISTS = 'math_mem_lists_v4'; 
-    const SK_USER = 'math_mem_user_v4';
-    const SK_POOL = 'math_mem_pool_v4';
+    const SK_LISTS = 'math_mem_lists_v5'; 
+    const SK_USER = 'math_mem_user_v5';
+    const SK_POOL = 'math_mem_pool_v5';
 
     window.onload = function() {
         loadData();
@@ -442,12 +463,15 @@
 
     function initDefaultList() {
         lists = [{
-            name: "範例練習 (2題)",
+            name: "範例 (提問模式)",
             timer: 0,
             reward: 10,
             qs: [
-                { text: "一盒巧克力有24顆。小明有3盒，他把所有的巧克力平分給8位朋友，每位朋友可以分到多少顆巧克力？", keywords: ["24", "3", "8"] },
-                { text: "遊樂園門票一張200元，老師買了5張，付了1000元，請問找回多少元？", keywords: ["200", "5", "1000"] }
+                { 
+                    text: "一盒巧克力有24顆。小明有3盒，他把所有的巧克力平分給8位朋友，每位朋友可以分到多少顆巧克力？", 
+                    keywords: ["24", "3", "8"],
+                    questions: ["一盒有幾顆?", "小明有幾盒?", "分給幾位朋友?"]
+                }
             ]
         }];
         saveData();
@@ -509,9 +533,10 @@
         tempQs = [];
         document.getElementById('list-name').value = "新的練習題庫";
         document.getElementById('list-timer').value = ""; 
-        document.getElementById('list-reward').value = "10"; // 預設 10
+        document.getElementById('list-reward').value = "10"; 
         document.getElementById('editor-text').value = "";
         document.getElementById('editor-keywords').value = "";
+        document.getElementById('q-inputs-container').style.display = 'none';
         
         renderEditorRows();
         renderPoolInEditor();
@@ -526,6 +551,7 @@
         document.getElementById('list-reward').value = lists[i].reward || 10;
         document.getElementById('editor-text').value = "";
         document.getElementById('editor-keywords').value = "";
+        document.getElementById('q-inputs-container').style.display = 'none';
         
         renderEditorRows();
         renderPoolInEditor();
@@ -538,9 +564,26 @@
         if(nums) {
             let unique = [...new Set(nums)];
             document.getElementById('editor-keywords').value = unique.join(", ");
+            generateQuestionInputs(unique);
         } else {
             alert("找不到數字！");
         }
+    }
+
+    function generateQuestionInputs(keywords) {
+        const container = document.getElementById('q-inputs-list');
+        container.innerHTML = '';
+        document.getElementById('q-inputs-container').style.display = 'block';
+
+        keywords.forEach(k => {
+            let div = document.createElement('div');
+            div.className = 'q-edit-row';
+            div.innerHTML = `
+                <span class="q-edit-badge">${k}</span>
+                <input type="text" class="editor-input q-input" data-key="${k}" placeholder="針對 ${k} 的提問 (例如: 一箱有幾瓶?)">
+            `;
+            container.appendChild(div);
+        });
     }
 
     function addCurrentToList() {
@@ -550,10 +593,31 @@
         if(!kStr) return alert("請輸入要隱藏的關鍵字");
 
         let kArr = kStr.split(/[,，\s]+/).filter(k => k.length > 0);
-        tempQs.push({ text: txt, keywords: kArr });
+        
+        // 抓取提問
+        let qArr = [];
+        let qInputs = document.querySelectorAll('.q-input');
+        let hasQuestions = false;
+        
+        // 確保問題順序對應關鍵字順序
+        kArr.forEach(key => {
+            let matchingInput = Array.from(qInputs).find(input => input.dataset.key === key);
+            let val = matchingInput ? matchingInput.value.trim() : "";
+            if(val) hasQuestions = true;
+            qArr.push(val); 
+        });
+
+        // 只有當至少填寫了一個問題時，才儲存 questions 欄位
+        let qObj = { text: txt, keywords: kArr };
+        if(hasQuestions) {
+            qObj.questions = qArr;
+        }
+
+        tempQs.push(qObj);
         
         document.getElementById('editor-text').value = "";
         document.getElementById('editor-keywords').value = "";
+        document.getElementById('q-inputs-container').style.display = 'none';
         renderEditorRows();
     }
 
@@ -572,9 +636,13 @@
             row.style.borderBottom = "1px solid #eee";
             row.style.padding = "8px";
             row.style.display = "flex"; row.style.justifyContent="space-between";
+            
+            let qTag = q.questions ? `<span style="background:#8e44ad; color:white; font-size:0.7rem; padding:1px 4px; border-radius:3px;">提問模式</span>` : "";
+
             row.innerHTML = `
                 <div style="font-size:0.9rem; overflow:hidden; width:85%;">
-                    ${q.text} <br> <span style="color:var(--primary); font-size:0.8rem;">隱藏: ${q.keywords.join(", ")}</span>
+                    ${q.text} ${qTag}<br> 
+                    <span style="color:var(--primary); font-size:0.8rem;">隱藏: ${q.keywords.join(", ")}</span>
                 </div>
                 <button class="btn-danger" style="padding:2px 8px;" onclick="tempQs.splice(${idx},1); renderEditorRows()">×</button>
             `;
@@ -595,9 +663,10 @@
         poolData.forEach((q, idx) => {
             const div = document.createElement('div');
             div.className = 'pool-item';
+            let qTag = q.questions ? "📝" : "";
             div.innerHTML = `
                 <div style="flex:1; padding-right: 5px;">
-                    <div style="white-space: normal; line-height: 1.3;">${q.text}</div>
+                    <div style="white-space: normal; line-height: 1.3;">${qTag} ${q.text}</div>
                     <div style="color:var(--primary); font-size:0.8rem; margin-top:2px;">[${q.keywords.join(",")}]</div>
                 </div>
                 <button class="btn-success" style="padding:2px 8px; font-size:1.2rem;" onclick="addFromPool(${idx})">＋</button>
@@ -639,7 +708,6 @@
             let item = document.createElement('div');
             item.className = 'list-item';
             let timerBadge = l.timer > 0 ? `<span style="background:#e74c3c; color:white; border-radius:10px; padding:2px 6px; font-size:0.8rem;">⏱️${l.timer}s</span>` : '';
-            // 顯示獎勵寶石
             let reward = l.reward || 10;
             let gemBadge = `<span style="background:#2980b9; color:white; border-radius:10px; padding:2px 6px; font-size:0.8rem; margin-left:5px;">💎${reward}</span>`;
             
@@ -670,7 +738,7 @@
 
     function startQuiz() {
         currentQIdx = 0;
-        earnedGemsInSession = 0; // 重置
+        earnedGemsInSession = 0; 
         let allowHelp = document.getElementById('opt-allow-help').checked;
         document.getElementById('btn-help').style.display = allowHelp ? 'inline-block' : 'none';
         showPage('page-quiz');
@@ -717,26 +785,60 @@
         document.getElementById('phase-answer').style.display = 'block';
         
         let q = currentQuizList[currentQIdx];
-        let html = q.text;
+        let container = document.getElementById('answer-area');
+        container.innerHTML = "";
         
-        let sortedKeys = [...q.keywords].sort((a,b) => b.length - a.length);
-        let index = 0;
-        let map = {};
-        
-        sortedKeys.forEach(k => {
-            let uuid = `__BLANK_${index}__`;
-            map[uuid] = k;
-            html = html.split(k).join(uuid); 
-            index++;
-        });
+        // 判斷是否為提問模式 (questions 欄位存在且不為空)
+        let isQAMode = q.questions && q.questions.length > 0 && q.questions.some(qn => qn.trim() !== "");
 
-        Object.keys(map).forEach(uuid => {
-            let ans = map[uuid];
-            let inputHtml = `<input type="text" class="blank-input" readonly onclick="focusInput(this)" data-ans="${ans}">`;
-            html = html.split(uuid).join(inputHtml);
-        });
+        if(isQAMode) {
+            // --- 提問模式 ---
+            document.getElementById('answer-title').innerText = "❓ 請回答以下問題";
+            
+            // 準備配對：問題 - 答案
+            let pairs = [];
+            q.keywords.forEach((key, idx) => {
+                let questionText = q.questions[idx] || `數字 ${key} 代表什麼?`; // 防呆
+                if(questionText.trim() === "") return; // 跳過空問題
+                pairs.push({ q: questionText, a: key, uuid: `__QA_${idx}__` });
+            });
 
-        document.getElementById('answer-area').innerHTML = html;
+            // 隨機打亂順序
+            pairs.sort(() => Math.random() - 0.5);
+
+            pairs.forEach(pair => {
+                let row = document.createElement('div');
+                row.className = 'qa-row';
+                row.innerHTML = `
+                    <div class="qa-question">${pair.q}</div>
+                    <input type="text" class="blank-input" readonly onclick="focusInput(this)" data-ans="${pair.a}">
+                `;
+                container.appendChild(row);
+            });
+
+        } else {
+            // --- 傳統填空模式 ---
+            document.getElementById('answer-title').innerText = "🖊️ 請填入消失的數字";
+            let html = q.text;
+            let sortedKeys = [...q.keywords].sort((a,b) => b.length - a.length);
+            let index = 0;
+            let map = {};
+            
+            sortedKeys.forEach(k => {
+                let uuid = `__BLANK_${index}__`;
+                map[uuid] = k;
+                html = html.split(k).join(uuid); 
+                index++;
+            });
+
+            Object.keys(map).forEach(uuid => {
+                let ans = map[uuid];
+                let inputHtml = `<input type="text" class="blank-input" readonly onclick="focusInput(this)" data-ans="${ans}">`;
+                html = html.split(uuid).join(inputHtml);
+            });
+            container.innerHTML = html;
+        }
+
         let firstInput = document.querySelector('.blank-input');
         if(firstInput) focusInput(firstInput);
     }
@@ -783,8 +885,6 @@
             speak("有錯誤喔，請再檢查一下");
         } else if(allCorrect) {
             speak("太棒了！答對了！");
-            // 移除單題給分，改為最後給總分
-            // earnedGemsInSession += 5; 
             spawnParticles('💎');
             setTimeout(nextQuestion, 1500);
         }
@@ -808,8 +908,6 @@
 
     function finishQuiz() {
         showPage('page-result');
-        
-        // 結算獎勵：根據設定的獎勵值給予
         let reward = currentList.reward !== undefined ? parseInt(currentList.reward) : 10;
         earnedGemsInSession = reward;
 
