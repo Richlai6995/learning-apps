@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>四則運算觀念系統 (v5.0 雙模式版)</title>
+    <title>四則運算觀念系統 (v5.1 自訂雙獎勵版)</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -187,17 +187,17 @@
             <button class="btn-primary btn-block" onclick="createQuiz()">✏️ 建立新測驗卷</button>
             
             <div style="display: flex; gap: 5px; margin-top: 5px;">
-                <button class="btn-info" style="flex:1;" onclick="document.getElementById('import-pool').click()">📥 匯入題目到總題庫</button>
+                <button class="btn-info" style="flex:1;" onclick="document.getElementById('import-pool').click()">📥 匯入題目</button>
                 <input type="file" id="import-pool" style="display:none" accept=".json" onchange="handlePoolImport(this)">
             </div>
             
             <div style="display: flex; gap: 5px; margin-top: 5px;">
-                <button class="btn-gray" style="flex:1;" onclick="exportData()">📤 匯出所有資料</button>
-                <button class="btn-gray" style="flex:1;" onclick="document.getElementById('import-data').click()">📥 匯入備份資料</button>
+                <button class="btn-gray" style="flex:1;" onclick="exportData()">📤 匯出資料</button>
+                <button class="btn-gray" style="flex:1;" onclick="document.getElementById('import-data').click()">📥 匯入備份</button>
                 <input type="file" id="import-data" style="display:none" accept=".json" onchange="handleDataImport(this)">
             </div>
         </div>
-        <div style="text-align:center; font-size:0.8rem; color:#aaa; margin-top:10px;">v5.0 雙模式優化版</div>
+        <div style="text-align:center; font-size:0.8rem; color:#aaa; margin-top:10px;">v5.1 自訂雙獎勵版</div>
     </div>
 
     <div id="page-shop" class="container">
@@ -226,18 +226,19 @@
     <div id="page-setting" class="container">
         <h2>📍 準備開始</h2>
         <div class="problem-text" id="setting-title" style="font-size:1.1rem; color:#555;"></div>
-        <div id="setting-reward-info" style="text-align:center; font-weight:bold; color:#d35400; margin-bottom:10px;"></div>
+        
+        <div id="setting-reward-info" style="text-align:center; font-weight:bold; font-size:1.1rem; color:#d35400; background:#fff3cd; padding:8px; border-radius:8px; margin-bottom:10px; border:1px solid #f39c12;"></div>
         
         <div style="padding: 10px; border-radius: 8px; margin: 5px 0;">
             <h4 style="margin:5px 0 10px 0; color:var(--primary);">1. 選擇模式</h4>
             <div class="mode-selector">
                 <div class="mode-btn selected" id="btn-mode-teach" onclick="selectMode('teaching')">
                     <h4 style="color:var(--mode-teach);">📖 教學模式</h4>
-                    <p>無限嘗試、有提示<br>獎勵：固定 1 💎</p>
+                    <p>無限嘗試、有提示</p>
                 </div>
                 <div class="mode-btn" id="btn-mode-test" onclick="selectMode('testing')">
                     <h4 style="color:var(--mode-test);">🔥 測驗模式</h4>
-                    <p>一題定生死、無提示<br>獎勵：滿分高額 💎</p>
+                    <p>一題定生死、無提示</p>
                 </div>
             </div>
 
@@ -305,12 +306,22 @@
 
     <div id="page-editor" class="container" style="max-width: 1000px;">
         <h2>✏️ 編輯測驗卷</h2>
-        <div style="background:#eee; padding:10px; border-radius:6px; margin-bottom:10px; display:flex; gap:10px; align-items:center;">
-            <input type="text" id="edit-list-name" placeholder="請輸入測驗卷名稱" class="editor-input" style="flex:1; font-weight:bold;">
-            <div style="display:flex; align-items:center; background:white; padding:5px 10px; border-radius:4px; border:1px solid #ddd;">
-                <span>🏆 滿分獎勵: 💎</span>
-                <input type="number" id="edit-list-gems" class="editor-input" style="width:60px; margin-left:5px; padding:2px;" value="10">
+        
+        <div style="background:#eee; padding:10px; border-radius:6px; margin-bottom:10px;">
+            <div style="margin-bottom:5px; font-weight:bold;">測驗卷名稱：</div>
+            <input type="text" id="edit-list-name" placeholder="請輸入名稱" class="editor-input" style="width:100%; font-weight:bold; margin-bottom:10px;">
+            
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <div style="flex:1; min-width:140px; display:flex; align-items:center; background:white; padding:5px 10px; border-radius:4px; border:1px solid #ddd;">
+                    <span style="color:var(--mode-teach); font-weight:bold;">📖 教學獎勵 💎:</span>
+                    <input type="number" id="edit-gems-teach" class="editor-input" style="width:70px; margin-left:5px; padding:2px;" value="10">
+                </div>
+                <div style="flex:1; min-width:140px; display:flex; align-items:center; background:white; padding:5px 10px; border-radius:4px; border:1px solid #ddd;">
+                    <span style="color:var(--mode-test); font-weight:bold;">🔥 測驗獎勵 💎:</span>
+                    <input type="number" id="edit-gems-test" class="editor-input" style="width:70px; margin-left:5px; padding:2px;" value="20">
+                </div>
             </div>
+            <div style="font-size:0.8rem; color:#777; margin-top:5px;">* 教學模式只要完成即可獲得；測驗模式需滿分才可獲得全額。</div>
         </div>
 
         <div class="editor-layout">
@@ -385,12 +396,18 @@
         };
 
         function loadData() {
-            const dLists = localStorage.getItem('fo_lists_v50'); // 升級key避免舊資料干擾
-            if(dLists) allLists = JSON.parse(dLists);
-            else {
+            const dLists = localStorage.getItem('fo_lists_v51'); // 升級key
+            if(dLists) {
+                allLists = JSON.parse(dLists);
+                // 舊版相容性處理: 若無 gemsTeach/gemsTest 則賦予預設值
+                allLists.forEach(l => {
+                    if(!l.gemsTeach) l.gemsTeach = 10;
+                    if(!l.gemsTest) l.gemsTest = l.gems || 20; // 相容舊版 gems
+                });
+            } else {
                 // 預設範例
                 const demoList = {
-                    id: 1, name: "入門混合練習", gems: 20,
+                    id: 1, name: "入門混合練習", gemsTeach: 10, gemsTest: 20,
                     qs: [
                         { text: "一罐飲料12元，買5罐要多少錢？", hint: "重複加5次", op: "mul", n1: 12, n2: 5 },
                         { text: "有8塊餅乾，平均分給2個小朋友，每人拿幾塊？", hint: "平分", op: "div", n1: 8, n2: 2 },
@@ -414,7 +431,7 @@
         }
 
         function saveData() {
-            localStorage.setItem('fo_lists_v50', JSON.stringify(allLists));
+            localStorage.setItem('fo_lists_v51', JSON.stringify(allLists));
             localStorage.setItem('fo_master_pool', JSON.stringify(masterPool));
             localStorage.setItem('fo_user', JSON.stringify(user));
             localStorage.setItem('fo_exchange_log', JSON.stringify(exchangeLog));
@@ -423,8 +440,6 @@
         // --- 語音 ---
         function speak(text) {
             if(!quizState.settings.voice) return;
-            // 測驗模式下，只有答對或答錯時才發聲，不朗讀題目(防止透過語氣作弊)，除非...
-            // 這裡設定：測驗模式下，只讀反饋，不讀題目提示
             if(quizState.mode === 'testing' && text.length > 10) return; 
 
             window.speechSynthesis.cancel();
@@ -511,9 +526,13 @@
                 div.innerHTML = `
                     <div style="flex:1;">
                         <div style="font-weight:bold; font-size:1.1rem;">
-                            ${list.name} <span class="gem-badge">最高💎${list.gems || 10}</span>
+                            ${list.name} <span class="gem-badge" style="background:#ddd; color:#555;">${list.qs.length}題</span>
                         </div> 
-                        <div style="font-size:0.9rem; color:#7f8c8d;">共 ${list.qs.length} 題</div>
+                        <div style="font-size:0.9rem; margin-top:5px;">
+                            <span style="color:var(--mode-teach);">📖${list.gemsTeach||10}</span> 
+                            <span style="color:#ccc;">|</span> 
+                            <span style="color:var(--mode-test);">🔥${list.gemsTest||20}</span>
+                        </div>
                     </div>
                     <div style="display:flex; gap:5px;">
                         <button class="btn-success" style="padding:8px 15px;" onclick="prepareQuiz(${idx})">▶ 開始</button>
@@ -529,7 +548,6 @@
         function prepareQuiz(idx) {
             currentList = allLists[idx];
             document.getElementById('setting-title').innerText = `目前選擇：${currentList.name}`;
-            document.getElementById('setting-reward-info').innerText = `🏆 測驗滿分獎勵：${currentList.gems || 10} 寶石`;
             
             // 預設為教學模式
             selectMode('teaching');
@@ -541,12 +559,18 @@
             document.getElementById('btn-mode-teach').classList.remove('selected');
             document.getElementById('btn-mode-test').classList.remove('selected');
             
+            const infoBox = document.getElementById('setting-reward-info');
+            
             if(mode === 'teaching') {
                 document.getElementById('btn-mode-teach').classList.add('selected');
                 document.getElementById('setting-options-area').style.display = 'block';
+                // 顯示教學模式獎勵
+                infoBox.innerText = `📖 教學目標：完成練習即可獲得 ${currentList.gemsTeach || 10} 💎`;
             } else {
                 document.getElementById('btn-mode-test').classList.add('selected');
                 document.getElementById('setting-options-area').style.display = 'none';
+                // 顯示測驗模式獎勵
+                infoBox.innerText = `🔥 測驗挑戰：滿分可獲得 ${currentList.gemsTest || 20} 💎`;
             }
         }
 
@@ -573,7 +597,6 @@
                 }, 1000)
             };
 
-            // 設定 UI 依據模式
             const badge = document.getElementById('quiz-mode-badge');
             if(selectedMode === 'teaching') {
                 badge.innerText = "📖 教學模式";
@@ -583,8 +606,7 @@
                 badge.innerText = "🔥 測驗模式";
                 badge.style.background = "var(--mode-test)";
                 document.getElementById('btn-help').style.display = 'none';
-                // 測驗模式強制關閉提示
-                quizState.settings.voice = true; // 但保留音效
+                quizState.settings.voice = true; 
                 quizState.settings.visual = false; 
             }
 
@@ -606,19 +628,17 @@
             
             document.querySelectorAll('.op-card').forEach(c => {
                 c.style.opacity = '1'; c.style.pointerEvents = 'auto'; c.style.border = '2px solid #eee';
+                c.style.background = "white"; // 重置背景
+                c.style.boxShadow = "0 4px 0 #ddd";
             });
 
-            // 教學模式且開啟語音才朗讀題目
             if(quizState.mode === 'teaching' && quizState.settings.voice) speak(q.text);
         }
 
         function useHelp() {
-            if(quizState.mode === 'testing') return; // 雙重防護
-            
+            if(quizState.mode === 'testing') return; 
             const q = quizState.questions[quizState.idx];
-            if(quizState.settings.visual) {
-                playAnimation(q);
-            }
+            if(quizState.settings.visual) playAnimation(q);
             if(quizState.settings.voice) speak(q.hint || "這題沒有提示喔");
         }
 
@@ -626,7 +646,6 @@
             const q = quizState.questions[quizState.idx];
             const isCorrect = (op === q.op);
 
-            // 鎖定所有按鈕，防止教學模式狂按或測驗模式重試
             if(quizState.mode === 'testing' || isCorrect) {
                 document.querySelectorAll('.op-card').forEach(c => c.style.pointerEvents = 'none');
             }
@@ -638,14 +657,12 @@
                 quizState.correct++;
                 spawnParticles('⭐'); 
                 document.querySelector(`.op-${op}`).style.border = "4px solid var(--success)";
+                document.querySelector(`.op-${op}`).style.background = "#eafaf1";
                 document.querySelectorAll('.op-card').forEach(c => { if(!c.classList.contains(`op-${op}`)) c.style.opacity = '0.3'; });
                 
-                // 視覺回饋
                 if(quizState.mode === 'teaching' && quizState.settings.visual && document.getElementById('anim-stage').style.display === 'none') {
                     playAnimation(q);
                 }
-                
-                // 不論模式，答對都顯示下一題
                 document.getElementById('btn-next').style.display = 'block';
 
             } else {
@@ -654,19 +671,15 @@
                 speak("不對喔");
 
                 if(quizState.mode === 'testing') {
-                    // --- 測驗模式：錯了就結束該題 ---
                     document.querySelector(`.op-${op}`).style.background = "#ffebee";
                     document.querySelector(`.op-${op}`).style.borderColor = "var(--danger)";
                     
-                    // 顯示正確答案
                     document.querySelector(`.op-${q.op}`).style.border = "4px solid var(--success)";
                     document.querySelector(`.op-${q.op}`).style.boxShadow = "0 0 10px var(--success)";
                     
-                    // 強制下一題
                     document.getElementById('feedback-msg').innerText += " (答案是 " + getOpName(q.op) + ")";
                     document.getElementById('btn-next').style.display = 'block';
                 } else {
-                    // --- 教學模式：允許重試 ---
                     document.querySelector(`.op-${op}`).style.opacity = '0.5';
                     document.querySelector(`.op-${op}`).style.pointerEvents = 'none';
                 }
@@ -688,17 +701,17 @@
             clearInterval(quizState.interval);
             let score = Math.round((quizState.correct / quizState.questions.length) * 100);
             
-            // 獎勵邏輯 v5.0
+            // 獎勵邏輯 v5.1
             let rewardGems = 0;
             let msg = "";
 
             if (quizState.mode === 'teaching') {
-                // 教學模式：固定 1 顆，鼓勵練習
-                rewardGems = 1;
-                msg = `練習完成！獲得 ${rewardGems} 💎 (教學模式固定獎勵)`;
+                // 教學模式：完成即給予設定的 gemsTeach
+                rewardGems = currentList.gemsTeach || 10;
+                msg = `練習完成！獲得 ${rewardGems} 💎 (教學獎勵)`;
             } else {
                 // 測驗模式：看分數
-                let maxReward = currentList.gems || 10;
+                let maxReward = currentList.gemsTest || 20;
                 if (score === 100) {
                     rewardGems = maxReward;
                     msg = `太棒了！滿分！獲得 ${rewardGems} 💎`;
@@ -706,8 +719,8 @@
                     rewardGems = Math.floor(maxReward / 2) || 1;
                     msg = `通過測驗！獲得 ${rewardGems} 💎`;
                 } else {
-                    rewardGems = 0;
-                    msg = `不及格...請多在教學模式練習再挑戰！`;
+                    rewardGems = 1;
+                    msg = `不及格...獲得 1 💎 安慰獎，再接再厲！`;
                 }
             }
 
@@ -725,7 +738,7 @@
             if(confirm("確定結束？")) { clearInterval(quizState.interval); window.speechSynthesis.cancel(); showPage('page-home'); }
         }
 
-        // --- 觀念動畫 (無劇透版) ---
+        // --- 觀念動畫 ---
         function playAnimation(q) {
             const stage = document.getElementById('anim-stage');
             const content = document.getElementById('anim-content');
@@ -792,13 +805,15 @@
         function createQuiz() {
             editingListId = null; tempQuizQs = [];
             document.getElementById('edit-list-name').value = "";
-            document.getElementById('edit-list-gems').value = 10; 
+            document.getElementById('edit-gems-teach').value = 10; // 預設 10
+            document.getElementById('edit-gems-test').value = 20;  // 預設 20
             showPage('page-editor'); renderQuizQs(); renderPoolSource();
         }
         function editList(idx) {
             editingListId = idx; const l = allLists[idx];
             document.getElementById('edit-list-name').value = l.name;
-            document.getElementById('edit-list-gems').value = l.gems || 10;
+            document.getElementById('edit-gems-teach').value = l.gemsTeach || 10;
+            document.getElementById('edit-gems-test').value = l.gemsTest || l.gems || 20;
             tempQuizQs = JSON.parse(JSON.stringify(l.qs));
             showPage('page-editor'); renderQuizQs(); renderPoolSource();
         }
@@ -844,9 +859,19 @@
 
         function saveList() {
             const name = document.getElementById('edit-list-name').value.trim();
-            const gems = parseInt(document.getElementById('edit-list-gems').value) || 10;
+            const gemsTeach = parseInt(document.getElementById('edit-gems-teach').value) || 10;
+            const gemsTest = parseInt(document.getElementById('edit-gems-test').value) || 20;
+            
             if(!name || tempQuizQs.length === 0) return alert("請輸入名稱並至少加入一題");
-            const newList = { id: Date.now(), name: name, qs: tempQuizQs, gems: gems };
+            
+            const newList = { 
+                id: Date.now(), 
+                name: name, 
+                qs: tempQuizQs, 
+                gemsTeach: gemsTeach, 
+                gemsTest: gemsTest 
+            };
+            
             if(editingListId !== null) allLists[editingListId] = newList; else allLists.push(newList);
             saveData(); showPage('page-home');
         }
