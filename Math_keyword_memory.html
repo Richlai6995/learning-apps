@@ -108,6 +108,11 @@
         }
         .pool-item:hover { background: #fdf2e9; }
 
+        /* 隨機抽題區塊樣式 */
+        .random-box {
+            background: #e8f8f5; border: 1px solid #1abc9c; padding: 10px; border-radius: 6px; margin-bottom: 10px;
+        }
+
         .editor-label { font-weight: bold; color: #555; margin-bottom: 5px; display:block;}
         .editor-textarea { 
             width: 100%; padding: 8px; border: 1px solid #bdc3c7; border-radius: 5px; 
@@ -229,7 +234,7 @@
         </div>
 
         <div class="app-version">
-            Math Keyword Memory v5.0 (QA Mode)<br>
+            Math Keyword Memory v6.0 (Random Pick)<br>
             <a href="#" onclick="hardReset()" style="color:#c0392b; text-decoration:underline;">⚠️ 系統異常? 點此強制重置</a>
         </div>
     </div>
@@ -284,7 +289,16 @@
                         <h3 style="margin:0; color:#d35400;">📚 總題庫來源</h3>
                         <span style="font-size:0.8rem; color:#666;" id="pool-count">0題</span>
                     </div>
-                    <div style="margin-bottom:5px; font-size:0.8rem; color:#666;">點擊 ➕ 將題目加入左側測驗卷</div>
+                    
+                    <div class="random-box">
+                        <div style="font-size:0.9rem; font-weight:bold; color:#16a085;">🎲 隨機抽題 (不重複)</div>
+                        <div style="display:flex; gap:5px; margin-top:5px;">
+                            <input type="number" id="random-count" class="editor-input" style="width:80px;" placeholder="數量" min="1">
+                            <button class="btn-info" style="flex:1; background:#1abc9c;" onclick="addRandomFromPool()">🎲 加入</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:5px; font-size:0.8rem; color:#666;">或點擊 ➕ 逐一加入:</div>
                     
                     <div id="pool-list-container" class="pool-list">
                         </div>
@@ -599,7 +613,6 @@
         let qInputs = document.querySelectorAll('.q-input');
         let hasQuestions = false;
         
-        // 確保問題順序對應關鍵字順序
         kArr.forEach(key => {
             let matchingInput = Array.from(qInputs).find(input => input.dataset.key === key);
             let val = matchingInput ? matchingInput.value.trim() : "";
@@ -607,7 +620,6 @@
             qArr.push(val); 
         });
 
-        // 只有當至少填寫了一個問題時，才儲存 questions 欄位
         let qObj = { text: txt, keywords: kArr };
         if(hasQuestions) {
             qObj.questions = qArr;
@@ -625,6 +637,42 @@
         let q = poolData[poolIndex];
         tempQs.push(JSON.parse(JSON.stringify(q)));
         renderEditorRows();
+    }
+
+    // --- 隨機抽題功能 ---
+    function addRandomFromPool() {
+        let countInput = document.getElementById('random-count');
+        let count = parseInt(countInput.value);
+
+        if (isNaN(count) || count <= 0) {
+            alert("請輸入有效的題數！");
+            return;
+        }
+
+        if (count > poolData.length) {
+            alert(`總題庫數量不足！\n目前只有 ${poolData.length} 題，無法取出 ${count} 題。`);
+            return;
+        }
+
+        // 洗牌演算法 (Fisher-Yates)
+        let indices = Array.from({length: poolData.length}, (_, i) => i);
+        for (let i = indices.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [indices[i], indices[j]] = [indices[j], indices[i]];
+        }
+
+        // 取前 count 個
+        let selectedIndices = indices.slice(0, count);
+
+        // 加入暫存區
+        selectedIndices.forEach(idx => {
+            let q = poolData[idx];
+            tempQs.push(JSON.parse(JSON.stringify(q))); // Deep copy
+        });
+
+        renderEditorRows();
+        alert(`成功隨機加入 ${count} 題！`);
+        countInput.value = '';
     }
 
     function renderEditorRows() {
@@ -788,22 +836,17 @@
         let container = document.getElementById('answer-area');
         container.innerHTML = "";
         
-        // 判斷是否為提問模式 (questions 欄位存在且不為空)
         let isQAMode = q.questions && q.questions.length > 0 && q.questions.some(qn => qn.trim() !== "");
 
         if(isQAMode) {
-            // --- 提問模式 ---
             document.getElementById('answer-title').innerText = "❓ 請回答以下問題";
-            
-            // 準備配對：問題 - 答案
             let pairs = [];
             q.keywords.forEach((key, idx) => {
-                let questionText = q.questions[idx] || `數字 ${key} 代表什麼?`; // 防呆
-                if(questionText.trim() === "") return; // 跳過空問題
+                let questionText = q.questions[idx] || `數字 ${key} 代表什麼?`;
+                if(questionText.trim() === "") return;
                 pairs.push({ q: questionText, a: key, uuid: `__QA_${idx}__` });
             });
 
-            // 隨機打亂順序
             pairs.sort(() => Math.random() - 0.5);
 
             pairs.forEach(pair => {
@@ -817,7 +860,6 @@
             });
 
         } else {
-            // --- 傳統填空模式 ---
             document.getElementById('answer-title').innerText = "🖊️ 請填入消失的數字";
             let html = q.text;
             let sortedKeys = [...q.keywords].sort((a,b) => b.length - a.length);
@@ -997,8 +1039,8 @@
         r.onload = e => {
             try {
                 let json = JSON.parse(e.target.result);
-                if(json.lists) lists = json.lists;
-                if(json.pool) poolData = json.pool; 
+                if(json.lists && Array.isArray(json.lists)) lists = json.lists;
+                if(json.pool && Array.isArray(json.pool)) poolData = json.pool; 
                 if(json.user) {
                     studentName = json.user.name;
                     totalGems = json.user.gems;
